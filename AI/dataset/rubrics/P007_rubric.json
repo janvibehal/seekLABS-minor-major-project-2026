@@ -1,0 +1,62 @@
+{
+  "problem_id": "P007",
+  "rubric": {
+    "weights": {
+      "algorithm_correctness": 25,
+      "logical_reasoning": 20,
+      "concept_coverage": 15,
+      "completeness": 10,
+      "data_structure_selection": 10,
+      "complexity_analysis": 10,
+      "edge_case_handling": 10
+    },
+    "total_weight": 100,
+    "dimensions": {
+      "algorithm_correctness": {
+        "weight": 25,
+        "evaluation": "Evaluate whether the proposed approach actually solves Reverse Integer.",
+        "full_credit": "The algorithm correctly solves the problem.",
+        "partial_credit": "The overall idea is correct but contains a small logical issue.",
+        "low_credit": "The candidate recognizes part of the problem but the proposed algorithm is substantially flawed.",
+        "zero_credit": "The proposed approach cannot solve the problem."
+      },
+      "logical_reasoning": {
+        "weight": 20,
+        "evaluation": "Evaluate whether the candidate's reasoning follows a valid sequence and connects the proposed steps to the required output."
+      },
+      "concept_coverage": {
+        "weight": 15,
+        "expected_concepts": [
+          "digit-extraction",
+          "integer-reversal",
+          "modulo",
+          "integer-division",
+          "overflow-detection"
+        ]
+      },
+      "completeness": {
+        "weight": 10,
+        "evaluation": "Evaluate whether the candidate sufficiently explains the approach, important steps, complexity, and relevant considerations."
+      },
+      "data_structure_selection": {
+        "weight": 10,
+        "expected": "integer-arithmetic"
+      },
+      "complexity_analysis": {
+        "weight": 10,
+        "expected_time": "O(log(|x|))",
+        "expected_space": "O(1)"
+      },
+      "edge_case_handling": {
+        "weight": 10,
+        "expected_cases": [
+          "Positive integer",
+          "Negative integer",
+          "Trailing zeroes",
+          "32-bit overflow",
+          "Zero"
+        ]
+      }
+    }
+  }
+}

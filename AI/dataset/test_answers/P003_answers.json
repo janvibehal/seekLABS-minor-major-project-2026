@@ -1,0 +1,80 @@
+{
+  "problem_id": "P003",
+  "candidate_test_answers": [
+    {
+      "test_answer_id": "P003_03",
+      "category": "fully_correct",
+      "answer": "Because the array is sorted, I would keep left and right pointers and repeatedly check the middle. If nums[mid] is too small I move left to mid+1; if too large I move right to mid-1; otherwise I return mid. This is O(log n) time and O(1) space. Empty arrays and absent targets are handled.",
+      "expected_evaluation": {
+        "algorithm_correctness": 97,
+        "logical_reasoning": 95,
+        "concept_coverage": 94,
+        "completeness": 95,
+        "data_structure_selection": 98,
+        "complexity_analysis": 96,
+        "edge_case_handling": 94,
+        "classification": "Correct"
+      }
+    },
+    {
+      "test_answer_id": "P003_03",
+      "category": "correct_but_inefficient",
+      "answer": "Since the array is sorted, I could simply scan from left to right until I find the target. It is correct and uses O(1) extra space, but it takes O(n) time.",
+      "expected_evaluation": {
+        "algorithm_correctness": 88,
+        "logical_reasoning": 80,
+        "concept_coverage": 70,
+        "completeness": 82,
+        "data_structure_selection": 78,
+        "complexity_analysis": 92,
+        "edge_case_handling": 72,
+        "classification": "Fallback: Partially Correct"
+      }
+    },
+    {
+      "test_answer_id": "P003_03",
+      "category": "complexity_mistake",
+      "answer": "I would use the standard left, right, and middle pointer binary search. The search correctly halves the range each time. I think its time complexity is O(n) because we still inspect elements, with O(1) space.",
+      "expected_evaluation": {
+        "algorithm_correctness": 94,
+        "logical_reasoning": 88,
+        "concept_coverage": 90,
+        "completeness": 88,
+        "data_structure_selection": 95,
+        "complexity_analysis": 45,
+        "edge_case_handling": 82,
+        "classification": "Fallback: Partially Correct"
+      }
+    },
+    {
+      "test_answer_id": "P003_03",
+      "category": "edge_case_missing",
+      "answer": "I would use binary search with left, right, and mid. If the middle is too small move left, otherwise move right. I would return the index when found. I haven't considered an empty array or the exact behavior when the target is absent.",
+      "expected_evaluation": {
+        "algorithm_correctness": 88,
+        "logical_reasoning": 78,
+        "concept_coverage": 84,
+        "completeness": 65,
+        "data_structure_selection": 94,
+        "complexity_analysis": 90,
+        "edge_case_handling": 42,
+        "classification": "Fallback: Partially Correct"
+      }
+    },
+    {
+      "test_answer_id": "P003_03",
+      "category": "partially_correct",
+      "answer": "I would compare the middle value with the target, but I might move the wrong pointer depending on whether it is larger or smaller. The idea is to keep searching the half where the target should be.",
+      "expected_evaluation": {
+        "algorithm_correctness": 55,
+        "logical_reasoning": 58,
+        "concept_coverage": 65,
+        "completeness": 52,
+        "data_structure_selection": 72,
+        "complexity_analysis": 55,
+        "edge_case_handling": 45,
+        "classification": "Partially Correct"
+      }
+    }
+  ]
+}

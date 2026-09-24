@@ -1,0 +1,304 @@
+{
+  "reviewer_scores": [
+    {
+      "problem_id": "P002",
+      "test_answer_id": "P002_TA001",
+      "source": "AI Evaluation Benchmark workbook / Human Ground Truth snapshot",
+      "scores": {
+        "algorithm_correctness": 96,
+        "logical_reasoning": 94,
+        "concept_coverage": 92,
+        "completeness": 94,
+        "data_structure_selection": 97,
+        "complexity_analysis": 92,
+        "edge_case_handling": 92
+      },
+      "review_status": "ASSESSED"
+    },
+    {
+      "problem_id": "P002",
+      "test_answer_id": "P002_TA002",
+      "source": "AI Evaluation Benchmark workbook / Human Ground Truth snapshot",
+      "scores": {
+        "algorithm_correctness": 88,
+        "logical_reasoning": 78,
+        "concept_coverage": 75,
+        "completeness": 82,
+        "data_structure_selection": 78,
+        "complexity_analysis": 72,
+        "edge_case_handling": 78
+      },
+      "review_status": "ASSESSED"
+    },
+    {
+      "problem_id": "P002",
+      "test_answer_id": "P002_TA003",
+      "source": "AI Evaluation Benchmark workbook / Human Ground Truth snapshot",
+      "scores": {
+        "algorithm_correctness": 92,
+        "logical_reasoning": 80,
+        "concept_coverage": 88,
+        "completeness": 82,
+        "data_structure_selection": 94,
+        "complexity_analysis": 45,
+        "edge_case_handling": 78
+      },
+      "review_status": "ASSESSED"
+    },
+    {
+      "problem_id": "P002",
+      "test_answer_id": "P002_TA004",
+      "source": "AI Evaluation Benchmark workbook / Human Ground Truth snapshot",
+      "scores": {
+        "algorithm_correctness": 88,
+        "logical_reasoning": 78,
+        "concept_coverage": 84,
+        "completeness": 72,
+        "data_structure_selection": 92,
+        "complexity_analysis": 90,
+        "edge_case_handling": 42
+      },
+      "review_status": "ASSESSED"
+    },
+    {
+      "problem_id": "P002",
+      "test_answer_id": "P002_TA005",
+      "source": "AI Evaluation Benchmark workbook / Human Ground Truth snapshot",
+      "scores": {
+        "algorithm_correctness": 55,
+        "logical_reasoning": 55,
+        "concept_coverage": 60,
+        "completeness": 50,
+        "data_structure_selection": 70,
+        "complexity_analysis": 55,
+        "edge_case_handling": 45
+      },
+      "review_status": "ASSESSED"
+    },
+    {
+      "problem_id": "P003",
+      "test_answer_id": "P003_TA001",
+      "source": "AI Evaluation Benchmark workbook / Human Ground Truth snapshot",
+      "scores": {
+        "algorithm_correctness": 97,
+        "logical_reasoning": 95,
+        "concept_coverage": 94,
+        "completeness": 95,
+        "data_structure_selection": 98,
+        "complexity_analysis": 96,
+        "edge_case_handling": 94
+      },
+      "review_status": "ASSESSED"
+    },
+    {
+      "problem_id": "P003",
+      "test_answer_id": "P003_TA002",
+      "source": "AI Evaluation Benchmark workbook / Human Ground Truth snapshot",
+      "scores": {
+        "algorithm_correctness": 88,
+        "logical_reasoning": 80,
+        "concept_coverage": 70,
+        "completeness": 82,
+        "data_structure_selection": 78,
+        "complexity_analysis": 92,
+        "edge_case_handling": 72
+      },
+      "review_status": "ASSESSED"
+    },
+    {
+      "problem_id": "P003",
+      "test_answer_id": "P003_TA003",
+      "source": "AI Evaluation Benchmark workbook / Human Ground Truth snapshot",
+      "scores": {
+        "algorithm_correctness": 94,
+        "logical_reasoning": 88,
+        "concept_coverage": 90,
+        "completeness": 88,
+        "data_structure_selection": 95,
+        "complexity_analysis": 45,
+        "edge_case_handling": 82
+      },
+      "review_status": "ASSESSED"
+    },
+    {
+      "problem_id": "P003",
+      "test_answer_id": "P003_TA004",
+      "source": "AI Evaluation Benchmark workbook / Human Ground Truth snapshot",
+      "scores": {
+        "algorithm_correctness": 88,
+        "logical_reasoning": 78,
+        "concept_coverage": 84,
+        "completeness": 65,
+        "data_structure_selection": 94,
+        "complexity_analysis": 90,
+        "edge_case_handling": 42
+      },
+      "review_status": "ASSESSED"
+    },
+    {
+      "problem_id": "P003",
+      "test_answer_id": "P003_TA005",
+      "source": "AI Evaluation Benchmark workbook / Human Ground Truth snapshot",
+      "scores": {
+        "algorithm_correctness": 55,
+        "logical_reasoning": 58,
+        "concept_coverage": 65,
+        "completeness": 52,
+        "data_structure_selection": 72,
+        "complexity_analysis": 55,
+        "edge_case_handling": 45
+      },
+      "review_status": "ASSESSED"
+    },
+    {
+      "problem_id": "P004",
+      "test_answer_id": "P004_TA001",
+      "source": "AI Evaluation Benchmark workbook / Human Ground Truth snapshot",
+      "scores": {
+        "algorithm_correctness": 96,
+        "logical_reasoning": 94,
+        "concept_coverage": 93,
+        "completeness": 95,
+        "data_structure_selection": 97,
+        "complexity_analysis": 94,
+        "edge_case_handling": 92
+      },
+      "review_status": "ASSESSED"
+    },
+    {
+      "problem_id": "P004",
+      "test_answer_id": "P004_TA002",
+      "source": "AI Evaluation Benchmark workbook / Human Ground Truth snapshot",
+      "scores": {
+        "algorithm_correctness": 86,
+        "logical_reasoning": 78,
+        "concept_coverage": 72,
+        "completeness": 78,
+        "data_structure_selection": 80,
+        "complexity_analysis": 80,
+        "edge_case_handling": 74
+      },
+      "review_status": "ASSESSED"
+    },
+    {
+      "problem_id": "P004",
+      "test_answer_id": "P004_TA003",
+      "source": "AI Evaluation Benchmark workbook / Human Ground Truth snapshot",
+      "scores": {
+        "algorithm_correctness": 93,
+        "logical_reasoning": 82,
+        "concept_coverage": 90,
+        "completeness": 85,
+        "data_structure_selection": 96,
+        "complexity_analysis": 42,
+        "edge_case_handling": 78
+      },
+      "review_status": "ASSESSED"
+    },
+    {
+      "problem_id": "P004",
+      "test_answer_id": "P004_TA004",
+      "source": "AI Evaluation Benchmark workbook / Human Ground Truth snapshot",
+      "scores": {
+        "algorithm_correctness": 88,
+        "logical_reasoning": 80,
+        "concept_coverage": 84,
+        "completeness": 68,
+        "data_structure_selection": 94,
+        "complexity_analysis": 88,
+        "edge_case_handling": 45
+      },
+      "review_status": "ASSESSED"
+    },
+    {
+      "problem_id": "P004",
+      "test_answer_id": "P004_TA005",
+      "source": "AI Evaluation Benchmark workbook / Human Ground Truth snapshot",
+      "scores": {
+        "algorithm_correctness": 58,
+        "logical_reasoning": 55,
+        "concept_coverage": 62,
+        "completeness": 50,
+        "data_structure_selection": 58,
+        "complexity_analysis": 50,
+        "edge_case_handling": 48
+      },
+      "review_status": "ASSESSED"
+    },
+    {
+      "problem_id": "P005",
+      "test_answer_id": "P005_TA001",
+      "source": "AI Evaluation Benchmark workbook / Human Ground Truth snapshot",
+      "scores": {
+        "algorithm_correctness": 97,
+        "logical_reasoning": 95,
+        "concept_coverage": 94,
+        "completeness": 96,
+        "data_structure_selection": 94,
+        "complexity_analysis": 96,
+        "edge_case_handling": 94
+      },
+      "review_status": "ASSESSED"
+    },
+    {
+      "problem_id": "P005",
+      "test_answer_id": "P005_TA002",
+      "source": "AI Evaluation Benchmark workbook / Human Ground Truth snapshot",
+      "scores": {
+        "algorithm_correctness": 88,
+        "logical_reasoning": 82,
+        "concept_coverage": 78,
+        "completeness": 82,
+        "data_structure_selection": 72,
+        "complexity_analysis": 90,
+        "edge_case_handling": 82
+      },
+      "review_status": "ASSESSED"
+    },
+    {
+      "problem_id": "P005",
+      "test_answer_id": "P005_TA003",
+      "source": "AI Evaluation Benchmark workbook / Human Ground Truth snapshot",
+      "scores": {
+        "algorithm_correctness": 94,
+        "logical_reasoning": 84,
+        "concept_coverage": 90,
+        "completeness": 88,
+        "data_structure_selection": 92,
+        "complexity_analysis": 45,
+        "edge_case_handling": 78
+      },
+      "review_status": "ASSESSED"
+    },
+    {
+      "problem_id": "P005",
+      "test_answer_id": "P005_TA004",
+      "source": "AI Evaluation Benchmark workbook / Human Ground Truth snapshot",
+      "scores": {
+        "algorithm_correctness": 88,
+        "logical_reasoning": 80,
+        "concept_coverage": 86,
+        "completeness": 72,
+        "data_structure_selection": 90,
+        "complexity_analysis": 92,
+        "edge_case_handling": 42
+      },
+      "review_status": "ASSESSED"
+    },
+    {
+      "problem_id": "P005",
+      "test_answer_id": "P005_TA005",
+      "source": "AI Evaluation Benchmark workbook / Human Ground Truth snapshot",
+      "scores": {
+        "algorithm_correctness": 58,
+        "logical_reasoning": 55,
+        "concept_coverage": 62,
+        "completeness": 55,
+        "data_structure_selection": 68,
+        "complexity_analysis": 55,
+        "edge_case_handling": 45
+      },
+      "review_status": "ASSESSED"
+    }
+  ]
+}

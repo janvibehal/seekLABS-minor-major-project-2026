@@ -1,0 +1,108 @@
+{
+  "candidate_id": "e2e_test_candidate",
+  "question_id": "P001",
+  "reference_answer_id": "P001-R3",
+  "reference_match_confidence": 0.95,
+  "target_reference_id": "P001-R3",
+  "current_answer": "I would use a HashMap to store previously seen values.\nFor each number, I would calculate its complement and check\nwhether that complement already exists in the HashMap.\nIf it exists, I return the two indices. Otherwise, I store\nthe current number and continue iterating through the array.\nThis gives O(n) time and O(n) space.",
+  "nlp_state": {
+    "approach": "Use a HashMap to store previously seen values. For each number, calculate its complement and check if it exists in the HashMap. If it exists, return the two indices. Otherwise, store the current number and continue.",
+    "algorithms": [],
+    "concepts": [
+      "complement",
+      "indices"
+    ],
+    "operations": [
+      "calculate complement",
+      "check existence",
+      "store current number"
+    ],
+    "data_structures": [
+      "HashMap"
+    ],
+    "time_complexity": "O(n)",
+    "space_complexity": "O(n)",
+    "edge_cases": [],
+    "reasoning_summary": null,
+    "assumptions": [],
+    "optimization": null
+  },
+  "scores": {
+    "algorithm_correctness": 100.0,
+    "logical_reasoning": 100.0,
+    "concept_coverage": 100.0,
+    "completeness": 100.0,
+    "data_structure": 100.0,
+    "complexity": 100.0,
+    "edge_cases": 100.0
+  },
+  "primary_classification": "Correct",
+  "secondary_classification": null,
+  "adaptive_classifications": [],
+  "primary_adaptive_gap": null,
+  "evidence": {
+    "algorithm_correctness": "The candidate's approach correctly solves the Two Sum problem by using a hash map for O(n) time and O(n) space complexity, handling all required cases including duplicates, negative values, and no solution.",
+    "logical_reasoning": "The candidate explains the reasoning clearly, showing how the algorithm works by calculating complements, checking for existing values, and ensuring proper index tracking.",
+    "concept_coverage": "The candidate communicates key concepts such as complement calculation, hash map usage, index tracking, and proper edge case handling, including duplicate values and negative numbers.",
+    "completeness": "The candidate addresses all essential parts of the solution, including the algorithm steps, data structures, time and space complexity, and edge case handling.",
+    "data_structure": "The candidate explicitly mentions the use of a hash map, which is appropriate for this problem and supports O(1) lookup time.",
+    "complexity": "The candidate explicitly states the time complexity as O(n) and space complexity as O(n), which matches the actual algorithm's performance.",
+    "edge_cases": "The candidate addresses all relevant edge cases, including empty input, single-element arrays, duplicate values, and no solution, demonstrating proper handling of these scenarios."
+  },
+  "history": [
+    {
+      "turn_number": 1,
+      "candidate_answer": "I would use a HashMap to store previously seen values.\nFor each number, I would calculate its complement and check\nwhether that complement already exists in the HashMap.\nIf it exists, I return the two indices. Otherwise, I store\nthe current number and continue iterating through the array.\nThis gives O(n) time and O(n) space.",
+      "reference_answer_id": "P001-R3",
+      "reference_match_confidence": 0.95,
+      "target_reference_id": "P001-R3",
+      "scores": {
+        "algorithm_correctness": 100.0,
+        "logical_reasoning": 100.0,
+        "concept_coverage": 100.0,
+        "completeness": 100.0,
+        "data_structure": 100.0,
+        "complexity": 100.0,
+        "edge_cases": 100.0
+      },
+      "primary_classification": "Correct",
+      "secondary_classification": null,
+      "adaptive_classifications": [],
+      "primary_adaptive_gap": null,
+      "evidence": {
+        "algorithm_correctness": "The candidate's approach correctly solves the Two Sum problem by using a hash map for O(n) time and O(n) space complexity, handling all required cases including duplicates, negative values, and no solution.",
+        "logical_reasoning": "The candidate explains the reasoning clearly, showing how the algorithm works by calculating complements, checking for existing values, and ensuring proper index tracking.",
+        "concept_coverage": "The candidate communicates key concepts such as complement calculation, hash map usage, index tracking, and proper edge case handling, including duplicate values and negative numbers.",
+        "completeness": "The candidate addresses all essential parts of the solution, including the algorithm steps, data structures, time and space complexity, and edge case handling.",
+        "data_structure": "The candidate explicitly mentions the use of a hash map, which is appropriate for this problem and supports O(1) lookup time.",
+        "complexity": "The candidate explicitly states the time complexity as O(n) and space complexity as O(n), which matches the actual algorithm's performance.",
+        "edge_cases": "The candidate addresses all relevant edge cases, including empty input, single-element arrays, duplicate values, and no solution, demonstrating proper handling of these scenarios."
+      },
+      "current_interviewer_question": "Please explain your approach for solving Two Sum.",
+      "nlp_state": {
+        "approach": "Use a HashMap to store previously seen values. For each number, calculate its complement and check if it exists in the HashMap. If it exists, return the two indices. Otherwise, store the current number and continue.",
+        "algorithms": [],
+        "concepts": [
+          "complement",
+          "indices"
+        ],
+        "operations": [
+          "calculate complement",
+          "check existence",
+          "store current number"
+        ],
+        "data_structures": [
+          "HashMap"
+        ],
+        "time_complexity": "O(n)",
+        "space_complexity": "O(n)",
+        "edge_cases": [],
+        "reasoning_summary": null,
+        "assumptions": [],
+        "optimization": null
+      }
+    }
+  ],
+  "current_interviewer_question": "Please explain your approach for solving Two Sum.",
+  "should_continue": false
+}

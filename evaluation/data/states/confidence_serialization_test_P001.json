@@ -1,0 +1,30 @@
+{
+  "candidate_id": "confidence_serialization_test",
+  "question_id": "P001",
+  "reference_answer_id": null,
+  "reference_match_confidence": null,
+  "target_reference_id": "P001-R3",
+  "current_answer": null,
+  "nlp_state": {
+    "approach": null,
+    "algorithms": [],
+    "concepts": [],
+    "operations": [],
+    "data_structures": [],
+    "time_complexity": null,
+    "space_complexity": null,
+    "edge_cases": [],
+    "reasoning_summary": null,
+    "assumptions": [],
+    "optimization": null
+  },
+  "scores": {},
+  "primary_classification": null,
+  "secondary_classification": null,
+  "adaptive_classifications": [],
+  "primary_adaptive_gap": null,
+  "evidence": {},
+  "history": [],
+  "current_interviewer_question": "Please explain your approach for solving Two Sum.",
+  "should_continue": false
+}

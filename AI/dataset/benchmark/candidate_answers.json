@@ -1,0 +1,372 @@
+{
+  "candidate_answers": [
+    {
+      "problem_id": "P001",
+      "test_answer_id": "P001_TA001",
+      "category": "fully_correct",
+      "answer": "Use a hash map to store each previously seen value and its index. For each number, calculate target minus that number and check whether the complement is already in the map. If it is, return the stored index and current index. Otherwise, store the current number and index. This takes O(n) time and O(n) space.",
+      "expected_evaluation": {
+        "algorithm_correctness": "High",
+        "logical_reasoning": "High",
+        "concept_coverage": "High",
+        "completeness": "High",
+        "data_structure_selection": "High",
+        "complexity_analysis": "High",
+        "edge_case_handling": "TBD",
+        "expected_score_range": "90-100"
+      }
+    },
+    {
+      "problem_id": "P001",
+      "test_answer_id": "P001_TA002",
+      "category": "correct_but_incomplete",
+      "answer": "Use a hash map to find the complement of each number and return the matching indices.",
+      "expected_evaluation": {
+        "algorithm_correctness": "High",
+        "logical_reasoning": "Medium-High",
+        "concept_coverage": "High",
+        "completeness": "Lower",
+        "data_structure_selection": "High",
+        "complexity_analysis": "Not addressed",
+        "edge_case_handling": "Not addressed",
+        "expected_score_range": "TBD"
+      }
+    },
+    {
+      "problem_id": "P001",
+      "test_answer_id": "P001_TA003",
+      "category": "correct_but_inefficient",
+      "answer": "Use two nested loops to examine every pair of elements. If the two values add up to the target, return their indices. This takes O(n^2) time and O(1) additional space.",
+      "expected_evaluation": {
+        "algorithm_correctness": "High",
+        "logical_reasoning": "High",
+        "concept_coverage": "Medium",
+        "completeness": "High",
+        "data_structure_selection": "Lower",
+        "complexity_analysis": "High",
+        "edge_case_handling": "TBD",
+        "expected_score_range": "TBD"
+      }
+    },
+    {
+      "problem_id": "P002",
+      "test_answer_id": "P002_TA001",
+      "category": "fully_correct",
+      "answer": "I would use a stack. Push opening brackets. For a closing bracket, the stack must be non-empty and its top must be the matching opening bracket; otherwise return false. At the end the stack must be empty. This is O(n) time and O(n) space. Empty input and mismatched or early closing brackets are handled.",
+      "expected_evaluation": {
+        "algorithm_correctness": 96,
+        "logical_reasoning": 94,
+        "concept_coverage": 92,
+        "completeness": 94,
+        "data_structure_selection": 97,
+        "complexity_analysis": 92,
+        "edge_case_handling": 92,
+        "classification": "Correct"
+      }
+    },
+    {
+      "problem_id": "P002",
+      "test_answer_id": "P002_TA002",
+      "category": "correct_but_inefficient",
+      "answer": "I can repeatedly remove valid pairs like (), {}, and [] from the string until no more replacements are possible. If the result is empty it is valid. This is correct, but repeated replacements can make it slower than a stack.",
+      "expected_evaluation": {
+        "algorithm_correctness": 88,
+        "logical_reasoning": 78,
+        "concept_coverage": 75,
+        "completeness": 82,
+        "data_structure_selection": 78,
+        "complexity_analysis": 72,
+        "edge_case_handling": 78,
+        "classification": "Correct"
+      }
+    },
+    {
+      "problem_id": "P002",
+      "test_answer_id": "P002_TA003",
+      "category": "complexity_mistake",
+      "answer": "I would use a stack, push opening brackets, and pop when the matching closing bracket appears. The algorithm is correct. I believe the time is O(n^2) because every bracket may require checking the stack, and space is O(n).",
+      "expected_evaluation": {
+        "algorithm_correctness": 92,
+        "logical_reasoning": 80,
+        "concept_coverage": 88,
+        "completeness": 82,
+        "data_structure_selection": 94,
+        "complexity_analysis": 45,
+        "edge_case_handling": 78,
+        "classification": "Fallback: Partially Correct"
+      }
+    },
+    {
+      "problem_id": "P002",
+      "test_answer_id": "P002_TA004",
+      "category": "edge_case_missing",
+      "answer": "I would use a stack to match opening and closing brackets. Push openings and pop when a closing bracket appears. The complexity is O(n) time and O(n) space. I would not specifically handle an empty string or a closing bracket appearing when the stack is empty.",
+      "expected_evaluation": {
+        "algorithm_correctness": 88,
+        "logical_reasoning": 78,
+        "concept_coverage": 84,
+        "completeness": 72,
+        "data_structure_selection": 92,
+        "complexity_analysis": 90,
+        "edge_case_handling": 42,
+        "classification": "Fallback: Partially Correct"
+      }
+    },
+    {
+      "problem_id": "P002",
+      "test_answer_id": "P002_TA005",
+      "category": "partially_correct",
+      "answer": "I would push every bracket into a stack and then compare the brackets after reading the string. I am not sure how to handle different bracket types or an unmatched closing bracket.",
+      "expected_evaluation": {
+        "algorithm_correctness": 55,
+        "logical_reasoning": 55,
+        "concept_coverage": 60,
+        "completeness": 50,
+        "data_structure_selection": 70,
+        "complexity_analysis": 55,
+        "edge_case_handling": 45,
+        "classification": "Partially Correct"
+      }
+    },
+    {
+      "problem_id": "P003",
+      "test_answer_id": "P003_TA001",
+      "category": "fully_correct",
+      "answer": "Because the array is sorted, I would keep left and right pointers and repeatedly check the middle. If nums[mid] is too small I move left to mid+1; if too large I move right to mid-1; otherwise I return mid. This is O(log n) time and O(1) space. Empty arrays and absent targets are handled.",
+      "expected_evaluation": {
+        "algorithm_correctness": 97,
+        "logical_reasoning": 95,
+        "concept_coverage": 94,
+        "completeness": 95,
+        "data_structure_selection": 98,
+        "complexity_analysis": 96,
+        "edge_case_handling": 94,
+        "classification": "Correct"
+      }
+    },
+    {
+      "problem_id": "P003",
+      "test_answer_id": "P003_TA002",
+      "category": "correct_but_inefficient",
+      "answer": "Since the array is sorted, I could simply scan from left to right until I find the target. It is correct and uses O(1) extra space, but it takes O(n) time.",
+      "expected_evaluation": {
+        "algorithm_correctness": 88,
+        "logical_reasoning": 80,
+        "concept_coverage": 70,
+        "completeness": 82,
+        "data_structure_selection": 78,
+        "complexity_analysis": 92,
+        "edge_case_handling": 72,
+        "classification": "Fallback: Partially Correct"
+      }
+    },
+    {
+      "problem_id": "P003",
+      "test_answer_id": "P003_TA003",
+      "category": "complexity_mistake",
+      "answer": "I would use the standard left, right, and middle pointer binary search. The search correctly halves the range each time. I think its time complexity is O(n) because we still inspect elements, with O(1) space.",
+      "expected_evaluation": {
+        "algorithm_correctness": 94,
+        "logical_reasoning": 88,
+        "concept_coverage": 90,
+        "completeness": 88,
+        "data_structure_selection": 95,
+        "complexity_analysis": 45,
+        "edge_case_handling": 82,
+        "classification": "Fallback: Partially Correct"
+      }
+    },
+    {
+      "problem_id": "P003",
+      "test_answer_id": "P003_TA004",
+      "category": "edge_case_missing",
+      "answer": "I would use binary search with left, right, and mid. If the middle is too small move left, otherwise move right. I would return the index when found. I haven't considered an empty array or the exact behavior when the target is absent.",
+      "expected_evaluation": {
+        "algorithm_correctness": 88,
+        "logical_reasoning": 78,
+        "concept_coverage": 84,
+        "completeness": 65,
+        "data_structure_selection": 94,
+        "complexity_analysis": 90,
+        "edge_case_handling": 42,
+        "classification": "Fallback: Partially Correct"
+      }
+    },
+    {
+      "problem_id": "P003",
+      "test_answer_id": "P003_TA005",
+      "category": "partially_correct",
+      "answer": "I would compare the middle value with the target, but I might move the wrong pointer depending on whether it is larger or smaller. The idea is to keep searching the half where the target should be.",
+      "expected_evaluation": {
+        "algorithm_correctness": 55,
+        "logical_reasoning": 58,
+        "concept_coverage": 65,
+        "completeness": 52,
+        "data_structure_selection": 72,
+        "complexity_analysis": 55,
+        "edge_case_handling": 45,
+        "classification": "Partially Correct"
+      }
+    },
+    {
+      "problem_id": "P004",
+      "test_answer_id": "P004_TA001",
+      "category": "fully_correct",
+      "answer": "I would sort the intervals by start time. Then keep the last merged interval and compare each new interval's start with its end. If they overlap, extend the end; otherwise append a new interval. Sorting dominates at O(n log n), and the merge pass is O(n). I would handle empty input and touching/overlapping boundaries consistently.",
+      "expected_evaluation": {
+        "algorithm_correctness": 96,
+        "logical_reasoning": 94,
+        "concept_coverage": 93,
+        "completeness": 95,
+        "data_structure_selection": 97,
+        "complexity_analysis": 94,
+        "edge_case_handling": 92,
+        "classification": "Correct"
+      }
+    },
+    {
+      "problem_id": "P004",
+      "test_answer_id": "P004_TA002",
+      "category": "correct_but_inefficient",
+      "answer": "I would compare every interval against the others and repeatedly merge overlaps until no more merges are possible. This can work, but sorting once and doing a single pass is more efficient.",
+      "expected_evaluation": {
+        "algorithm_correctness": 86,
+        "logical_reasoning": 78,
+        "concept_coverage": 72,
+        "completeness": 78,
+        "data_structure_selection": 80,
+        "complexity_analysis": 80,
+        "edge_case_handling": 74,
+        "classification": "Fallback: Partially Correct"
+      }
+    },
+    {
+      "problem_id": "P004",
+      "test_answer_id": "P004_TA003",
+      "category": "complexity_mistake",
+      "answer": "I would sort by start time and merge intervals in one pass. The logic is correct. I think the overall time is O(n) because after sorting we only traverse once, and sorting does not change the overall linear behavior.",
+      "expected_evaluation": {
+        "algorithm_correctness": 93,
+        "logical_reasoning": 82,
+        "concept_coverage": 90,
+        "completeness": 85,
+        "data_structure_selection": 96,
+        "complexity_analysis": 42,
+        "edge_case_handling": 78,
+        "classification": "Fallback: Partially Correct"
+      }
+    },
+    {
+      "problem_id": "P004",
+      "test_answer_id": "P004_TA004",
+      "category": "edge_case_missing",
+      "answer": "I would sort intervals by their starting values and merge whenever the next start is less than the current end. I haven't considered whether touching intervals should merge, empty input, or intervals contained completely inside another interval.",
+      "expected_evaluation": {
+        "algorithm_correctness": 88,
+        "logical_reasoning": 80,
+        "concept_coverage": 84,
+        "completeness": 68,
+        "data_structure_selection": 94,
+        "complexity_analysis": 88,
+        "edge_case_handling": 45,
+        "classification": "Fallback: Partially Correct"
+      }
+    },
+    {
+      "problem_id": "P004",
+      "test_answer_id": "P004_TA005",
+      "category": "partially_correct",
+      "answer": "I would compare each interval with the next interval and merge them if they overlap. I don't think sorting is necessary because the input already represents intervals that are close together.",
+      "expected_evaluation": {
+        "algorithm_correctness": 58,
+        "logical_reasoning": 55,
+        "concept_coverage": 62,
+        "completeness": 50,
+        "data_structure_selection": 58,
+        "complexity_analysis": 50,
+        "edge_case_handling": 48,
+        "classification": "Partially Correct"
+      }
+    },
+    {
+      "problem_id": "P005",
+      "test_answer_id": "P005_TA001",
+      "category": "fully_correct",
+      "answer": "I would use Kadane's algorithm. Maintain the best subarray ending at the current position and the global best. At each element choose between starting a new subarray or extending the current one. This is O(n) time and O(1) extra space. I would initialize from the first element so an all-negative array is handled correctly.",
+      "expected_evaluation": {
+        "algorithm_correctness": 97,
+        "logical_reasoning": 95,
+        "concept_coverage": 94,
+        "completeness": 96,
+        "data_structure_selection": 94,
+        "complexity_analysis": 96,
+        "edge_case_handling": 94,
+        "classification": "Correct"
+      }
+    },
+    {
+      "problem_id": "P005",
+      "test_answer_id": "P005_TA002",
+      "category": "correct_but_inefficient",
+      "answer": "I would check every possible subarray and calculate its sum, keeping the maximum. This is correct but much slower than Kadane's algorithm and can be O(n^2) or O(n^3) depending on how sums are computed.",
+      "expected_evaluation": {
+        "algorithm_correctness": 88,
+        "logical_reasoning": 82,
+        "concept_coverage": 78,
+        "completeness": 82,
+        "data_structure_selection": 72,
+        "complexity_analysis": 90,
+        "edge_case_handling": 82,
+        "classification": "Fallback: Partially Correct"
+      }
+    },
+    {
+      "problem_id": "P005",
+      "test_answer_id": "P005_TA003",
+      "category": "complexity_mistake",
+      "answer": "I would maintain a current sum and maximum sum, adding each value and resetting when the current sum becomes negative. The approach is Kadane's algorithm. I think it is O(n^2) because the maximum is updated repeatedly, with O(1) space.",
+      "expected_evaluation": {
+        "algorithm_correctness": 94,
+        "logical_reasoning": 84,
+        "concept_coverage": 90,
+        "completeness": 88,
+        "data_structure_selection": 92,
+        "complexity_analysis": 45,
+        "edge_case_handling": 78,
+        "classification": "Fallback: Partially Correct"
+      }
+    },
+    {
+      "problem_id": "P005",
+      "test_answer_id": "P005_TA004",
+      "category": "edge_case_missing",
+      "answer": "I would use Kadane's algorithm with a running sum and maximum. If the running sum becomes negative, reset it. This is O(n) time and O(1) space. I would not specifically handle an array where every number is negative.",
+      "expected_evaluation": {
+        "algorithm_correctness": 88,
+        "logical_reasoning": 80,
+        "concept_coverage": 86,
+        "completeness": 72,
+        "data_structure_selection": 90,
+        "complexity_analysis": 92,
+        "edge_case_handling": 42,
+        "classification": "Fallback: Partially Correct"
+      }
+    },
+    {
+      "problem_id": "P005",
+      "test_answer_id": "P005_TA005",
+      "category": "partially_correct",
+      "answer": "I would keep adding all values and whenever the sum is negative I reset it. I would return the largest sum I saw, but I am not sure how to initialize it or handle negative-only arrays.",
+      "expected_evaluation": {
+        "algorithm_correctness": 58,
+        "logical_reasoning": 55,
+        "concept_coverage": 62,
+        "completeness": 55,
+        "data_structure_selection": 68,
+        "complexity_analysis": 55,
+        "edge_case_handling": 45,
+        "classification": "Partially Correct"
+      }
+    }
+  ]
+}

@@ -1,0 +1,352 @@
+{
+  "ground_truth": [
+    {
+      "problem_id": "P001",
+      "test_answer_id": "P001_TA001",
+      "category": "fully_correct",
+      "expected_classification": "Correct",
+      "expected_evaluation": {
+        "algorithm_correctness": "High",
+        "logical_reasoning": "High",
+        "concept_coverage": "High",
+        "completeness": "High",
+        "data_structure_selection": "High",
+        "complexity_analysis": "High",
+        "edge_case_handling": "TBD",
+        "expected_score_range": "90-100"
+      }
+    },
+    {
+      "problem_id": "P001",
+      "test_answer_id": "P001_TA002",
+      "category": "correct_but_incomplete",
+      "expected_classification": "Partially Correct",
+      "expected_evaluation": {
+        "algorithm_correctness": "High",
+        "logical_reasoning": "Medium-High",
+        "concept_coverage": "High",
+        "completeness": "Lower",
+        "data_structure_selection": "High",
+        "complexity_analysis": "Not addressed",
+        "edge_case_handling": "Not addressed",
+        "expected_score_range": "TBD"
+      }
+    },
+    {
+      "problem_id": "P001",
+      "test_answer_id": "P001_TA003",
+      "category": "correct_but_inefficient",
+      "expected_classification": "Correct but Non-Optimal",
+      "expected_evaluation": {
+        "algorithm_correctness": "High",
+        "logical_reasoning": "High",
+        "concept_coverage": "Medium",
+        "completeness": "High",
+        "data_structure_selection": "Lower",
+        "complexity_analysis": "High",
+        "edge_case_handling": "TBD",
+        "expected_score_range": "TBD"
+      }
+    },
+    {
+      "problem_id": "P002",
+      "test_answer_id": "P002_TA001",
+      "category": "fully_correct",
+      "expected_classification": "Correct",
+      "expected_scores": {
+        "algorithm_correctness": 96,
+        "logical_reasoning": 94,
+        "concept_coverage": 92,
+        "completeness": 94,
+        "data_structure_selection": 97,
+        "complexity_analysis": 92,
+        "edge_case_handling": 92
+      }
+    },
+    {
+      "problem_id": "P002",
+      "test_answer_id": "P002_TA002",
+      "category": "correct_but_inefficient",
+      "expected_classification": "Correct",
+      "expected_scores": {
+        "algorithm_correctness": 88,
+        "logical_reasoning": 78,
+        "concept_coverage": 75,
+        "completeness": 82,
+        "data_structure_selection": 78,
+        "complexity_analysis": 72,
+        "edge_case_handling": 78
+      }
+    },
+    {
+      "problem_id": "P002",
+      "test_answer_id": "P002_TA003",
+      "category": "complexity_mistake",
+      "expected_classification": "Fallback: Partially Correct",
+      "expected_scores": {
+        "algorithm_correctness": 92,
+        "logical_reasoning": 80,
+        "concept_coverage": 88,
+        "completeness": 82,
+        "data_structure_selection": 94,
+        "complexity_analysis": 45,
+        "edge_case_handling": 78
+      }
+    },
+    {
+      "problem_id": "P002",
+      "test_answer_id": "P002_TA004",
+      "category": "edge_case_missing",
+      "expected_classification": "Fallback: Partially Correct",
+      "expected_scores": {
+        "algorithm_correctness": 88,
+        "logical_reasoning": 78,
+        "concept_coverage": 84,
+        "completeness": 72,
+        "data_structure_selection": 92,
+        "complexity_analysis": 90,
+        "edge_case_handling": 42
+      }
+    },
+    {
+      "problem_id": "P002",
+      "test_answer_id": "P002_TA005",
+      "category": "partially_correct",
+      "expected_classification": "Partially Correct",
+      "expected_scores": {
+        "algorithm_correctness": 55,
+        "logical_reasoning": 55,
+        "concept_coverage": 60,
+        "completeness": 50,
+        "data_structure_selection": 70,
+        "complexity_analysis": 55,
+        "edge_case_handling": 45
+      }
+    },
+    {
+      "problem_id": "P003",
+      "test_answer_id": "P003_TA001",
+      "category": "fully_correct",
+      "expected_classification": "Correct",
+      "expected_scores": {
+        "algorithm_correctness": 97,
+        "logical_reasoning": 95,
+        "concept_coverage": 94,
+        "completeness": 95,
+        "data_structure_selection": 98,
+        "complexity_analysis": 96,
+        "edge_case_handling": 94
+      }
+    },
+    {
+      "problem_id": "P003",
+      "test_answer_id": "P003_TA002",
+      "category": "correct_but_inefficient",
+      "expected_classification": "Fallback: Partially Correct",
+      "expected_scores": {
+        "algorithm_correctness": 88,
+        "logical_reasoning": 80,
+        "concept_coverage": 70,
+        "completeness": 82,
+        "data_structure_selection": 78,
+        "complexity_analysis": 92,
+        "edge_case_handling": 72
+      }
+    },
+    {
+      "problem_id": "P003",
+      "test_answer_id": "P003_TA003",
+      "category": "complexity_mistake",
+      "expected_classification": "Fallback: Partially Correct",
+      "expected_scores": {
+        "algorithm_correctness": 94,
+        "logical_reasoning": 88,
+        "concept_coverage": 90,
+        "completeness": 88,
+        "data_structure_selection": 95,
+        "complexity_analysis": 45,
+        "edge_case_handling": 82
+      }
+    },
+    {
+      "problem_id": "P003",
+      "test_answer_id": "P003_TA004",
+      "category": "edge_case_missing",
+      "expected_classification": "Fallback: Partially Correct",
+      "expected_scores": {
+        "algorithm_correctness": 88,
+        "logical_reasoning": 78,
+        "concept_coverage": 84,
+        "completeness": 65,
+        "data_structure_selection": 94,
+        "complexity_analysis": 90,
+        "edge_case_handling": 42
+      }
+    },
+    {
+      "problem_id": "P003",
+      "test_answer_id": "P003_TA005",
+      "category": "partially_correct",
+      "expected_classification": "Partially Correct",
+      "expected_scores": {
+        "algorithm_correctness": 55,
+        "logical_reasoning": 58,
+        "concept_coverage": 65,
+        "completeness": 52,
+        "data_structure_selection": 72,
+        "complexity_analysis": 55,
+        "edge_case_handling": 45
+      }
+    },
+    {
+      "problem_id": "P004",
+      "test_answer_id": "P004_TA001",
+      "category": "fully_correct",
+      "expected_classification": "Correct",
+      "expected_scores": {
+        "algorithm_correctness": 96,
+        "logical_reasoning": 94,
+        "concept_coverage": 93,
+        "completeness": 95,
+        "data_structure_selection": 97,
+        "complexity_analysis": 94,
+        "edge_case_handling": 92
+      }
+    },
+    {
+      "problem_id": "P004",
+      "test_answer_id": "P004_TA002",
+      "category": "correct_but_inefficient",
+      "expected_classification": "Fallback: Partially Correct",
+      "expected_scores": {
+        "algorithm_correctness": 86,
+        "logical_reasoning": 78,
+        "concept_coverage": 72,
+        "completeness": 78,
+        "data_structure_selection": 80,
+        "complexity_analysis": 80,
+        "edge_case_handling": 74
+      }
+    },
+    {
+      "problem_id": "P004",
+      "test_answer_id": "P004_TA003",
+      "category": "complexity_mistake",
+      "expected_classification": "Fallback: Partially Correct",
+      "expected_scores": {
+        "algorithm_correctness": 93,
+        "logical_reasoning": 82,
+        "concept_coverage": 90,
+        "completeness": 85,
+        "data_structure_selection": 96,
+        "complexity_analysis": 42,
+        "edge_case_handling": 78
+      }
+    },
+    {
+      "problem_id": "P004",
+      "test_answer_id": "P004_TA004",
+      "category": "edge_case_missing",
+      "expected_classification": "Fallback: Partially Correct",
+      "expected_scores": {
+        "algorithm_correctness": 88,
+        "logical_reasoning": 80,
+        "concept_coverage": 84,
+        "completeness": 68,
+        "data_structure_selection": 94,
+        "complexity_analysis": 88,
+        "edge_case_handling": 45
+      }
+    },
+    {
+      "problem_id": "P004",
+      "test_answer_id": "P004_TA005",
+      "category": "partially_correct",
+      "expected_classification": "Partially Correct",
+      "expected_scores": {
+        "algorithm_correctness": 58,
+        "logical_reasoning": 55,
+        "concept_coverage": 62,
+        "completeness": 50,
+        "data_structure_selection": 58,
+        "complexity_analysis": 50,
+        "edge_case_handling": 48
+      }
+    },
+    {
+      "problem_id": "P005",
+      "test_answer_id": "P005_TA001",
+      "category": "fully_correct",
+      "expected_classification": "Correct",
+      "expected_scores": {
+        "algorithm_correctness": 97,
+        "logical_reasoning": 95,
+        "concept_coverage": 94,
+        "completeness": 96,
+        "data_structure_selection": 94,
+        "complexity_analysis": 96,
+        "edge_case_handling": 94
+      }
+    },
+    {
+      "problem_id": "P005",
+      "test_answer_id": "P005_TA002",
+      "category": "correct_but_inefficient",
+      "expected_classification": "Fallback: Partially Correct",
+      "expected_scores": {
+        "algorithm_correctness": 88,
+        "logical_reasoning": 82,
+        "concept_coverage": 78,
+        "completeness": 82,
+        "data_structure_selection": 72,
+        "complexity_analysis": 90,
+        "edge_case_handling": 82
+      }
+    },
+    {
+      "problem_id": "P005",
+      "test_answer_id": "P005_TA003",
+      "category": "complexity_mistake",
+      "expected_classification": "Fallback: Partially Correct",
+      "expected_scores": {
+        "algorithm_correctness": 94,
+        "logical_reasoning": 84,
+        "concept_coverage": 90,
+        "completeness": 88,
+        "data_structure_selection": 92,
+        "complexity_analysis": 45,
+        "edge_case_handling": 78
+      }
+    },
+    {
+      "problem_id": "P005",
+      "test_answer_id": "P005_TA004",
+      "category": "edge_case_missing",
+      "expected_classification": "Fallback: Partially Correct",
+      "expected_scores": {
+        "algorithm_correctness": 88,
+        "logical_reasoning": 80,
+        "concept_coverage": 86,
+        "completeness": 72,
+        "data_structure_selection": 90,
+        "complexity_analysis": 92,
+        "edge_case_handling": 42
+      }
+    },
+    {
+      "problem_id": "P005",
+      "test_answer_id": "P005_TA005",
+      "category": "partially_correct",
+      "expected_classification": "Partially Correct",
+      "expected_scores": {
+        "algorithm_correctness": 58,
+        "logical_reasoning": 55,
+        "concept_coverage": 62,
+        "completeness": 55,
+        "data_structure_selection": 68,
+        "complexity_analysis": 55,
+        "edge_case_handling": 45
+      }
+    }
+  ]
+}

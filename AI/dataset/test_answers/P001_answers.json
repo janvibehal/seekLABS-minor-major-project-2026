@@ -1,0 +1,61 @@
+{
+  "problem_id": "P001",
+
+  "candidate_test_answers": [
+
+    {
+      "test_answer_id": "P001_TA001",
+      "category": "fully_correct",
+
+      "answer": "Use a hash map to store each previously seen value and its index. For each number, calculate target minus that number and check whether the complement is already in the map. If it is, return the stored index and current index. Otherwise, store the current number and index. This takes O(n) time and O(n) space.",
+
+      "expected_evaluation": {
+        "algorithm_correctness": "High",
+        "logical_reasoning": "High",
+        "concept_coverage": "High",
+        "completeness": "High",
+        "data_structure_selection": "High",
+        "complexity_analysis": "High",
+        "edge_case_handling": "TBD",
+        "expected_score_range": "90-100"
+      }
+    },
+
+    {
+      "test_answer_id": "P001_TA002",
+      "category": "correct_but_incomplete",
+
+      "answer": "Use a hash map to find the complement of each number and return the matching indices.",
+
+      "expected_evaluation": {
+        "algorithm_correctness": "High",
+        "logical_reasoning": "Medium-High",
+        "concept_coverage": "High",
+        "completeness": "Lower",
+        "data_structure_selection": "High",
+        "complexity_analysis": "Not addressed",
+        "edge_case_handling": "Not addressed",
+        "expected_score_range": "TBD"
+      }
+    },
+
+    {
+      "test_answer_id": "P001_TA003",
+      "category": "correct_but_inefficient",
+
+      "answer": "Use two nested loops to examine every pair of elements. If the two values add up to the target, return their indices. This takes O(n^2) time and O(1) additional space.",
+
+      "expected_evaluation": {
+        "algorithm_correctness": "High",
+        "logical_reasoning": "High",
+        "concept_coverage": "Medium",
+        "completeness": "High",
+        "data_structure_selection": "Lower",
+        "complexity_analysis": "High",
+        "edge_case_handling": "TBD",
+        "expected_score_range": "TBD"
+      }
+    }
+
+  ]
+}

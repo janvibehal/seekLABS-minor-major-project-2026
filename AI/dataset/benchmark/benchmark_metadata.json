@@ -1,0 +1,38 @@
+{
+  "benchmark_version": "1.0",
+  "dataset_scope": [
+    "P001",
+    "P002",
+    "P003",
+    "P004",
+    "P005"
+  ],
+  "problem_count": 5,
+  "candidate_answer_count": 23,
+  "purpose": "Evaluation benchmark for semantic and component-based assessment of candidate programming reasoning.",
+  "source_notes": {
+    "P001": "Existing repository Phase 2 dataset.",
+    "P002": "Repository reference solution plus candidate snapshots from supplied benchmark workbook.",
+    "P003": "Repository reference solution plus candidate snapshots from supplied benchmark workbook.",
+    "P004": "Repository reference solution plus candidate snapshots from supplied benchmark workbook.",
+    "P005": "Problem/reference structure derived from supplied benchmark workbook because the ZIP contained an empty P005 reference file."
+  },
+  "dimensions": [
+    "algorithm_correctness",
+    "logical_reasoning",
+    "concept_coverage",
+    "completeness",
+    "data_structure_selection",
+    "complexity_analysis",
+    "edge_case_handling"
+  ],
+  "category_distribution": {
+    "fully_correct": 5,
+    "correct_but_inefficient": 5,
+    "complexity_mistake": 4,
+    "edge_case_missing": 4,
+    "partially_correct": 4,
+    "correct_but_incomplete": 1
+  },
+  "important_rule": "Semantic similarity is supporting evidence; it must not be used alone as a final correctness score."
+}

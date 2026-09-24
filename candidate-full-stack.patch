@@ -1,0 +1,5871 @@
+diff --git a/backend/package.json b/backend/package.json
+index c349000..5592d19 100644
+--- a/backend/package.json
++++ b/backend/package.json
+@@ -9,7 +9,8 @@
+     "start": "node dist/server.js",
+     "prisma:generate": "prisma generate",
+     "prisma:migrate": "prisma migrate dev",
+-    "prisma:studio": "prisma studio"
++    "prisma:studio": "prisma studio",
++    "prisma:seed": "tsx prisma/seed.ts"
+   },
+   "keywords": [],
+   "author": "",
+diff --git a/backend/prisma/schema.prisma b/backend/prisma/schema.prisma
+index 045070f..3f5eba5 100644
+--- a/backend/prisma/schema.prisma
++++ b/backend/prisma/schema.prisma
+@@ -21,6 +21,36 @@ enum Role {
+   CANDIDATE
+ }
+ 
++enum InterviewStatus {
++  SCHEDULED
++  IN_PROGRESS
++  COMPLETED
++  EXPIRED
++  CANCELLED
++}
++
++enum Difficulty {
++  EASY
++  MEDIUM
++  HARD
++}
++
++enum SessionStatus {
++  IN_PROGRESS
++  COMPLETED
++}
++
++enum QuestionStatus {
++  PENDING
++  CURRENT
++  COMPLETED
++}
++
++enum MessageSender {
++  AI
++  CANDIDATE
++}
++
+ 
+ // ─────────────────────────────────────────────
+ // USER
+@@ -47,6 +77,11 @@ model User {
+   passwordResetTokens    PasswordResetToken[]
+   emailVerificationTokens EmailVerificationToken[]
+ 
++  interviews             Interview[]
++  interviewSessions      InterviewSession[]
++  questionAttempts       QuestionAttempt[]
++  evaluations            Evaluation[]
++
+   @@index([role])
+   @@index([isActive])
+ }
+@@ -115,4 +150,206 @@ model EmailVerificationToken {
+ 
+   @@index([userId])
+   @@index([expiresAt])
++}
++
++
++// ─────────────────────────────────────────────
++// QUESTION (question bank)
++// ─────────────────────────────────────────────
++
++model Question {
++  id          String     @id @default(cuid())
++
++  title       String
++  difficulty  Difficulty @default(MEDIUM)
++  topics      String[]
++
++  description String
++  examples    Json       @default("[]")
++  constraints String[]
++
++  createdAt   DateTime   @default(now())
++  updatedAt   DateTime   @updatedAt
++
++  interviewQuestions InterviewQuestion[]
++  messages           Message[]
++  attempts           QuestionAttempt[]
++
++  @@index([difficulty])
++}
++
++
++// ─────────────────────────────────────────────
++// INTERVIEW
++// ─────────────────────────────────────────────
++
++model Interview {
++  id           String          @id @default(cuid())
++
++  title        String
++  type         String          @default("Technical Interview")
++  company      String?
++
++  focusAreas   String[]
++
++  scheduledAt  DateTime
++  duration     Int             @default(45) // minutes
++
++  status       InterviewStatus @default(SCHEDULED)
++
++  candidateId  String
++  candidate    User            @relation(fields: [candidateId], references: [id], onDelete: Cascade)
++
++  questions    InterviewQuestion[]
++  session      InterviewSession?
++  evaluation   Evaluation?
++
++  createdAt    DateTime        @default(now())
++  updatedAt    DateTime        @updatedAt
++
++  @@index([candidateId])
++  @@index([status])
++}
++
++
++// ─────────────────────────────────────────────
++// INTERVIEW QUESTION (ordered question set per interview)
++// ─────────────────────────────────────────────
++
++model InterviewQuestion {
++  id          String         @id @default(cuid())
++
++  interviewId String
++  interview   Interview      @relation(fields: [interviewId], references: [id], onDelete: Cascade)
++
++  questionId  String
++  question    Question       @relation(fields: [questionId], references: [id], onDelete: Cascade)
++
++  order       Int            @default(0)
++  status      QuestionStatus @default(PENDING)
++
++  createdAt   DateTime       @default(now())
++
++  @@unique([interviewId, questionId])
++  @@index([interviewId])
++}
++
++
++// ─────────────────────────────────────────────
++// INTERVIEW SESSION (an in-progress / completed attempt)
++// ─────────────────────────────────────────────
++
++model InterviewSession {
++  id              String        @id @default(cuid())
++
++  interviewId     String        @unique
++  interview       Interview     @relation(fields: [interviewId], references: [id], onDelete: Cascade)
++
++  candidateId     String
++  candidate       User          @relation(fields: [candidateId], references: [id], onDelete: Cascade)
++
++  status          SessionStatus @default(IN_PROGRESS)
++
++  currentQuestionId String?
++
++  startedAt       DateTime      @default(now())
++  endedAt         DateTime?
++  durationSeconds Int?
++
++  messages        Message[]
++  attempts        QuestionAttempt[]
++
++  createdAt       DateTime      @default(now())
++  updatedAt       DateTime      @updatedAt
++
++  @@index([candidateId])
++  @@index([status])
++}
++
++
++// ─────────────────────────────────────────────
++// MESSAGE (chat transcript)
++// ─────────────────────────────────────────────
++
++model Message {
++  id         String           @id @default(cuid())
++
++  sessionId  String
++  session    InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
++
++  questionId String?
++  question   Question?        @relation(fields: [questionId], references: [id])
++
++  sender     MessageSender
++  message    String
++
++  createdAt  DateTime         @default(now())
++
++  @@index([sessionId])
++  @@index([sessionId, createdAt])
++}
++
++
++// ─────────────────────────────────────────────
++// QUESTION ATTEMPT (candidate's attempt at a single question)
++// ─────────────────────────────────────────────
++
++model QuestionAttempt {
++  id          String           @id @default(cuid())
++
++  sessionId   String
++  session     InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
++
++  questionId  String
++  question    Question         @relation(fields: [questionId], references: [id], onDelete: Cascade)
++
++  candidateId String
++  candidate   User             @relation(fields: [candidateId], references: [id], onDelete: Cascade)
++
++  status      QuestionStatus   @default(CURRENT)
++
++  startedAt   DateTime         @default(now())
++  completedAt DateTime?
++
++  createdAt   DateTime         @default(now())
++  updatedAt   DateTime         @updatedAt
++
++  @@unique([sessionId, questionId])
++  @@index([sessionId])
++  @@index([candidateId])
++}
++
++
++// ─────────────────────────────────────────────
++// EVALUATION (final report for a completed interview)
++// ─────────────────────────────────────────────
++
++model Evaluation {
++  id                   String    @id @default(cuid())
++
++  interviewId          String    @unique
++  interview            Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
++
++  sessionId            String    @unique
++
++  candidateId          String
++  candidate            User      @relation(fields: [candidateId], references: [id], onDelete: Cascade)
++
++  overallScore         Int
++
++  algorithmCorrectness Int
++  logicalReasoning     Int
++  conceptCoverage      Int
++  completeness         Int
++  dataStructure        Int
++  complexity           Int
++  edgeCases            Int
++
++  strengths            String[]
++  improvements         String[]
++  feedback             String
++
++  createdAt            DateTime  @default(now())
++
++  @@index([candidateId])
+ }
+\ No newline at end of file
+diff --git a/backend/prisma/seed.ts b/backend/prisma/seed.ts
+new file mode 100644
+index 0000000..75ff0e1
+--- /dev/null
++++ b/backend/prisma/seed.ts
+@@ -0,0 +1,119 @@
++import 'dotenv/config'
++import { PrismaPg } from '@prisma/adapter-pg'
++import { PrismaClient } from '../src/generated/prisma/client.js'
++import bcrypt from 'bcrypt'
++
++const adapter = new PrismaPg({
++  connectionString: process.env.DATABASE_URL,
++})
++
++const prisma = new PrismaClient({ adapter })
++
++async function main() {
++  const passwordHash = await bcrypt.hash('Password123!', 10)
++
++  const candidate = await prisma.user.upsert({
++    where: { email: 'candidate@example.com' },
++    update: {},
++    create: {
++      firstName: 'Anjali',
++      lastName: 'Dass',
++      email: 'candidate@example.com',
++      passwordHash,
++      role: 'CANDIDATE',
++      emailVerified: true,
++    },
++  })
++
++  const questionData = [
++    {
++      title: 'Two Sum',
++      difficulty: 'EASY' as const,
++      topics: ['Arrays', 'Hash Map'],
++      description:
++        'Given an array of integers and a target value, find two numbers that add up to the target.',
++      examples: [
++        {
++          input: 'nums = [2,7,11,15], target = 9',
++          output: '[0,1]',
++          explanation: 'nums[0] + nums[1] = 2 + 7 = 9.',
++        },
++      ],
++      constraints: [
++        '2 <= nums.length <= 10^4',
++        '-10^9 <= nums[i] <= 10^9',
++        '-10^9 <= target <= 10^9',
++      ],
++    },
++    {
++      title: 'Longest Substring Without Repeating Characters',
++      difficulty: 'MEDIUM' as const,
++      topics: ['Strings', 'Sliding Window'],
++      description:
++        'Given a string s, find the length of the longest substring without repeating characters.',
++      examples: [
++        {
++          input: 's = "abcabcbb"',
++          output: '3',
++          explanation: 'The answer is "abc", with a length of 3.',
++        },
++      ],
++      constraints: [
++        '0 <= s.length <= 5 * 10^4',
++        's consists of English letters, digits, symbols and spaces.',
++      ],
++    },
++    {
++      title: 'Binary Tree Preorder Traversal',
++      difficulty: 'MEDIUM' as const,
++      topics: ['Trees', 'Recursion'],
++      description:
++        'Given the root of a binary tree, return the preorder traversal of its nodes.',
++      examples: [
++        {
++          input: 'root = [1,null,2,3]',
++          output: '[1,2,3]',
++          explanation: 'Visit the root, then the left subtree, then the right subtree.',
++        },
++      ],
++      constraints: ['The number of nodes is between 0 and 100.', '-100 <= Node.val <= 100'],
++    },
++  ]
++
++  const questions = []
++  for (const q of questionData) {
++    const question = await prisma.question.create({ data: q })
++    questions.push(question)
++  }
++
++  const interview = await prisma.interview.create({
++    data: {
++      title: 'Backend Developer Interview',
++      type: 'Technical Coding Interview',
++      company: 'Tech Solutions',
++      focusAreas: ['Data Structures', 'Algorithms', 'Problem Solving'],
++      scheduledAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
++      duration: 45,
++      status: 'SCHEDULED',
++      candidateId: candidate.id,
++      questions: {
++        create: questions.map((question, index) => ({
++          questionId: question.id,
++          order: index,
++        })),
++      },
++    },
++  })
++
++  console.log('Seeded candidate:', candidate.email, '(password: Password123!)')
++  console.log('Seeded interview:', interview.id)
++}
++
++main()
++  .catch((error) => {
++    console.error(error)
++    process.exitCode = 1
++  })
++  .finally(async () => {
++    await prisma.$disconnect()
++  })
+diff --git a/backend/prisma7.config.ts b/backend/prisma7.config.ts
+index 831a20f..846b38d 100644
+--- a/backend/prisma7.config.ts
++++ b/backend/prisma7.config.ts
+@@ -7,6 +7,7 @@ export default defineConfig({
+   schema: "prisma/schema.prisma",
+   migrations: {
+     path: "prisma/migrations",
++    seed: "tsx prisma/seed.ts",
+   },
+   datasource: {
+     url: process.env["DATABASE_URL"],
+diff --git a/backend/src/controllers/candidate.controller.ts b/backend/src/controllers/candidate.controller.ts
+new file mode 100644
+index 0000000..1a43cb6
+--- /dev/null
++++ b/backend/src/controllers/candidate.controller.ts
+@@ -0,0 +1,57 @@
++import type { Request, Response } from 'express'
++import type { AuthenticatedRequest } from '../middleware/auth.middleware.js'
++
++import {
++  getCandidateDashboard,
++  listCandidateResults,
++  getCandidateResultDetail,
++} from '../services/candidate.service.js'
++
++import { getCandidatePreparation } from '../services/preparation.service.js'
++
++import { interviewIdParamSchema } from '../validators/interview.validator.js'
++
++export const dashboard = async (req: Request, res: Response) => {
++  const { user } = req as AuthenticatedRequest
++
++  const data = await getCandidateDashboard(user.userId)
++
++  return res.status(200).json({
++    success: true,
++    data,
++  })
++}
++
++export const listResults = async (req: Request, res: Response) => {
++  const { user } = req as AuthenticatedRequest
++
++  const data = await listCandidateResults(user.userId)
++
++  return res.status(200).json({
++    success: true,
++    data,
++  })
++}
++
++export const getResultDetail = async (req: Request, res: Response) => {
++  const { user } = req as AuthenticatedRequest
++  const { interviewId } = interviewIdParamSchema.parse(req.params)
++
++  const data = await getCandidateResultDetail(user.userId, interviewId)
++
++  return res.status(200).json({
++    success: true,
++    data,
++  })
++}
++
++export const preparation = async (req: Request, res: Response) => {
++  const { user } = req as AuthenticatedRequest
++
++  const data = await getCandidatePreparation(user.userId)
++
++  return res.status(200).json({
++    success: true,
++    data,
++  })
++}
+diff --git a/backend/src/controllers/interview.controller.ts b/backend/src/controllers/interview.controller.ts
+new file mode 100644
+index 0000000..b26d704
+--- /dev/null
++++ b/backend/src/controllers/interview.controller.ts
+@@ -0,0 +1,49 @@
++import type { Request, Response } from 'express'
++import type { AuthenticatedRequest } from '../middleware/auth.middleware.js'
++
++import {
++  listCandidateInterviews,
++  getCandidateInterview,
++  startInterview,
++} from '../services/interview.service.js'
++
++import {
++  interviewIdParamSchema,
++  interviewStatusFilterSchema,
++} from '../validators/interview.validator.js'
++
++export const listInterviews = async (req: Request, res: Response) => {
++  const { user } = req as AuthenticatedRequest
++  const { status } = interviewStatusFilterSchema.parse(req.query)
++
++  const data = await listCandidateInterviews(user.userId, status)
++
++  return res.status(200).json({
++    success: true,
++    data,
++  })
++}
++
++export const getInterview = async (req: Request, res: Response) => {
++  const { user } = req as AuthenticatedRequest
++  const { interviewId } = interviewIdParamSchema.parse(req.params)
++
++  const data = await getCandidateInterview(user.userId, interviewId)
++
++  return res.status(200).json({
++    success: true,
++    data,
++  })
++}
++
++export const start = async (req: Request, res: Response) => {
++  const { user } = req as AuthenticatedRequest
++  const { interviewId } = interviewIdParamSchema.parse(req.params)
++
++  const data = await startInterview(user.userId, interviewId)
++
++  return res.status(200).json({
++    success: true,
++    data,
++  })
++}
+diff --git a/backend/src/controllers/session.controller.ts b/backend/src/controllers/session.controller.ts
+new file mode 100644
+index 0000000..18aba19
+--- /dev/null
++++ b/backend/src/controllers/session.controller.ts
+@@ -0,0 +1,64 @@
++import type { Request, Response } from 'express'
++import type { AuthenticatedRequest } from '../middleware/auth.middleware.js'
++
++import {
++  getSessionDetail,
++  getSessionMessages,
++  sendCandidateMessage,
++  endInterviewSession,
++} from '../services/session.service.js'
++
++import {
++  sessionIdParamSchema,
++  sendMessageSchema,
++} from '../validators/session.validator.js'
++
++export const getSession = async (req: Request, res: Response) => {
++  const { user } = req as AuthenticatedRequest
++  const { sessionId } = sessionIdParamSchema.parse(req.params)
++
++  const data = await getSessionDetail(user.userId, sessionId)
++
++  return res.status(200).json({
++    success: true,
++    data,
++  })
++}
++
++export const getMessages = async (req: Request, res: Response) => {
++  const { user } = req as AuthenticatedRequest
++  const { sessionId } = sessionIdParamSchema.parse(req.params)
++
++  const data = await getSessionMessages(user.userId, sessionId)
++
++  return res.status(200).json({
++    success: true,
++    data,
++  })
++}
++
++export const sendMessage = async (req: Request, res: Response) => {
++  const { user } = req as AuthenticatedRequest
++  const { sessionId } = sessionIdParamSchema.parse(req.params)
++  const input = sendMessageSchema.parse(req.body)
++
++  const data = await sendCandidateMessage(user.userId, sessionId, input)
++
++  return res.status(201).json({
++    success: true,
++    data,
++  })
++}
++
++export const end = async (req: Request, res: Response) => {
++  const { user } = req as AuthenticatedRequest
++  const { sessionId } = sessionIdParamSchema.parse(req.params)
++
++  const data = await endInterviewSession(user.userId, sessionId)
++
++  return res.status(200).json({
++    success: true,
++    message: data.message,
++    data,
++  })
++}
+diff --git a/backend/src/middleware/error.middleware.ts b/backend/src/middleware/error.middleware.ts
+index 41aefdc..78ca77d 100644
+--- a/backend/src/middleware/error.middleware.ts
++++ b/backend/src/middleware/error.middleware.ts
+@@ -1,5 +1,6 @@
+ import type { ErrorRequestHandler } from 'express'
+ import { ZodError } from 'zod'
++import { AppError } from '../utils/app-error.js'
+ 
+ export const errorHandler: ErrorRequestHandler = (
+   error,
+@@ -17,6 +18,13 @@ export const errorHandler: ErrorRequestHandler = (
+     })
+   }
+ 
++  if (error instanceof AppError) {
++    return res.status(error.statusCode).json({
++      success: false,
++      message: error.message,
++    })
++  }
++
+   if (error instanceof Error) {
+     return res.status(400).json({
+       success: false,
+diff --git a/backend/src/middleware/rbac.middleware.ts b/backend/src/middleware/rbac.middleware.ts
+index e69de29..3425876 100644
+--- a/backend/src/middleware/rbac.middleware.ts
++++ b/backend/src/middleware/rbac.middleware.ts
+@@ -0,0 +1,25 @@
++import type { NextFunction, Request, Response } from 'express'
++import type { AuthenticatedRequest } from './auth.middleware.js'
++import type { Role } from '../generated/prisma/enums.js'
++
++export const requireRole = (...roles: Role[]) => {
++  return (req: Request, res: Response, next: NextFunction) => {
++    const authenticatedRequest = req as AuthenticatedRequest
++
++    if (!authenticatedRequest.user) {
++      return res.status(401).json({
++        success: false,
++        message: 'Authentication required',
++      })
++    }
++
++    if (!roles.includes(authenticatedRequest.user.role)) {
++      return res.status(403).json({
++        success: false,
++        message: 'You do not have permission to access this resource',
++      })
++    }
++
++    next()
++  }
++}
+diff --git a/backend/src/repositories/evaluation.repository.ts b/backend/src/repositories/evaluation.repository.ts
+new file mode 100644
+index 0000000..9008202
+--- /dev/null
++++ b/backend/src/repositories/evaluation.repository.ts
+@@ -0,0 +1,44 @@
++import prisma from '../lib/prisma.js'
++
++export const createEvaluation = async (data: {
++  interviewId: string
++  sessionId: string
++  candidateId: string
++  overallScore: number
++  algorithmCorrectness: number
++  logicalReasoning: number
++  conceptCoverage: number
++  completeness: number
++  dataStructure: number
++  complexity: number
++  edgeCases: number
++  strengths: string[]
++  improvements: string[]
++  feedback: string
++}) => {
++  return prisma.evaluation.create({
++    data,
++  })
++}
++
++export const findEvaluationByInterviewId = async (interviewId: string) => {
++  return prisma.evaluation.findUnique({
++    where: {
++      interviewId,
++    },
++  })
++}
++
++export const findEvaluationsByCandidate = async (candidateId: string) => {
++  return prisma.evaluation.findMany({
++    where: {
++      candidateId,
++    },
++    include: {
++      interview: true,
++    },
++    orderBy: {
++      createdAt: 'desc',
++    },
++  })
++}
+diff --git a/backend/src/repositories/interview.repository.ts b/backend/src/repositories/interview.repository.ts
+new file mode 100644
+index 0000000..46969e6
+--- /dev/null
++++ b/backend/src/repositories/interview.repository.ts
+@@ -0,0 +1,77 @@
++import prisma from '../lib/prisma.js'
++import type { InterviewStatus } from '../generated/prisma/enums.js'
++
++export const findInterviewsByCandidate = async (
++  candidateId: string,
++  status?: InterviewStatus,
++) => {
++  return prisma.interview.findMany({
++    where: {
++      candidateId,
++      ...(status ? { status } : {}),
++    },
++    include: {
++      evaluation: true,
++    },
++    orderBy: {
++      scheduledAt: 'asc',
++    },
++  })
++}
++
++export const findInterviewById = async (interviewId: string) => {
++  return prisma.interview.findUnique({
++    where: {
++      id: interviewId,
++    },
++    include: {
++      evaluation: true,
++      session: true,
++    },
++  })
++}
++
++export const findInterviewWithQuestions = async (interviewId: string) => {
++  return prisma.interview.findUnique({
++    where: {
++      id: interviewId,
++    },
++    include: {
++      questions: {
++        include: {
++          question: true,
++        },
++        orderBy: {
++          order: 'asc',
++        },
++      },
++      session: true,
++    },
++  })
++}
++
++export const countInterviewsByCandidateAndStatus = async (
++  candidateId: string,
++  status: InterviewStatus,
++) => {
++  return prisma.interview.count({
++    where: {
++      candidateId,
++      status,
++    },
++  })
++}
++
++export const updateInterviewStatus = async (
++  interviewId: string,
++  status: InterviewStatus,
++) => {
++  return prisma.interview.update({
++    where: {
++      id: interviewId,
++    },
++    data: {
++      status,
++    },
++  })
++}
+diff --git a/backend/src/repositories/message.repository.ts b/backend/src/repositories/message.repository.ts
+new file mode 100644
+index 0000000..2a015f3
+--- /dev/null
++++ b/backend/src/repositories/message.repository.ts
+@@ -0,0 +1,24 @@
++import prisma from '../lib/prisma.js'
++import type { MessageSender } from '../generated/prisma/enums.js'
++
++export const createMessage = async (data: {
++  sessionId: string
++  questionId: string | null
++  sender: MessageSender
++  message: string
++}) => {
++  return prisma.message.create({
++    data,
++  })
++}
++
++export const findMessagesBySession = async (sessionId: string) => {
++  return prisma.message.findMany({
++    where: {
++      sessionId,
++    },
++    orderBy: {
++      createdAt: 'asc',
++    },
++  })
++}
+diff --git a/backend/src/repositories/question.repository.ts b/backend/src/repositories/question.repository.ts
+new file mode 100644
+index 0000000..c16b3ff
+--- /dev/null
++++ b/backend/src/repositories/question.repository.ts
+@@ -0,0 +1,19 @@
++import prisma from '../lib/prisma.js'
++
++export const findQuestionById = async (questionId: string) => {
++  return prisma.question.findUnique({
++    where: {
++      id: questionId,
++    },
++  })
++}
++
++export const findQuestionsByIds = async (questionIds: string[]) => {
++  return prisma.question.findMany({
++    where: {
++      id: {
++        in: questionIds,
++      },
++    },
++  })
++}
+diff --git a/backend/src/repositories/session.repository.ts b/backend/src/repositories/session.repository.ts
+new file mode 100644
+index 0000000..cd7f577
+--- /dev/null
++++ b/backend/src/repositories/session.repository.ts
+@@ -0,0 +1,138 @@
++import prisma from '../lib/prisma.js'
++import type { SessionStatus, QuestionStatus } from '../generated/prisma/enums.js'
++
++export const createSession = async (data: {
++  interviewId: string
++  candidateId: string
++  currentQuestionId: string | null
++}) => {
++  return prisma.interviewSession.create({
++    data,
++  })
++}
++
++export const findSessionById = async (sessionId: string) => {
++  return prisma.interviewSession.findUnique({
++    where: {
++      id: sessionId,
++    },
++    include: {
++      interview: {
++        include: {
++          questions: {
++            include: {
++              question: true,
++            },
++            orderBy: {
++              order: 'asc',
++            },
++          },
++        },
++      },
++    },
++  })
++}
++
++export const findSessionByInterviewId = async (interviewId: string) => {
++  return prisma.interviewSession.findUnique({
++    where: {
++      interviewId,
++    },
++  })
++}
++
++export const updateSessionCurrentQuestion = async (
++  sessionId: string,
++  currentQuestionId: string | null,
++) => {
++  return prisma.interviewSession.update({
++    where: {
++      id: sessionId,
++    },
++    data: {
++      currentQuestionId,
++    },
++  })
++}
++
++export const endSession = async (
++  sessionId: string,
++  data: {
++    status: SessionStatus
++    endedAt: Date
++    durationSeconds: number
++  },
++) => {
++  return prisma.interviewSession.update({
++    where: {
++      id: sessionId,
++    },
++    data,
++  })
++}
++
++export const upsertQuestionAttempt = async (data: {
++  sessionId: string
++  questionId: string
++  candidateId: string
++  status: QuestionStatus
++}) => {
++  return prisma.questionAttempt.upsert({
++    where: {
++      sessionId_questionId: {
++        sessionId: data.sessionId,
++        questionId: data.questionId,
++      },
++    },
++    update: {
++      status: data.status,
++      ...(data.status === 'COMPLETED' ? { completedAt: new Date() } : {}),
++    },
++    create: {
++      sessionId: data.sessionId,
++      questionId: data.questionId,
++      candidateId: data.candidateId,
++      status: data.status,
++    },
++  })
++}
++
++export const updateInterviewQuestionStatus = async (
++  interviewId: string,
++  questionId: string,
++  status: QuestionStatus,
++) => {
++  return prisma.interviewQuestion.update({
++    where: {
++      interviewId_questionId: {
++        interviewId,
++        questionId,
++      },
++    },
++    data: {
++      status,
++    },
++  })
++}
++
++export const countMessagesForQuestion = async (
++  sessionId: string,
++  questionId: string,
++) => {
++  return prisma.message.count({
++    where: {
++      sessionId,
++      questionId,
++      sender: 'CANDIDATE',
++    },
++  })
++}
++
++export const countCompletedAttemptsByCandidate = async (candidateId: string) => {
++  return prisma.questionAttempt.count({
++    where: {
++      candidateId,
++      status: 'COMPLETED',
++    },
++  })
++}
+diff --git a/backend/src/routes/v1/candidate.routes.ts b/backend/src/routes/v1/candidate.routes.ts
+index eef0101..b38ba54 100644
+--- a/backend/src/routes/v1/candidate.routes.ts
++++ b/backend/src/routes/v1/candidate.routes.ts
+@@ -2,18 +2,23 @@ import { Router } from 'express'
+ import { authenticate } from '../../middleware/auth.middleware.js'
+ import { requireRole } from '../../middleware/rbac.middleware.js'
+ 
++import { dashboard } from '../../controllers/candidate.controller.js'
++
++import interviewRoutes from './interview.routes.js'
++import sessionRoutes from './session.routes.js'
++import resultRoutes from './result.routes.js'
++import preparationRoutes from './preparation.routes.js'
++
+ const router = Router()
+ 
+-router.get(
+-  '/dashboard',
+-  authenticate,
+-  requireRole('CANDIDATE'),
+-  (_req, res) => {
+-    return res.status(200).json({
+-      success: true,
+-      message: 'Welcome to the candidate dashboard',
+-    })
+-  },
+-)
++// Every candidate route requires a valid access token and the CANDIDATE role.
++router.use(authenticate, requireRole('CANDIDATE'))
++
++router.get('/dashboard', dashboard)
++
++router.use('/interviews', interviewRoutes)
++router.use('/interview-sessions', sessionRoutes)
++router.use('/results', resultRoutes)
++router.use('/preparation', preparationRoutes)
+ 
+-export default router
+\ No newline at end of file
++export default router
+diff --git a/backend/src/routes/v1/interview.routes.ts b/backend/src/routes/v1/interview.routes.ts
+new file mode 100644
+index 0000000..2bbd0d8
+--- /dev/null
++++ b/backend/src/routes/v1/interview.routes.ts
+@@ -0,0 +1,11 @@
++import { Router } from 'express'
++
++import { listInterviews, getInterview, start } from '../../controllers/interview.controller.js'
++
++const router = Router()
++
++router.get('/', listInterviews)
++router.get('/:interviewId', getInterview)
++router.post('/:interviewId/start', start)
++
++export default router
+diff --git a/backend/src/routes/v1/preparation.routes.ts b/backend/src/routes/v1/preparation.routes.ts
+new file mode 100644
+index 0000000..620a477
+--- /dev/null
++++ b/backend/src/routes/v1/preparation.routes.ts
+@@ -0,0 +1,9 @@
++import { Router } from 'express'
++
++import { preparation } from '../../controllers/candidate.controller.js'
++
++const router = Router()
++
++router.get('/', preparation)
++
++export default router
+diff --git a/backend/src/routes/v1/result.routes.ts b/backend/src/routes/v1/result.routes.ts
+new file mode 100644
+index 0000000..892d88a
+--- /dev/null
++++ b/backend/src/routes/v1/result.routes.ts
+@@ -0,0 +1,10 @@
++import { Router } from 'express'
++
++import { listResults, getResultDetail } from '../../controllers/candidate.controller.js'
++
++const router = Router()
++
++router.get('/', listResults)
++router.get('/:interviewId', getResultDetail)
++
++export default router
+diff --git a/backend/src/routes/v1/session.routes.ts b/backend/src/routes/v1/session.routes.ts
+new file mode 100644
+index 0000000..8fc5c07
+--- /dev/null
++++ b/backend/src/routes/v1/session.routes.ts
+@@ -0,0 +1,17 @@
++import { Router } from 'express'
++
++import {
++  getSession,
++  getMessages,
++  sendMessage,
++  end,
++} from '../../controllers/session.controller.js'
++
++const router = Router()
++
++router.get('/:sessionId', getSession)
++router.get('/:sessionId/messages', getMessages)
++router.post('/:sessionId/messages', sendMessage)
++router.post('/:sessionId/end', end)
++
++export default router
+diff --git a/backend/src/services/ai.service.ts b/backend/src/services/ai.service.ts
+new file mode 100644
+index 0000000..fb8fba2
+--- /dev/null
++++ b/backend/src/services/ai.service.ts
+@@ -0,0 +1,154 @@
++/**
++ * This module is a stand-in for the real NLP extraction / adaptive
++ * question-engine pipeline (see AI/ and evaluation/ at the repo root).
++ *
++ * It exposes the same shape the real pipeline will eventually need to
++ * fulfil, so swapping the mock implementation for a call into that
++ * pipeline (or an HTTP call to a Python service) later is a one-file change.
++ */
++
++interface QuestionLike {
++  id: string
++  title: string
++  description: string
++}
++
++const FOLLOW_UPS = [
++  "That's a reasonable start — can you walk me through the time complexity of your approach?",
++  'Good. What data structure are you using here, and why is it a good fit?',
++  'How would your approach handle an empty input or an edge case?',
++  "Interesting — is there a way to reduce the space complexity you're describing?",
++  'Can you clarify how you would test this solution?',
++]
++
++export const buildOpeningMessage = (question: QuestionLike): string => {
++  return `Let's start with this problem: "${question.title}". ${question.description} Take your time, and walk me through your approach.`
++}
++
++export const buildTransitionMessage = (nextQuestion: QuestionLike): string => {
++  return `Nice work on the previous problem. Let's move on to: "${nextQuestion.title}". ${nextQuestion.description}`
++}
++
++export const buildClosingMessage = (): string => {
++  return "That's the last question for this interview. Great job — click 'End Interview' whenever you're ready, and I'll put together your results."
++}
++
++/**
++ * Decides whether the candidate has said enough about the current
++ * question to move on. This is a placeholder heuristic (message count)
++ * — the real adaptive engine will use the extraction/evaluation layer
++ * to judge concept coverage instead.
++ */
++export const shouldAdvanceQuestion = (candidateMessageCount: number): boolean => {
++  return candidateMessageCount >= 3
++}
++
++export const generateFollowUp = (candidateMessageCount: number): string => {
++  const index = candidateMessageCount % FOLLOW_UPS.length
++  return FOLLOW_UPS[index] as string
++}
++
++interface DimensionScores {
++  algorithmCorrectness: number
++  logicalReasoning: number
++  conceptCoverage: number
++  completeness: number
++  dataStructure: number
++  complexity: number
++  edgeCases: number
++}
++
++interface GeneratedEvaluation extends DimensionScores {
++  overallScore: number
++  strengths: string[]
++  improvements: string[]
++  feedback: string
++}
++
++/**
++ * Produces a plausible-looking evaluation from the transcript so the
++ * results screens have real data to render. Replace with a call into
++ * the scoring/ pipeline once it's wired up to this backend.
++ */
++export const generateEvaluation = (params: {
++  candidateMessageCount: number
++  totalQuestions: number
++  completedQuestions: number
++}): GeneratedEvaluation => {
++  const { candidateMessageCount, totalQuestions, completedQuestions } = params
++
++  const completionRatio =
++    totalQuestions > 0 ? completedQuestions / totalQuestions : 0
++
++  const engagement = Math.min(candidateMessageCount / (totalQuestions * 3 || 1), 1)
++
++  const base = 55 + completionRatio * 25 + engagement * 15
++
++  const jitter = (seed: number) => Math.round(((seed * 37) % 15) - 7)
++
++  const clamp = (value: number) => Math.max(35, Math.min(98, Math.round(value)))
++
++  const dimensions: DimensionScores = {
++    algorithmCorrectness: clamp(base + jitter(1)),
++    logicalReasoning: clamp(base + jitter(2)),
++    conceptCoverage: clamp(base + jitter(3)),
++    completeness: clamp(base * completionRatio + 20 + jitter(4)),
++    dataStructure: clamp(base + jitter(5)),
++    complexity: clamp(base + jitter(6)),
++    edgeCases: clamp(base - 5 + jitter(7)),
++  }
++
++  const overallScore = clamp(
++    (dimensions.algorithmCorrectness +
++      dimensions.logicalReasoning +
++      dimensions.conceptCoverage +
++      dimensions.completeness +
++      dimensions.dataStructure +
++      dimensions.complexity +
++      dimensions.edgeCases) /
++      7,
++  )
++
++  const strengths: string[] = []
++  const improvements: string[] = []
++
++  if (dimensions.logicalReasoning >= 75) {
++    strengths.push('Clear, structured reasoning when explaining the approach')
++  }
++  if (dimensions.algorithmCorrectness >= 75) {
++    strengths.push('Correct handling of the core algorithm')
++  }
++  if (dimensions.dataStructure >= 75) {
++    strengths.push('Good choice of data structures for the problem')
++  }
++  if (strengths.length === 0) {
++    strengths.push('Engaged consistently with each question')
++  }
++
++  if (dimensions.edgeCases < 65) {
++    improvements.push('Spend more time discussing edge cases before coding')
++  }
++  if (dimensions.complexity < 65) {
++    improvements.push('Explain time and space complexity more explicitly')
++  }
++  if (completionRatio < 1) {
++    improvements.push('Try to work through every question within the session')
++  }
++  if (improvements.length === 0) {
++    improvements.push('Keep practicing to maintain this level of consistency')
++  }
++
++  const feedback = `You completed ${completedQuestions} of ${totalQuestions} questions. Overall you scored ${overallScore}%, with the strongest performance in ${
++    dimensions.algorithmCorrectness >= dimensions.logicalReasoning
++      ? 'algorithm correctness'
++      : 'logical reasoning'
++  }. Focus on the improvement areas below before your next interview.`
++
++  return {
++    ...dimensions,
++    overallScore,
++    strengths,
++    improvements,
++    feedback,
++  }
++}
+diff --git a/backend/src/services/candidate.service.ts b/backend/src/services/candidate.service.ts
+new file mode 100644
+index 0000000..c5149d3
+--- /dev/null
++++ b/backend/src/services/candidate.service.ts
+@@ -0,0 +1,126 @@
++import { findUserById } from '../repositories/user.repository.js'
++import { findInterviewsByCandidate } from '../repositories/interview.repository.js'
++import {
++  findEvaluationByInterviewId,
++  findEvaluationsByCandidate,
++} from '../repositories/evaluation.repository.js'
++
++import { NotFoundError, ForbiddenError } from '../utils/app-error.js'
++
++type CandidateInterview = Awaited<
++  ReturnType<typeof findInterviewsByCandidate>
++>[number]
++
++type CandidateEvaluation = Awaited<
++  ReturnType<typeof findEvaluationsByCandidate>
++>[number]
++
++export const getCandidateDashboard = async (candidateId: string) => {
++  const [candidate, interviews] = await Promise.all([
++    findUserById(candidateId),
++    findInterviewsByCandidate(candidateId),
++  ])
++
++  if (!candidate) {
++    throw new NotFoundError('Candidate not found')
++  }
++
++  const completed = interviews.filter(
++    (interview: CandidateInterview) => interview.status === 'COMPLETED',
++  )
++  const upcoming = interviews.filter(
++    (interview: CandidateInterview) => interview.status === 'SCHEDULED',
++  )
++
++  const scores = completed
++    .map((interview: CandidateInterview) => interview.evaluation?.overallScore)
++    .filter((score: number | undefined): score is number => typeof score === 'number')
++
++  const averageScore =
++    scores.length > 0
++      ? Math.round(
++          scores.reduce((sum: number, score: number) => sum + score, 0) / scores.length,
++        )
++      : 0
++
++  const toSummary = (interview: CandidateInterview) => ({
++    id: interview.id,
++    title: interview.title,
++    status: interview.status,
++    scheduledAt: interview.scheduledAt,
++    duration: interview.duration,
++    score: interview.evaluation?.overallScore ?? null,
++  })
++
++  return {
++    candidate: {
++      firstName: candidate.firstName,
++      lastName: candidate.lastName,
++      email: candidate.email,
++    },
++    stats: {
++      totalInterviews: interviews.length,
++      completedInterviews: completed.length,
++      averageScore,
++      upcomingInterviews: upcoming.length,
++    },
++    recentInterviews: completed
++      .sort(
++        (a: CandidateInterview, b: CandidateInterview) =>
++          b.scheduledAt.getTime() - a.scheduledAt.getTime(),
++      )
++      .slice(0, 5)
++      .map(toSummary),
++    upcomingInterviews: upcoming
++      .sort(
++        (a: CandidateInterview, b: CandidateInterview) =>
++          a.scheduledAt.getTime() - b.scheduledAt.getTime(),
++      )
++      .slice(0, 5)
++      .map(toSummary),
++  }
++}
++
++export const listCandidateResults = async (candidateId: string) => {
++  const evaluations = await findEvaluationsByCandidate(candidateId)
++
++  return evaluations.map((evaluation: CandidateEvaluation) => ({
++    interviewId: evaluation.interviewId,
++    title: evaluation.interview.title,
++    company: evaluation.interview.company,
++    completedAt: evaluation.createdAt,
++    overallScore: evaluation.overallScore,
++  }))
++}
++
++export const getCandidateResultDetail = async (
++  candidateId: string,
++  interviewId: string,
++) => {
++  const evaluation = await findEvaluationByInterviewId(interviewId)
++
++  if (!evaluation) {
++    throw new NotFoundError('Results not found for this interview')
++  }
++
++  if (evaluation.candidateId !== candidateId) {
++    throw new ForbiddenError('This result does not belong to you')
++  }
++
++  return {
++    interviewId: evaluation.interviewId,
++    overallScore: evaluation.overallScore,
++    dimensions: {
++      algorithmCorrectness: evaluation.algorithmCorrectness,
++      logicalReasoning: evaluation.logicalReasoning,
++      conceptCoverage: evaluation.conceptCoverage,
++      completeness: evaluation.completeness,
++      dataStructure: evaluation.dataStructure,
++      complexity: evaluation.complexity,
++      edgeCases: evaluation.edgeCases,
++    },
++    strengths: evaluation.strengths,
++    improvements: evaluation.improvements,
++    feedback: evaluation.feedback,
++  }
++}
+diff --git a/backend/src/services/interview.service.ts b/backend/src/services/interview.service.ts
+new file mode 100644
+index 0000000..c41cfab
+--- /dev/null
++++ b/backend/src/services/interview.service.ts
+@@ -0,0 +1,141 @@
++import {
++  countInterviewsByCandidateAndStatus,
++  findInterviewById,
++  findInterviewWithQuestions,
++  findInterviewsByCandidate,
++  updateInterviewStatus,
++} from '../repositories/interview.repository.js'
++
++import {
++  createSession,
++  findSessionByInterviewId,
++  updateInterviewQuestionStatus,
++} from '../repositories/session.repository.js'
++
++import { createMessage } from '../repositories/message.repository.js'
++
++import { buildOpeningMessage } from './ai.service.js'
++
++import { NotFoundError, ForbiddenError, ConflictError } from '../utils/app-error.js'
++
++import type { InterviewStatus } from '../generated/prisma/enums.js'
++
++export const listCandidateInterviews = async (
++  candidateId: string,
++  status?: InterviewStatus,
++) => {
++  const interviews = await findInterviewsByCandidate(candidateId, status)
++
++  return interviews.map((interview: Awaited<ReturnType<typeof findInterviewsByCandidate>>[number]) => ({
++    id: interview.id,
++    title: interview.title,
++    type: interview.type,
++    company: interview.company,
++    topics: interview.focusAreas,
++    scheduledAt: interview.scheduledAt,
++    duration: interview.duration,
++    status: interview.status,
++    score: interview.evaluation?.overallScore ?? null,
++  }))
++}
++
++export const getCandidateInterview = async (
++  candidateId: string,
++  interviewId: string,
++) => {
++  const interview = await findInterviewById(interviewId)
++
++  if (!interview) {
++    throw new NotFoundError('Interview not found')
++  }
++
++  if (interview.candidateId !== candidateId) {
++    throw new ForbiddenError('This interview does not belong to you')
++  }
++
++  return {
++    id: interview.id,
++    title: interview.title,
++    type: interview.type,
++    company: interview.company,
++    topics: interview.focusAreas,
++    scheduledAt: interview.scheduledAt,
++    duration: interview.duration,
++    status: interview.status,
++    score: interview.evaluation?.overallScore ?? null,
++    sessionId: interview.session?.id ?? null,
++  }
++}
++
++export const startInterview = async (
++  candidateId: string,
++  interviewId: string,
++) => {
++  const interview = await findInterviewWithQuestions(interviewId)
++
++  if (!interview) {
++    throw new NotFoundError('Interview not found')
++  }
++
++  if (interview.candidateId !== candidateId) {
++    throw new ForbiddenError('This interview does not belong to you')
++  }
++
++  if (interview.status === 'COMPLETED') {
++    throw new ConflictError('This interview has already been completed')
++  }
++
++  if (interview.status === 'EXPIRED' || interview.status === 'CANCELLED') {
++    throw new ConflictError('This interview is no longer available')
++  }
++
++  const existingSession = await findSessionByInterviewId(interviewId)
++
++  if (existingSession) {
++    return {
++      sessionId: existingSession.id,
++      status: existingSession.status,
++      startedAt: existingSession.startedAt,
++      currentQuestionId: existingSession.currentQuestionId,
++    }
++  }
++
++  const firstQuestion = interview.questions[0]?.question ?? null
++
++  const session = await createSession({
++    interviewId,
++    candidateId,
++    currentQuestionId: firstQuestion?.id ?? null,
++  })
++
++  await updateInterviewStatus(interviewId, 'IN_PROGRESS')
++
++  if (firstQuestion) {
++    await updateInterviewQuestionStatus(interviewId, firstQuestion.id, 'CURRENT')
++
++    await createMessage({
++      sessionId: session.id,
++      questionId: firstQuestion.id,
++      sender: 'AI',
++      message: buildOpeningMessage(firstQuestion),
++    })
++  }
++
++  return {
++    sessionId: session.id,
++    status: session.status,
++    startedAt: session.startedAt,
++    currentQuestionId: session.currentQuestionId,
++  }
++}
++
++export const getCandidateInterviewStats = async (candidateId: string) => {
++  const [total, completed, upcoming, inProgress] = await Promise.all([
++    findInterviewsByCandidate(candidateId).then((list) => list.length),
++    countInterviewsByCandidateAndStatus(candidateId, 'COMPLETED'),
++    countInterviewsByCandidateAndStatus(candidateId, 'SCHEDULED'),
++    countInterviewsByCandidateAndStatus(candidateId, 'IN_PROGRESS'),
++  ])
++
++  return { total, completed, upcoming, inProgress }
++}
+diff --git a/backend/src/services/preparation.service.ts b/backend/src/services/preparation.service.ts
+new file mode 100644
+index 0000000..c91d72e
+--- /dev/null
++++ b/backend/src/services/preparation.service.ts
+@@ -0,0 +1,71 @@
++import { findEvaluationsByCandidate } from '../repositories/evaluation.repository.js'
++import { countCompletedAttemptsByCandidate } from '../repositories/session.repository.js'
++
++// Maps each scored dimension to the topic areas it roughly corresponds to,
++// so a low dimension score can be surfaced as an actionable topic to review.
++const DIMENSION_TOPICS: Record<string, string[]> = {
++  algorithmCorrectness: ['Algorithms'],
++  logicalReasoning: ['Problem Solving'],
++  conceptCoverage: ['Core Concepts'],
++  completeness: ['Time Management'],
++  dataStructure: ['Data Structures'],
++  complexity: ['Time & Space Complexity'],
++  edgeCases: ['Edge Cases'],
++}
++
++export const getCandidatePreparation = async (candidateId: string) => {
++  const [evaluations, questionsSolved] = await Promise.all([
++    findEvaluationsByCandidate(candidateId),
++    countCompletedAttemptsByCandidate(candidateId),
++  ])
++
++  if (evaluations.length === 0) {
++    return {
++      overallProgress: 0,
++      questionsSolved,
++      interviewsCompleted: 0,
++      topicScores: [],
++      weakTopics: [],
++      recommendedTopics: ['Data Structures', 'Algorithms', 'Problem Solving'],
++    }
++  }
++
++  const dimensionKeys = Object.keys(DIMENSION_TOPICS) as Array<
++    keyof typeof DIMENSION_TOPICS
++  >
++
++  type CandidateEvaluation = Awaited<
++    ReturnType<typeof findEvaluationsByCandidate>
++  >[number]
++
++  const averages = dimensionKeys.map((key) => {
++    const sum = evaluations.reduce((total: number, evaluation: CandidateEvaluation) => {
++      const value = evaluation[key as keyof typeof evaluation]
++      return total + (typeof value === 'number' ? value : 0)
++    }, 0)
++
++    return {
++      key,
++      topic: DIMENSION_TOPICS[key]![0]!,
++      average: Math.round(sum / evaluations.length),
++    }
++  })
++
++  const sortedAscending = [...averages].sort((a, b) => a.average - b.average)
++
++  const overallProgress = Math.round(
++    averages.reduce((sum, item) => sum + item.average, 0) / averages.length,
++  )
++
++  return {
++    overallProgress,
++    questionsSolved,
++    interviewsCompleted: evaluations.length,
++    topicScores: averages.map(({ topic, average }) => ({
++      topic,
++      score: average,
++    })),
++    weakTopics: sortedAscending.slice(0, 3).map((item) => item.topic),
++    recommendedTopics: sortedAscending.slice(0, 3).map((item) => item.topic),
++  }
++}
+diff --git a/backend/src/services/session.service.ts b/backend/src/services/session.service.ts
+new file mode 100644
+index 0000000..58f4087
+--- /dev/null
++++ b/backend/src/services/session.service.ts
+@@ -0,0 +1,257 @@
++import {
++  findSessionById,
++  updateSessionCurrentQuestion,
++  upsertQuestionAttempt,
++  updateInterviewQuestionStatus,
++  countMessagesForQuestion,
++  endSession as endSessionRepo,
++} from '../repositories/session.repository.js'
++
++import {
++  createMessage,
++  findMessagesBySession,
++} from '../repositories/message.repository.js'
++
++import { updateInterviewStatus } from '../repositories/interview.repository.js'
++
++import { createEvaluation } from '../repositories/evaluation.repository.js'
++
++import {
++  buildTransitionMessage,
++  buildClosingMessage,
++  generateFollowUp,
++  generateEvaluation,
++  shouldAdvanceQuestion,
++} from './ai.service.js'
++
++import type { SendMessageInput } from '../validators/session.validator.js'
++
++import { NotFoundError, ForbiddenError, ConflictError } from '../utils/app-error.js'
++
++type OwnedSession = Awaited<ReturnType<typeof findSessionById>>
++type InterviewQuestionWithQuestion = NonNullable<OwnedSession>['interview']['questions'][number]
++
++const assertOwnedSession = async (candidateId: string, sessionId: string) => {
++  const session = await findSessionById(sessionId)
++
++  if (!session) {
++    throw new NotFoundError('Interview session not found')
++  }
++
++  if (session.candidateId !== candidateId) {
++    throw new ForbiddenError('This interview session does not belong to you')
++  }
++
++  return session
++}
++
++export const getSessionDetail = async (
++  candidateId: string,
++  sessionId: string,
++) => {
++  const session = await assertOwnedSession(candidateId, sessionId)
++
++  const questions = session.interview.questions.map(({ question, status, order }: InterviewQuestionWithQuestion) => ({
++    id: question.id,
++    title: question.title,
++    difficulty: question.difficulty,
++    topics: question.topics,
++    description: question.description,
++    examples: question.examples,
++    constraints: question.constraints,
++    status,
++    order,
++  }))
++
++  return {
++    session: {
++      id: session.id,
++      status: session.status,
++      duration: session.interview.duration * 60,
++      startedAt: session.startedAt,
++      currentQuestionId: session.currentQuestionId,
++    },
++    questions,
++  }
++}
++
++export const getSessionMessages = async (
++  candidateId: string,
++  sessionId: string,
++) => {
++  await assertOwnedSession(candidateId, sessionId)
++
++  const messages = await findMessagesBySession(sessionId)
++
++  return messages.map((message: Awaited<ReturnType<typeof findMessagesBySession>>[number]) => ({
++    id: message.id,
++    sender: message.sender,
++    message: message.message,
++    questionId: message.questionId,
++    createdAt: message.createdAt,
++  }))
++}
++
++export const sendCandidateMessage = async (
++  candidateId: string,
++  sessionId: string,
++  input: SendMessageInput,
++) => {
++  const session = await assertOwnedSession(candidateId, sessionId)
++
++  if (session.status !== 'IN_PROGRESS') {
++    throw new ConflictError('This interview session has already ended')
++  }
++
++  const orderedQuestions = session.interview.questions
++
++  const currentIndex = orderedQuestions.findIndex(
++    (interviewQuestion: InterviewQuestionWithQuestion) =>
++      interviewQuestion.question.id === input.questionId,
++  )
++
++  if (currentIndex === -1) {
++    throw new NotFoundError('Question not found on this interview')
++  }
++
++  // 1. Save the candidate's message.
++  const candidateMessage = await createMessage({
++    sessionId,
++    questionId: input.questionId,
++    sender: 'CANDIDATE',
++    message: input.message,
++  })
++
++  await upsertQuestionAttempt({
++    sessionId,
++    questionId: input.questionId,
++    candidateId,
++    status: 'CURRENT',
++  })
++
++  // 2. Decide whether to move on (this is where the adaptive engine /
++  //    concept-extraction pipeline will eventually plug in).
++  const candidateMessageCount = await countMessagesForQuestion(
++    sessionId,
++    input.questionId,
++  )
++
++  const advance = shouldAdvanceQuestion(candidateMessageCount)
++
++  let aiText: string
++  let nextQuestionId: string | null = session.currentQuestionId
++
++  if (advance) {
++    await upsertQuestionAttempt({
++      sessionId,
++      questionId: input.questionId,
++      candidateId,
++      status: 'COMPLETED',
++    })
++    await updateInterviewQuestionStatus(
++      session.interview.id,
++      input.questionId,
++      'COMPLETED',
++    )
++
++    const nextQuestion = orderedQuestions[currentIndex + 1]?.question ?? null
++
++    if (nextQuestion) {
++      await updateInterviewQuestionStatus(
++        session.interview.id,
++        nextQuestion.id,
++        'CURRENT',
++      )
++      await updateSessionCurrentQuestion(sessionId, nextQuestion.id)
++
++      nextQuestionId = nextQuestion.id
++      aiText = buildTransitionMessage(nextQuestion)
++    } else {
++      nextQuestionId = null
++      aiText = buildClosingMessage()
++    }
++  } else {
++    aiText = generateFollowUp(candidateMessageCount)
++  }
++
++  const aiMessage = await createMessage({
++    sessionId,
++    questionId: nextQuestionId ?? input.questionId,
++    sender: 'AI',
++    message: aiText,
++  })
++
++  return {
++    candidateMessage: {
++      id: candidateMessage.id,
++      sender: candidateMessage.sender,
++      message: candidateMessage.message,
++      questionId: candidateMessage.questionId,
++      createdAt: candidateMessage.createdAt,
++    },
++    aiMessage: {
++      id: aiMessage.id,
++      sender: aiMessage.sender,
++      message: aiMessage.message,
++      questionId: aiMessage.questionId,
++      createdAt: aiMessage.createdAt,
++    },
++    currentQuestionId: nextQuestionId,
++  }
++}
++
++export const endInterviewSession = async (
++  candidateId: string,
++  sessionId: string,
++) => {
++  const session = await assertOwnedSession(candidateId, sessionId)
++
++  if (session.status === 'COMPLETED') {
++    throw new ConflictError('This interview session has already ended')
++  }
++
++  const endedAt = new Date()
++  const durationSeconds = Math.max(
++    0,
++    Math.floor((endedAt.getTime() - session.startedAt.getTime()) / 1000),
++  )
++
++  await endSessionRepo(sessionId, {
++    status: 'COMPLETED',
++    endedAt,
++    durationSeconds,
++  })
++
++  await updateInterviewStatus(session.interview.id, 'COMPLETED')
++
++  const totalQuestions = session.interview.questions.length
++  const completedQuestions = session.interview.questions.filter(
++    (interviewQuestion: InterviewQuestionWithQuestion) =>
++      interviewQuestion.status === 'COMPLETED',
++  ).length
++
++  const messages = await findMessagesBySession(sessionId)
++  const candidateMessageCount = messages.filter(
++    (message: Awaited<ReturnType<typeof findMessagesBySession>>[number]) =>
++      message.sender === 'CANDIDATE',
++  ).length
++
++  const evaluationResult = generateEvaluation({
++    candidateMessageCount,
++    totalQuestions,
++    completedQuestions,
++  })
++
++  await createEvaluation({
++    interviewId: session.interview.id,
++    sessionId,
++    candidateId,
++    ...evaluationResult,
++  })
++
++  return {
++    message: 'Interview completed successfully',
++    durationSeconds,
++    overallScore: evaluationResult.overallScore,
++  }
++}
+diff --git a/backend/src/utils/app-error.ts b/backend/src/utils/app-error.ts
+new file mode 100644
+index 0000000..c5cebd1
+--- /dev/null
++++ b/backend/src/utils/app-error.ts
+@@ -0,0 +1,30 @@
++export class AppError extends Error {
++  statusCode: number
++
++  constructor(message: string, statusCode = 400) {
++    super(message)
++    this.name = 'AppError'
++    this.statusCode = statusCode
++  }
++}
++
++export class NotFoundError extends AppError {
++  constructor(message = 'Resource not found') {
++    super(message, 404)
++    this.name = 'NotFoundError'
++  }
++}
++
++export class ForbiddenError extends AppError {
++  constructor(message = 'You do not have access to this resource') {
++    super(message, 403)
++    this.name = 'ForbiddenError'
++  }
++}
++
++export class ConflictError extends AppError {
++  constructor(message = 'This action conflicts with the current state') {
++    super(message, 409)
++    this.name = 'ConflictError'
++  }
++}
+diff --git a/backend/src/validators/interview.validator.ts b/backend/src/validators/interview.validator.ts
+new file mode 100644
+index 0000000..4c23810
+--- /dev/null
++++ b/backend/src/validators/interview.validator.ts
+@@ -0,0 +1,13 @@
++import { z } from 'zod'
++
++export const interviewStatusFilterSchema = z.object({
++  status: z
++    .enum(['SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'EXPIRED', 'CANCELLED'])
++    .optional(),
++})
++
++export type InterviewStatusFilter = z.infer<typeof interviewStatusFilterSchema>
++
++export const interviewIdParamSchema = z.object({
++  interviewId: z.string().min(1, 'interviewId is required'),
++})
+diff --git a/backend/src/validators/session.validator.ts b/backend/src/validators/session.validator.ts
+new file mode 100644
+index 0000000..da3dfc7
+--- /dev/null
++++ b/backend/src/validators/session.validator.ts
+@@ -0,0 +1,15 @@
++import { z } from 'zod'
++
++export const sessionIdParamSchema = z.object({
++  sessionId: z.string().min(1, 'sessionId is required'),
++})
++
++export const sendMessageSchema = z.object({
++  questionId: z.string().min(1, 'questionId is required'),
++  message: z
++    .string()
++    .min(1, 'message cannot be empty')
++    .max(5000, 'message is too long'),
++})
++
++export type SendMessageInput = z.infer<typeof sendMessageSchema>
+diff --git a/frontend/.env.example b/frontend/.env.example
+new file mode 100644
+index 0000000..644678f
+--- /dev/null
++++ b/frontend/.env.example
+@@ -0,0 +1 @@
++VITE_API_URL=http://localhost:5000/api/v1
+diff --git a/frontend/src/App.jsx b/frontend/src/App.jsx
+index 48ca6b1..7d02ece 100644
+--- a/frontend/src/App.jsx
++++ b/frontend/src/App.jsx
+@@ -1,5 +1,8 @@
+ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+ 
++import { AuthProvider } from './context/AuthContext.jsx'
++import ProtectedRoute from './components/auth/ProtectedRoute.jsx'
++
+ import Login from './pages/auth/Login'
+ import Signup from './pages/auth/Signup'
+ 
+@@ -16,84 +19,115 @@ import RecruiterAnalytics from './pages/recruiter/RecruiterAnalytics'
+ import CandidateDashboard from './pages/candidate/CandidateDashboard'
+ import CandidateInterviews from './pages/candidate/CandidateInterviews'
+ import CandidateResults from './pages/candidate/CandidateResults'
++import CandidateResultDetail from './pages/candidate/CandidateResultDetail'
+ import CandidatePreparation from './pages/candidate/CandidatePreparation'
+ import CandidateInterview from './pages/candidate/CandidateInterview'
+ 
+ function App() {
+   return (
+     <BrowserRouter>
+-      <Routes>
+-
+-        <Route path="/" element={<Home />} />
+-
+-        {/* Authentication */}
+-        <Route path="/login" element={<Login />} />
+-        <Route path="/signup" element={<Signup />} />
+-
+-        {/* Admin */}
+-        <Route
+-          path="/admin/dashboard"
+-          element={<AdminDashboard />}
+-        />
+-
+-        {/* Recruiter */}
+-        <Route
+-          path="/recruiter/dashboard"
+-          element={<RecruiterDashboard />}
+-        />
+-        <Route
+-          path="/recruiter/jobs"
+-          element={<RecruiterJobs />}
+-        />
+-        <Route
+-          path="/recruiter/candidates"
+-          element={<RecruiterCandidates />}
+-        />
+-        <Route
+-          path="/recruiter/interviews"
+-          element={<RecruiterInterviews />}
+-        />
+-
+-
+-
+-
+-        {/* Candidate */}
+-        <Route
+-          path="/candidate/dashboard"
+-          element={<CandidateDashboard />}
+-        />
+-        <Route
+-          path="/candidate/interviews"
+-          element={<CandidateInterviews />}
+-        />
+-        <Route
+-          path="/candidate/results"
+-          element={<CandidateResults />}
+-        />
+-        <Route
+-          path="/candidate/preparation"
+-          element={<CandidatePreparation />}
+-        />
+-        <Route
+-          path="/candidate/interview/:id"
+-          element={<CandidateInterview   />}
+-        />
+-        <Route
+-          path="/recruiter/analytics"
+-          element={<RecruiterAnalytics />}
+-        />
+-
+-
+-
+-        {/* Default */}
+-        <Route
+-          path="*"
+-          element={<Navigate to="/login" replace />}
+-        />
+-
+-      </Routes>
++      <AuthProvider>
++        <Routes>
++
++          <Route path="/" element={<Home />} />
++
++          {/* Authentication */}
++          <Route path="/login" element={<Login />} />
++          <Route path="/signup" element={<Signup />} />
++
++          {/* Admin */}
++          <Route
++            path="/admin/dashboard"
++            element={<AdminDashboard />}
++          />
++
++          {/* Recruiter */}
++          <Route
++            path="/recruiter/dashboard"
++            element={<RecruiterDashboard />}
++          />
++          <Route
++            path="/recruiter/jobs"
++            element={<RecruiterJobs />}
++          />
++          <Route
++            path="/recruiter/candidates"
++            element={<RecruiterCandidates />}
++          />
++          <Route
++            path="/recruiter/interviews"
++            element={<RecruiterInterviews />}
++          />
++
++
++
++
++          {/* Candidate */}
++          <Route
++            path="/candidate/dashboard"
++            element={
++              <ProtectedRoute allowedRoles={['CANDIDATE']}>
++                <CandidateDashboard />
++              </ProtectedRoute>
++            }
++          />
++          <Route
++            path="/candidate/interviews"
++            element={
++              <ProtectedRoute allowedRoles={['CANDIDATE']}>
++                <CandidateInterviews />
++              </ProtectedRoute>
++            }
++          />
++          <Route
++            path="/candidate/results"
++            element={
++              <ProtectedRoute allowedRoles={['CANDIDATE']}>
++                <CandidateResults />
++              </ProtectedRoute>
++            }
++          />
++          <Route
++            path="/candidate/results/:id"
++            element={
++              <ProtectedRoute allowedRoles={['CANDIDATE']}>
++                <CandidateResultDetail />
++              </ProtectedRoute>
++            }
++          />
++          <Route
++            path="/candidate/preparation"
++            element={
++              <ProtectedRoute allowedRoles={['CANDIDATE']}>
++                <CandidatePreparation />
++              </ProtectedRoute>
++            }
++          />
++          <Route
++            path="/candidate/interview/:id"
++            element={
++              <ProtectedRoute allowedRoles={['CANDIDATE']}>
++                <CandidateInterview />
++              </ProtectedRoute>
++            }
++          />
++          <Route
++            path="/recruiter/analytics"
++            element={<RecruiterAnalytics />}
++          />
++
++
++
++          {/* Default */}
++          <Route
++            path="*"
++            element={<Navigate to="/login" replace />}
++          />
++
++        </Routes>
++      </AuthProvider>
+     </BrowserRouter>
+   )
+ }
+ 
+-export default App
+\ No newline at end of file
++export default App
+diff --git a/frontend/src/api/auth.api.js b/frontend/src/api/auth.api.js
+new file mode 100644
+index 0000000..bbed366
+--- /dev/null
++++ b/frontend/src/api/auth.api.js
+@@ -0,0 +1,49 @@
++import { apiClient, apiRequest, setAccessToken } from '../lib/apiClient.js'
++
++export const register = async ({ firstName, lastName, email, password }) => {
++  const result = await apiRequest('/auth/register', {
++    method: 'POST',
++    body: { firstName, lastName, email, password },
++    skipAuth: true,
++  })
++
++  return result.data
++}
++
++export const login = async ({ email, password }) => {
++  const result = await apiRequest('/auth/login', {
++    method: 'POST',
++    body: { email, password },
++    skipAuth: true,
++  })
++
++  setAccessToken(result.accessToken)
++
++  return result.data
++}
++
++export const refresh = async () => {
++  try {
++    const result = await apiRequest('/auth/refresh', {
++      method: 'POST',
++      skipAuth: true,
++      skipRefresh: true,
++    })
++
++    setAccessToken(result.data.accessToken)
++
++    return result.data.user
++  } catch {
++    return null
++  }
++}
++
++export const me = async () => {
++  const result = await apiClient.get('/auth/me')
++  return result.data
++}
++
++export const logout = async () => {
++  await apiRequest('/auth/logout', { method: 'POST', skipRefresh: true })
++  setAccessToken(null)
++}
+diff --git a/frontend/src/api/candidate.api.js b/frontend/src/api/candidate.api.js
+new file mode 100644
+index 0000000..1237a1b
+--- /dev/null
++++ b/frontend/src/api/candidate.api.js
+@@ -0,0 +1,115 @@
++import { apiClient } from '../lib/apiClient.js'
++
++// ---- normalization helpers -------------------------------------------
++// The backend uses upper-case enums (Prisma convention); the existing
++// frontend components were designed around lower-case status strings.
++// Normalizing here means the components stay as they are.
++
++export const toLowerStatus = (status) => (status ? status.toLowerCase() : status)
++
++export const toChatSender = (sender) => (sender === 'AI' ? 'ai' : 'candidate')
++
++const INTERVIEW_STATUS_LABEL = {
++  SCHEDULED: 'Upcoming',
++  IN_PROGRESS: 'Upcoming',
++  COMPLETED: 'Completed',
++  EXPIRED: 'Expired',
++  CANCELLED: 'Expired',
++}
++
++export const toInterviewStatusLabel = (status) =>
++  INTERVIEW_STATUS_LABEL[status] || status
++
++export const formatDate = (isoDate) => {
++  const date = new Date(isoDate)
++  const today = new Date()
++  const tomorrow = new Date(today)
++  tomorrow.setDate(today.getDate() + 1)
++
++  const isSameDay = (a, b) =>
++    a.getFullYear() === b.getFullYear() &&
++    a.getMonth() === b.getMonth() &&
++    a.getDate() === b.getDate()
++
++  if (isSameDay(date, today)) return 'Today'
++  if (isSameDay(date, tomorrow)) return 'Tomorrow'
++
++  return date.toLocaleDateString('en-US', {
++    month: 'short',
++    day: '2-digit',
++    year: 'numeric',
++  })
++}
++
++export const formatTime = (isoDate) =>
++  new Date(isoDate).toLocaleTimeString('en-US', {
++    hour: '2-digit',
++    minute: '2-digit',
++  })
++
++export const formatDuration = (minutes) => `${minutes} min`
++
++// ---- API calls ----------------------------------------------------------
++
++export const getDashboard = async () => {
++  const result = await apiClient.get('/candidate/dashboard')
++  return result.data
++}
++
++export const listInterviews = async (status) => {
++  const query = status ? `?status=${status}` : ''
++  const result = await apiClient.get(`/candidate/interviews${query}`)
++  return result.data
++}
++
++export const getInterview = async (interviewId) => {
++  const result = await apiClient.get(`/candidate/interviews/${interviewId}`)
++  return result.data
++}
++
++export const startInterview = async (interviewId) => {
++  const result = await apiClient.post(`/candidate/interviews/${interviewId}/start`)
++  return result.data
++}
++
++export const getSession = async (sessionId) => {
++  const result = await apiClient.get(`/candidate/interview-sessions/${sessionId}`)
++  return result.data
++}
++
++export const getMessages = async (sessionId) => {
++  const result = await apiClient.get(
++    `/candidate/interview-sessions/${sessionId}/messages`,
++  )
++  return result.data
++}
++
++export const sendMessage = async (sessionId, { questionId, message }) => {
++  const result = await apiClient.post(
++    `/candidate/interview-sessions/${sessionId}/messages`,
++    { questionId, message },
++  )
++  return result.data
++}
++
++export const endInterview = async (sessionId) => {
++  const result = await apiClient.post(
++    `/candidate/interview-sessions/${sessionId}/end`,
++  )
++  return result.data
++}
++
++export const listResults = async () => {
++  const result = await apiClient.get('/candidate/results')
++  return result.data
++}
++
++export const getResultDetail = async (interviewId) => {
++  const result = await apiClient.get(`/candidate/results/${interviewId}`)
++  return result.data
++}
++
++export const getPreparation = async () => {
++  const result = await apiClient.get('/candidate/preparation')
++  return result.data
++}
+diff --git a/frontend/src/components/auth/ProtectedRoute.jsx b/frontend/src/components/auth/ProtectedRoute.jsx
+new file mode 100644
+index 0000000..bb6be45
+--- /dev/null
++++ b/frontend/src/components/auth/ProtectedRoute.jsx
+@@ -0,0 +1,33 @@
++import { Navigate, useLocation } from 'react-router-dom'
++import { useAuth } from '../../context/AuthContext.jsx'
++
++const ROLE_HOME = {
++  ADMIN: '/admin/dashboard',
++  RECRUITER: '/recruiter/dashboard',
++  CANDIDATE: '/candidate/dashboard',
++}
++
++function ProtectedRoute({ allowedRoles, children }) {
++  const { user, status } = useAuth()
++  const location = useLocation()
++
++  if (status === 'loading') {
++    return (
++      <div className="flex h-screen w-full items-center justify-center bg-[#f4f8fc]">
++        <span className="h-8 w-8 animate-spin rounded-full border-2 border-[#285b8f]/30 border-t-[#285b8f]" />
++      </div>
++    )
++  }
++
++  if (status === 'unauthenticated') {
++    return <Navigate to="/login" replace state={{ from: location }} />
++  }
++
++  if (allowedRoles && !allowedRoles.includes(user.role)) {
++    return <Navigate to={ROLE_HOME[user.role] || '/login'} replace />
++  }
++
++  return children
++}
++
++export default ProtectedRoute
+diff --git a/frontend/src/components/candidate/interviews/ChatHeader.jsx b/frontend/src/components/candidate/interviews/ChatHeader.jsx
+index 1fbcdad..4438101 100644
+--- a/frontend/src/components/candidate/interviews/ChatHeader.jsx
++++ b/frontend/src/components/candidate/interviews/ChatHeader.jsx
+@@ -1,4 +1,4 @@
+-function ChatHeader() {
++function ChatHeader({ isActive = true }) {
+   return (
+     <div className="flex h-16 shrink-0 items-center justify-between border-b border-white/10 bg-[#0d1626] px-5">
+ 
+@@ -20,9 +20,11 @@ function ChatHeader() {
+               AI Interviewer
+             </p>
+ 
+-            <span className="border border-[#4ade80]/20 bg-[#4ade80]/10 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wider text-[#7ee2a0]">
+-              Live
+-            </span>
++            {isActive && (
++              <span className="border border-[#4ade80]/20 bg-[#4ade80]/10 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wider text-[#7ee2a0]">
++                Live
++              </span>
++            )}
+ 
+           </div>
+ 
+@@ -46,7 +48,7 @@ function ChatHeader() {
+           </p>
+ 
+           <p className="text-[10px] font-medium text-slate-400">
+-            Active
++            {isActive ? 'Active' : 'Ended'}
+           </p>
+ 
+         </div>
+diff --git a/frontend/src/components/candidate/interviews/ChatInput.jsx b/frontend/src/components/candidate/interviews/ChatInput.jsx
+index feb0a6e..09fd505 100644
+--- a/frontend/src/components/candidate/interviews/ChatInput.jsx
++++ b/frontend/src/components/candidate/interviews/ChatInput.jsx
+@@ -1,16 +1,16 @@
+ import { useState } from 'react'
+ 
+-function ChatInput() {
++function ChatInput({ onSend, disabled }) {
+   const [message, setMessage] = useState('')
+ 
+   const handleSubmit = (event) => {
+     event.preventDefault()
+ 
+-    if (!message.trim()) {
++    if (!message.trim() || disabled) {
+       return
+     }
+ 
+-    console.log('Candidate response:', message)
++    onSend?.(message.trim())
+ 
+     setMessage('')
+   }
+@@ -19,7 +19,7 @@ function ChatInput() {
+     if (event.key === 'Enter' && !event.shiftKey) {
+       event.preventDefault()
+ 
+-      if (message.trim()) {
++      if (message.trim() && !disabled) {
+         event.currentTarget.form.requestSubmit()
+       }
+     }
+@@ -40,7 +40,8 @@ function ChatInput() {
+             onKeyDown={handleKeyDown}
+             placeholder="Explain your approach..."
+             rows={3}
+-            className="w-full resize-none bg-transparent px-4 py-3.5 text-[13px] leading-6 text-slate-200 outline-none placeholder:text-slate-600"
++            disabled={disabled}
++            className="w-full resize-none bg-transparent px-4 py-3.5 text-[13px] leading-6 text-slate-200 outline-none placeholder:text-slate-600 disabled:opacity-50"
+           />
+ 
+ 
+@@ -53,7 +54,7 @@ function ChatInput() {
+               <div className="h-1.5 w-1.5 rounded-full bg-[#78b9f2]" />
+ 
+               <span className="text-[9px] text-slate-600">
+-                Your response is being evaluated
++                {disabled ? 'Waiting for a response...' : 'Your response is being evaluated'}
+               </span>
+ 
+             </div>
+@@ -61,7 +62,7 @@ function ChatInput() {
+ 
+             <button
+               type="submit"
+-              disabled={!message.trim()}
++              disabled={!message.trim() || disabled}
+               className="flex h-8 items-center gap-2 bg-[#78aeda] px-4 text-[10px] font-semibold text-[#08111d] transition hover:bg-[#8fc1e6] disabled:cursor-not-allowed disabled:opacity-30"
+             >
+ 
+@@ -111,4 +112,4 @@ function SendIcon() {
+ }
+ 
+ 
+-export default ChatInput
+\ No newline at end of file
++export default ChatInput
+diff --git a/frontend/src/components/candidate/interviews/ChatMessages.jsx b/frontend/src/components/candidate/interviews/ChatMessages.jsx
+index fcf7e77..cbf8bab 100644
+--- a/frontend/src/components/candidate/interviews/ChatMessages.jsx
++++ b/frontend/src/components/candidate/interviews/ChatMessages.jsx
+@@ -1,43 +1,12 @@
++import { useEffect, useRef } from 'react'
+ import ChatMessage from './ChatMessage'
+ 
+-function ChatMessages() {
+-  const messages = [
+-    {
+-      id: 1,
+-      sender: 'ai',
+-      message:
+-        "Let's start with this problem. Take a moment to understand it and tell me how you would approach the solution.",
+-      time: '10:32 AM',
+-    },
+-    {
+-      id: 2,
+-      sender: 'candidate',
+-      message:
+-        'I would use a sliding window approach. I can maintain a window of unique characters and expand or shrink it as needed.',
+-      time: '10:33 AM',
+-    },
+-    {
+-      id: 3,
+-      sender: 'ai',
+-      message:
+-        'Good. Why did you choose a sliding window instead of checking every possible substring?',
+-      time: '10:33 AM',
+-    },
+-    {
+-      id: 4,
+-      sender: 'candidate',
+-      message:
+-        'Because checking every substring would take more time. With a sliding window, I can move the left and right pointers and maintain the characters in the current window.',
+-      time: '10:34 AM',
+-    },
+-    {
+-      id: 5,
+-      sender: 'ai',
+-      message:
+-        'That makes sense. What data structure would you use to keep track of the characters currently present in the window?',
+-      time: '10:34 AM',
+-    },
+-  ]
++function ChatMessages({ messages = [] }) {
++  const bottomRef = useRef(null)
++
++  useEffect(() => {
++    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
++  }, [messages.length])
+ 
+   return (
+     <div className="min-h-0 flex-1 overflow-y-auto bg-[#0b1220] px-5 py-6">
+@@ -68,6 +37,8 @@ function ChatMessages() {
+             />
+           ))}
+ 
++          <div ref={bottomRef} />
++
+         </div>
+ 
+       </div>
+@@ -76,4 +47,4 @@ function ChatMessages() {
+   )
+ }
+ 
+-export default ChatMessages
+\ No newline at end of file
++export default ChatMessages
+diff --git a/frontend/src/components/candidate/interviews/ChatPanel.jsx b/frontend/src/components/candidate/interviews/ChatPanel.jsx
+index ca746c5..fde4f18 100644
+--- a/frontend/src/components/candidate/interviews/ChatPanel.jsx
++++ b/frontend/src/components/candidate/interviews/ChatPanel.jsx
+@@ -2,18 +2,18 @@ import ChatHeader from './ChatHeader'
+ import ChatMessages from './ChatMessages'
+ import ChatInput from './ChatInput'
+ 
+-function ChatPanel() {
++function ChatPanel({ messages, onSendMessage, sending, sessionEnded }) {
+   return (
+     <section className="flex min-h-0 flex-col border-l border-[#202b3b] bg-[#0b1220] text-white">
+ 
+-      <ChatHeader />
++      <ChatHeader isActive={!sessionEnded} />
+ 
+-      <ChatMessages />
++      <ChatMessages messages={messages} />
+ 
+-      <ChatInput />
++      <ChatInput onSend={onSendMessage} disabled={sending || sessionEnded} />
+ 
+     </section>
+   )
+ }
+ 
+-export default ChatPanel
+\ No newline at end of file
++export default ChatPanel
+diff --git a/frontend/src/components/candidate/interviews/InterviewLayout.jsx b/frontend/src/components/candidate/interviews/InterviewLayout.jsx
+index 79fdd85..ae7f160 100644
+--- a/frontend/src/components/candidate/interviews/InterviewLayout.jsx
++++ b/frontend/src/components/candidate/interviews/InterviewLayout.jsx
+@@ -5,19 +5,37 @@ import QuestionPanel from './QuestionPanel'
+ import ChatPanel from './ChatPanel'
+ 
+ function InterviewLayout({
++  title,
+   questions,
+-  currentQuestion,
+-  selectedQuestion,
++  activeQuestionId,
++  viewedQuestionId,
+   onQuestionSelect,
++  messages,
++  onSendMessage,
++  sending,
++  sessionEnded,
++  timeLabel,
++  onEndInterview,
++  ending,
+ }) {
+   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
+ 
++  const activeIndex = questions.findIndex((q) => q.id === activeQuestionId)
++  const selectedQuestion =
++    questions.find((q) => q.id === viewedQuestionId) ?? questions[0] ?? null
++
++  const selectedIndex = questions.findIndex((q) => q.id === selectedQuestion?.id)
++
+   return (
+     <div className="flex h-screen flex-col overflow-hidden bg-[#f4f8fc]">
+ 
+       <InterviewTopBar
+-        currentQuestion={currentQuestion}
++        title={title}
++        currentQuestionNumber={activeIndex >= 0 ? activeIndex + 1 : 1}
+         totalQuestions={questions.length}
++        timeLabel={timeLabel}
++        onEndInterview={onEndInterview}
++        ending={ending}
+       />
+ 
+       <div
+@@ -32,7 +50,7 @@ function InterviewLayout({
+ 
+         <QuestionSidebar
+           questions={questions}
+-          currentQuestion={currentQuestion}
++          currentQuestion={selectedQuestion?.id}
+           onQuestionSelect={onQuestionSelect}
+           isCollapsed={isSidebarCollapsed}
+           onToggle={() =>
+@@ -45,7 +63,7 @@ function InterviewLayout({
+ 
+         <QuestionPanel
+           question={selectedQuestion}
+-          questionNumber={currentQuestion}
++          questionNumber={selectedIndex >= 0 ? selectedIndex + 1 : 1}
+           totalQuestions={questions.length}
+         />
+ 
+@@ -53,7 +71,10 @@ function InterviewLayout({
+         {/* Chat Panel */}
+ 
+         <ChatPanel
+-          question={selectedQuestion}
++          messages={messages}
++          onSendMessage={onSendMessage}
++          sending={sending}
++          sessionEnded={sessionEnded}
+         />
+ 
+       </div>
+@@ -62,4 +83,4 @@ function InterviewLayout({
+   )
+ }
+ 
+-export default InterviewLayout
+\ No newline at end of file
++export default InterviewLayout
+diff --git a/frontend/src/components/candidate/interviews/InterviewTopBar.jsx b/frontend/src/components/candidate/interviews/InterviewTopBar.jsx
+index e64e7f8..d0d5ebf 100644
+--- a/frontend/src/components/candidate/interviews/InterviewTopBar.jsx
++++ b/frontend/src/components/candidate/interviews/InterviewTopBar.jsx
+@@ -1,4 +1,11 @@
+-function InterviewTopBar() {
++function InterviewTopBar({
++  title = 'Interview',
++  currentQuestionNumber,
++  totalQuestions,
++  timeLabel,
++  onEndInterview,
++  ending,
++}) {
+   return (
+     <header className="flex h-16 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-5">
+ 
+@@ -14,49 +21,55 @@ function InterviewTopBar() {
+           </p>
+ 
+           <p className="text-[10px] text-slate-400">
+-            Backend Developer Interview
++            {title}
+           </p>
+         </div>
+ 
+       </div>
+ 
+ 
+-      <div className="hidden items-center gap-3 md:flex">
++      {Boolean(totalQuestions) && (
++        <div className="hidden items-center gap-3 md:flex">
+ 
+-        <span className="text-xs text-slate-400">
+-          Question
+-        </span>
++          <span className="text-xs text-slate-400">
++            Question
++          </span>
+ 
+-        <span className="text-sm font-semibold text-[#17324f]">
+-          2
+-        </span>
++          <span className="text-sm font-semibold text-[#17324f]">
++            {currentQuestionNumber}
++          </span>
+ 
+-        <span className="text-xs text-slate-400">
+-          / 5
+-        </span>
++          <span className="text-xs text-slate-400">
++            / {totalQuestions}
++          </span>
+ 
+-      </div>
++        </div>
++      )}
+ 
+ 
+       <div className="flex items-center gap-5">
+ 
+-        <div className="flex items-center gap-2 text-sm font-semibold text-[#285b8f]">
++        {timeLabel && (
++          <div className="flex items-center gap-2 text-sm font-semibold text-[#285b8f]">
+ 
+-          <ClockIcon />
++            <ClockIcon />
+ 
+-          <span>
+-            38:42
+-          </span>
++            <span>
++              {timeLabel}
++            </span>
+ 
+-        </div>
++          </div>
++        )}
+ 
+         <div className="h-6 w-px bg-slate-200" />
+ 
+         <button
+           type="button"
+-          className="border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-500 transition hover:border-red-200 hover:text-red-500"
++          onClick={onEndInterview}
++          disabled={ending}
++          className="border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-500 transition hover:border-red-200 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-50"
+         >
+-          End Interview
++          {ending ? 'Ending...' : 'End Interview'}
+         </button>
+ 
+       </div>
+@@ -80,4 +93,4 @@ function ClockIcon() {
+   )
+ }
+ 
+-export default InterviewTopBar
+\ No newline at end of file
++export default InterviewTopBar
+diff --git a/frontend/src/components/candidate/interviews/QuestionItem.jsx b/frontend/src/components/candidate/interviews/QuestionItem.jsx
+index adc9599..2804e3a 100644
+--- a/frontend/src/components/candidate/interviews/QuestionItem.jsx
++++ b/frontend/src/components/candidate/interviews/QuestionItem.jsx
+@@ -1,5 +1,6 @@
+ function QuestionItem({
+   question,
++  index,
+   isCurrent,
+   onClick,
+ }) {
+@@ -29,7 +30,7 @@ function QuestionItem({
+         {isCompleted ? (
+           <CheckIcon />
+         ) : (
+-          String(question.id).padStart(2, '0')
++          String(index + 1).padStart(2, '0')
+         )}
+ 
+       </div>
+diff --git a/frontend/src/components/candidate/interviews/QuestionList.jsx b/frontend/src/components/candidate/interviews/QuestionList.jsx
+index 3405639..757f1bd 100644
+--- a/frontend/src/components/candidate/interviews/QuestionList.jsx
++++ b/frontend/src/components/candidate/interviews/QuestionList.jsx
+@@ -10,10 +10,11 @@ function QuestionList({
+ 
+       <div className="space-y-1">
+ 
+-        {questions.map((question) => (
++        {questions.map((question, index) => (
+           <QuestionItem
+             key={question.id}
+             question={question}
++            index={index}
+             isCurrent={question.id === currentQuestion}
+             onClick={() => onQuestionSelect(question.id)}
+           />
+diff --git a/frontend/src/components/layout/CandidateHeader.jsx b/frontend/src/components/layout/CandidateHeader.jsx
+index 4136c3d..f8e19bb 100644
+--- a/frontend/src/components/layout/CandidateHeader.jsx
++++ b/frontend/src/components/layout/CandidateHeader.jsx
+@@ -1,5 +1,18 @@
++import { useNavigate } from 'react-router-dom'
++import { useAuth } from '../../context/AuthContext.jsx'
+ 
+ function CandidateHeader() {
++  const navigate = useNavigate()
++  const { user, logout } = useAuth()
++
++  const initial = user?.firstName?.[0]?.toUpperCase() || 'C'
++  const fullName = user ? `${user.firstName} ${user.lastName}` : 'Candidate'
++
++  const handleLogout = async () => {
++    await logout()
++    navigate('/login')
++  }
++
+   return (
+     <header className="flex h-20 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-6 lg:px-8">
+ 
+@@ -53,19 +66,16 @@ function CandidateHeader() {
+         <div className="h-7 w-px bg-slate-200" />
+ 
+ 
+-        <button
+-          type="button"
+-          className="flex items-center gap-3"
+-        >
++        <div className="flex items-center gap-3">
+ 
+           <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#dcecff] text-sm font-semibold text-[#285b8f]">
+-            A
++            {initial}
+           </div>
+ 
+           <div className="hidden text-left sm:block">
+ 
+             <p className="text-sm font-semibold text-slate-700">
+-              Candidate
++              {fullName}
+             </p>
+ 
+             <p className="text-xs text-slate-400">
+@@ -74,9 +84,15 @@ function CandidateHeader() {
+ 
+           </div>
+ 
+-          <ChevronIcon />
++          <button
++            type="button"
++            onClick={handleLogout}
++            className="ml-2 text-xs font-semibold text-slate-400 transition hover:text-red-500"
++          >
++            Log out
++          </button>
+ 
+-        </button>
++        </div>
+ 
+       </div>
+ 
+@@ -110,13 +126,4 @@ function BellIcon() {
+   )
+ }
+ 
+-function ChevronIcon() {
+-  return (
+-    <svg className="h-4 w-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+-      <path d="m6 9 6 6 6-6" />
+-    </svg>
+-  )
+-}
+-
+ export default CandidateHeader
+-
+diff --git a/frontend/src/components/layout/CandidateSidebar.jsx b/frontend/src/components/layout/CandidateSidebar.jsx
+index 1daf58a..488d528 100644
+--- a/frontend/src/components/layout/CandidateSidebar.jsx
++++ b/frontend/src/components/layout/CandidateSidebar.jsx
+@@ -1,6 +1,11 @@
+ import { NavLink } from 'react-router-dom'
++import { useAuth } from '../../context/AuthContext.jsx'
+ 
+ function CandidateSidebar() {
++  const { user } = useAuth()
++  const initial = user?.firstName?.[0]?.toUpperCase() || 'C'
++  const fullName = user ? `${user.firstName} ${user.lastName}` : 'Candidate'
++
+   const navigation = [
+     {
+       name: 'Dashboard',
+@@ -114,13 +119,13 @@ function CandidateSidebar() {
+         >
+ 
+           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#dcecff] text-sm font-semibold text-[#285b8f]">
+-            A
++            {initial}
+           </div>
+ 
+           <div className="min-w-0">
+ 
+             <p className="truncate text-sm font-semibold text-slate-700">
+-              Candidate
++              {fullName}
+             </p>
+ 
+             <p className="truncate text-xs text-slate-400">
+diff --git a/frontend/src/context/AuthContext.jsx b/frontend/src/context/AuthContext.jsx
+new file mode 100644
+index 0000000..427e336
+--- /dev/null
++++ b/frontend/src/context/AuthContext.jsx
+@@ -0,0 +1,78 @@
++import { createContext, useCallback, useContext, useEffect, useState } from 'react'
++import * as authApi from '../api/auth.api.js'
++import { setUnauthorizedHandler } from '../lib/apiClient.js'
++
++const AuthContext = createContext(null)
++
++export function AuthProvider({ children }) {
++  const [user, setUser] = useState(null)
++  const [status, setStatus] = useState('loading') // 'loading' | 'authenticated' | 'unauthenticated'
++
++  useEffect(() => {
++    let cancelled = false
++
++    authApi.refresh().then((restoredUser) => {
++      if (cancelled) return
++
++      if (restoredUser) {
++        setUser(restoredUser)
++        setStatus('authenticated')
++      } else {
++        setStatus('unauthenticated')
++      }
++    })
++
++    return () => {
++      cancelled = true
++    }
++  }, [])
++
++  useEffect(() => {
++    setUnauthorizedHandler(() => {
++      setUser(null)
++      setStatus('unauthenticated')
++    })
++
++    return () => setUnauthorizedHandler(null)
++  }, [])
++
++  const login = useCallback(async ({ email, password }) => {
++    const loggedInUser = await authApi.login({ email, password })
++    setUser(loggedInUser)
++    setStatus('authenticated')
++    return loggedInUser
++  }, [])
++
++  const register = useCallback(async (input) => {
++    return authApi.register(input)
++  }, [])
++
++  const logout = useCallback(async () => {
++    await authApi.logout()
++    setUser(null)
++    setStatus('unauthenticated')
++  }, [])
++
++  const value = {
++    user,
++    status,
++    isAuthenticated: status === 'authenticated',
++    isLoading: status === 'loading',
++    login,
++    register,
++    logout,
++  }
++
++  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
++}
++
++// eslint-disable-next-line react-refresh/only-export-components
++export function useAuth() {
++  const context = useContext(AuthContext)
++
++  if (!context) {
++    throw new Error('useAuth must be used within an AuthProvider')
++  }
++
++  return context
++}
+diff --git a/frontend/src/lib/apiClient.js b/frontend/src/lib/apiClient.js
+new file mode 100644
+index 0000000..b84e540
+--- /dev/null
++++ b/frontend/src/lib/apiClient.js
+@@ -0,0 +1,94 @@
++const API_BASE_URL =
++  import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1'
++
++// Access tokens are short-lived (15m) and kept in memory only - never in
++// localStorage/sessionStorage. The refresh token lives in an httpOnly
++// cookie set by the backend, so a page reload just calls /auth/refresh.
++let accessToken = null
++let onUnauthorized = null
++
++export const setAccessToken = (token) => {
++  accessToken = token
++}
++
++export const getAccessToken = () => accessToken
++
++// Registered by AuthContext so the client can clear state on a hard 401.
++export const setUnauthorizedHandler = (handler) => {
++  onUnauthorized = handler
++}
++
++export class ApiError extends Error {
++  constructor(message, status, errors) {
++    super(message)
++    this.name = 'ApiError'
++    this.status = status
++    this.errors = errors
++  }
++}
++
++const rawRequest = async (path, { method = 'GET', body, skipAuth = false } = {}) => {
++  const headers = { 'Content-Type': 'application/json' }
++
++  if (!skipAuth && accessToken) {
++    headers.Authorization = `Bearer ${accessToken}`
++  }
++
++  const response = await fetch(`${API_BASE_URL}${path}`, {
++    method,
++    headers,
++    credentials: 'include', // send/receive the refresh-token cookie
++    body: body !== undefined ? JSON.stringify(body) : undefined,
++  })
++
++  let payload
++  try {
++    payload = await response.json()
++  } catch {
++    payload = null
++  }
++
++  return { response, payload }
++}
++
++const refreshAccessToken = async () => {
++  const { response, payload } = await rawRequest('/auth/refresh', {
++    method: 'POST',
++    skipAuth: true,
++  })
++
++  if (!response.ok || !payload?.success) {
++    return false
++  }
++
++  setAccessToken(payload.data.accessToken)
++  return true
++}
++
++export const apiRequest = async (path, options = {}) => {
++  let { response, payload } = await rawRequest(path, options)
++
++  // Access token expired mid-session - refresh once and retry.
++  if (response.status === 401 && !options.skipAuth && !options.skipRefresh) {
++    const refreshed = await refreshAccessToken()
++
++    if (refreshed) {
++      ;({ response, payload } = await rawRequest(path, options))
++    } else {
++      onUnauthorized?.()
++    }
++  }
++
++  if (!response.ok || !payload?.success) {
++    const message = payload?.message || 'Something went wrong. Please try again.'
++    throw new ApiError(message, response.status, payload?.errors)
++  }
++
++  return payload
++}
++
++export const apiClient = {
++  get: (path) => apiRequest(path, { method: 'GET' }),
++  post: (path, body) => apiRequest(path, { method: 'POST', body }),
++  refreshAccessToken,
++}
+diff --git a/frontend/src/pages/auth/Login.jsx b/frontend/src/pages/auth/Login.jsx
+index 50de4fa..7d2ffca 100644
+--- a/frontend/src/pages/auth/Login.jsx
++++ b/frontend/src/pages/auth/Login.jsx
+@@ -1,8 +1,16 @@
+ import { useState } from 'react'
+ import { useNavigate } from 'react-router-dom'
++import { useAuth } from '../../context/AuthContext.jsx'
++
++const ROLE_HOME = {
++  ADMIN: '/admin/dashboard',
++  RECRUITER: '/recruiter/dashboard',
++  CANDIDATE: '/candidate/dashboard',
++}
+ 
+ function Login() {
+   const navigate = useNavigate()
++  const { login } = useAuth()
+ 
+   const [email, setEmail] = useState('')
+   const [password, setPassword] = useState('')
+@@ -18,64 +26,11 @@ function Login() {
+     setLoading(true)
+ 
+     try {
+-      await new Promise((resolve) => setTimeout(resolve, 700))
+-
+-      // TEMPORARY DEVELOPMENT LOGIN
+-      // The real backend will determine the role later.
+-
+-      const mockUsers = {
+-        'admin@interviewiq.com': {
+-          password: 'admin123',
+-          role: 'admin',
+-        },
+-
+-        'recruiter@interviewiq.com': {
+-          password: 'recruiter123',
+-          role: 'recruiter',
+-        },
+-
+-        'candidate@interviewiq.com': {
+-          password: 'candidate123',
+-          role: 'candidate',
+-        },
+-      }
+-
+-      const user = mockUsers[email.toLowerCase()]
+-
+-      // Check whether account exists
+-      if (!user) {
+-        setError('Account not found. Please check your email.')
+-        return
+-      }
+-
+-      // Check password
+-      if (user.password !== password) {
+-        setError('Incorrect password. Please try again.')
+-        return
+-      }
+-
+-      // Store temporary user information
+-      const userData = {
+-        email,
+-        role: user.role,
+-      }
+-
+-      localStorage.setItem(
+-        'interviewai_user',
+-        JSON.stringify(userData)
+-      )
+-
+-      // Role-based navigation
+-      if (user.role === 'admin') {
+-        navigate('/admin/dashboard')
+-      } else if (user.role === 'recruiter') {
+-        navigate('/recruiter/dashboard')
+-      } else {
+-        navigate('/candidate/dashboard')
+-      }
++      const user = await login({ email, password })
+ 
++      navigate(ROLE_HOME[user.role] || '/login')
+     } catch (err) {
+-      setError('Unable to sign in. Please try again.')
++      setError(err.message || 'Unable to sign in. Please try again.')
+     } finally {
+       setLoading(false)
+     }
+diff --git a/frontend/src/pages/auth/Signup.jsx b/frontend/src/pages/auth/Signup.jsx
+index f596fc0..ed31e05 100644
+--- a/frontend/src/pages/auth/Signup.jsx
++++ b/frontend/src/pages/auth/Signup.jsx
+@@ -1,9 +1,11 @@
+ 
+ import { useState } from 'react'
+ import { useNavigate } from 'react-router-dom'
++import { useAuth } from '../../context/AuthContext.jsx'
+ 
+ function Signup() {
+   const navigate = useNavigate()
++  const { register, login } = useAuth()
+ 
+   const [form, setForm] = useState({
+     firstName: '',
+@@ -46,36 +48,20 @@ function Signup() {
+     setLoading(true)
+ 
+     try {
+-      /*
+-        TEMPORARY MOCK SIGNUP
++      await register({
++        firstName: form.firstName,
++        lastName: form.lastName,
++        email: form.email,
++        password: form.password,
++      })
+ 
+-        Later this will become:
+-
+-        const response = await fetch('/api/auth/register', {
+-          method: 'POST',
+-          headers: {
+-            'Content-Type': 'application/json',
+-          },
+-          body: JSON.stringify({
+-            firstName: form.firstName,
+-            lastName: form.lastName,
+-            email: form.email,
+-            password: form.password,
+-          }),
+-        })
+-
+-        The backend automatically assigns:
+-
+-        role: "candidate"
+-
+-        The user cannot choose Admin or Recruiter.
+-      */
+-
+-      await new Promise((resolve) => setTimeout(resolve, 800))
++      // New accounts are always CANDIDATE role - register() doesn't
++      // return tokens, so log in right away to start the session.
++      await login({ email: form.email, password: form.password })
+ 
+       navigate('/candidate/dashboard')
+     } catch (err) {
+-      setError('Unable to create your account. Please try again.')
++      setError(err.message || 'Unable to create your account. Please try again.')
+     } finally {
+       setLoading(false)
+     }
+diff --git a/frontend/src/pages/candidate/CandidateDashboard.jsx b/frontend/src/pages/candidate/CandidateDashboard.jsx
+index 82fe2c9..a6213d9 100644
+--- a/frontend/src/pages/candidate/CandidateDashboard.jsx
++++ b/frontend/src/pages/candidate/CandidateDashboard.jsx
+@@ -1,6 +1,84 @@
++import { useEffect, useState } from 'react'
++import { useNavigate } from 'react-router-dom'
+ import CandidateLayout from '../../components/layout/CandidateLayout'
++import { useAuth } from '../../context/AuthContext.jsx'
++import * as candidateApi from '../../api/candidate.api.js'
+ 
+ function CandidateDashboard() {
++  const navigate = useNavigate()
++  const { user } = useAuth()
++
++  const [loading, setLoading] = useState(true)
++  const [error, setError] = useState('')
++  const [dashboard, setDashboard] = useState(null)
++  const [preparation, setPreparation] = useState(null)
++  const [latestResult, setLatestResult] = useState(null)
++
++  useEffect(() => {
++    let cancelled = false
++
++    const load = async () => {
++      setLoading(true)
++      setError('')
++
++      try {
++        const [dashboardData, preparationData] = await Promise.all([
++          candidateApi.getDashboard(),
++          candidateApi.getPreparation(),
++        ])
++
++        if (cancelled) return
++
++        setDashboard(dashboardData)
++        setPreparation(preparationData)
++
++        const latestCompleted = dashboardData.recentInterviews[0]
++        if (latestCompleted) {
++          const detail = await candidateApi.getResultDetail(latestCompleted.id)
++          if (!cancelled) setLatestResult(detail)
++        }
++      } catch (err) {
++        if (!cancelled) setError(err.message || 'Unable to load your dashboard.')
++      } finally {
++        if (!cancelled) setLoading(false)
++      }
++    }
++
++    load()
++
++    return () => {
++      cancelled = true
++    }
++  }, [])
++
++  if (loading) {
++    return (
++      <CandidateLayout>
++        <div className="flex h-64 items-center justify-center">
++          <span className="h-8 w-8 animate-spin rounded-full border-2 border-[#285b8f]/30 border-t-[#285b8f]" />
++        </div>
++      </CandidateLayout>
++    )
++  }
++
++  if (error) {
++    return (
++      <CandidateLayout>
++        <div className="border border-red-200 bg-red-50 p-6 text-sm text-red-600">
++          {error}
++        </div>
++      </CandidateLayout>
++    )
++  }
++
++  const upcoming = dashboard.upcomingInterviews[0]
++  const dimensionEntries = latestResult
++    ? Object.entries(latestResult.dimensions)
++    : []
++  const topRecommendation = preparation?.topicScores?.length
++    ? [...preparation.topicScores].sort((a, b) => a.score - b.score)[0]
++    : null
++
+   return (
+     <CandidateLayout>
+ 
+@@ -15,7 +93,7 @@ function CandidateDashboard() {
+         </p>
+ 
+         <h1 className="mt-1 text-2xl font-bold tracking-tight text-[#17324f] lg:text-3xl">
+-          Good morning, Candidate
++          Good morning, {user?.firstName || 'Candidate'}
+         </h1>
+ 
+         <p className="mt-2 text-sm text-slate-500">
+@@ -33,28 +111,28 @@ function CandidateDashboard() {
+ 
+         <StatCard
+           label="Upcoming Interviews"
+-          value="2"
++          value={String(dashboard.stats.upcomingInterviews)}
+           description="Scheduled interviews"
+           icon={<CalendarIcon />}
+         />
+ 
+         <StatCard
+           label="Completed"
+-          value="5"
++          value={String(dashboard.stats.completedInterviews)}
+           description="Interviews completed"
+           icon={<CheckIcon />}
+         />
+ 
+         <StatCard
+           label="Average Score"
+-          value="82%"
+-          description="+6% from previous"
++          value={`${dashboard.stats.averageScore}%`}
++          description={`${dashboard.stats.totalInterviews} total interviews`}
+           icon={<ChartIcon />}
+         />
+ 
+         <StatCard
+           label="Preparation"
+-          value="74%"
++          value={`${preparation?.overallProgress ?? 0}%`}
+           description="Overall progress"
+           icon={<BookIcon />}
+         />
+@@ -75,107 +153,90 @@ function CandidateDashboard() {
+           <SectionHeader
+             title="Upcoming Interview"
+             action="View all"
++            onAction={() => navigate('/candidate/interviews')}
+           />
+ 
+-          <div className="border border-slate-200 bg-white">
++          {upcoming ? (
++            <div className="border border-slate-200 bg-white">
+ 
+-            <div className="p-6">
++              <div className="p-6">
+ 
+-              <div className="flex flex-col justify-between gap-5 sm:flex-row">
++                <div className="flex flex-col justify-between gap-5 sm:flex-row">
+ 
+-                <div>
++                  <div>
+ 
+-                  <div className="flex items-center gap-3">
++                    <div className="flex items-center gap-3">
+ 
+-                    <div className="flex h-11 w-11 items-center justify-center bg-[#e7f2ff] text-[#285b8f]">
+-                      <CodeIcon />
+-                    </div>
++                      <div className="flex h-11 w-11 items-center justify-center bg-[#e7f2ff] text-[#285b8f]">
++                        <CodeIcon />
++                      </div>
+ 
+-                    <div>
++                      <div>
+ 
+-                      <h3 className="font-semibold text-slate-800">
+-                        Backend Developer
+-                      </h3>
++                        <h3 className="font-semibold text-slate-800">
++                          {upcoming.title}
++                        </h3>
+ 
+-                      <p className="text-xs text-slate-400">
+-                        Technical Coding Interview
+-                      </p>
++                      </div>
+ 
+                     </div>
+ 
+-                  </div>
+ 
++                    <div className="mt-5 flex flex-wrap gap-4 text-xs text-slate-500">
+ 
+-                  <div className="mt-5 flex flex-wrap gap-4 text-xs text-slate-500">
++                      <span className="flex items-center gap-2">
++                        <CalendarIcon />
++                        {candidateApi.formatDate(upcoming.scheduledAt)}
++                      </span>
+ 
+-                    <span className="flex items-center gap-2">
+-                      <CalendarIcon />
+-                      Tomorrow
+-                    </span>
++                      <span className="flex items-center gap-2">
++                        <ClockIcon />
++                        {candidateApi.formatTime(upcoming.scheduledAt)}
++                      </span>
+ 
+-                    <span className="flex items-center gap-2">
+-                      <ClockIcon />
+-                      10:30 AM
+-                    </span>
++                      <span className="flex items-center gap-2">
++                        <TimerIcon />
++                        {candidateApi.formatDuration(upcoming.duration)}
++                      </span>
+ 
+-                    <span className="flex items-center gap-2">
+-                      <TimerIcon />
+-                      45 minutes
+-                    </span>
++                    </div>
+ 
+                   </div>
+ 
+-                </div>
+ 
++                  <div className="flex items-start">
+ 
+-                <div className="flex items-start">
++                    <span className="bg-[#eaf5ff] px-3 py-1.5 text-xs font-semibold text-[#3972a7]">
++                      {candidateApi.toInterviewStatusLabel(upcoming.status)}
++                    </span>
+ 
+-                  <span className="bg-[#eaf5ff] px-3 py-1.5 text-xs font-semibold text-[#3972a7]">
+-                    Scheduled
+-                  </span>
++                  </div>
+ 
+                 </div>
+ 
+-              </div>
+-
+-
+-              <div className="mt-6 border-t border-slate-100 pt-5">
+-
+-                <div className="flex items-center justify-between">
+-
+-                  <div>
+ 
+-                    <p className="text-xs text-slate-400">
+-                      Interview focus
+-                    </p>
++                <div className="mt-6 border-t border-slate-100 pt-5">
+ 
+-                    <div className="mt-2 flex flex-wrap gap-2">
++                  <div className="flex items-center justify-between">
+ 
+-                      <Tag text="Data Structures" />
+-
+-                      <Tag text="Algorithms" />
+-
+-                      <Tag text="Problem Solving" />
+-
+-                    </div>
++                    <button
++                      type="button"
++                      onClick={() => navigate(`/candidate/interview/${upcoming.id}`)}
++                      className="hidden bg-[#285b8f] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#214d79] sm:block"
++                    >
++                      View Interview →
++                    </button>
+ 
+                   </div>
+ 
+-
+-                  <button
+-                    type="button"
+-                    className="hidden bg-[#285b8f] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#214d79] sm:block"
+-                  >
+-                    View Interview →
+-                  </button>
+-
+                 </div>
+ 
+               </div>
+ 
+             </div>
+-
+-          </div>
++          ) : (
++            <EmptyState message="No upcoming interviews scheduled." />
++          )}
+ 
+         </div>
+ 
+@@ -187,6 +248,7 @@ function CandidateDashboard() {
+           <SectionHeader
+             title="Preparation"
+             action="Practice"
++            onAction={() => navigate('/candidate/preparation')}
+           />
+ 
+           <div className="border border-slate-200 bg-white p-6">
+@@ -220,13 +282,13 @@ function CandidateDashboard() {
+                     stroke="#4b9bea"
+                     strokeWidth="8"
+                     strokeDasharray="264"
+-                    strokeDashoffset="69"
++                    strokeDashoffset={264 - ((preparation?.overallProgress ?? 0) / 100) * 264}
+                     strokeLinecap="round"
+                   />
+                 </svg>
+ 
+                 <span className="text-xl font-bold text-[#17324f]">
+-                  74%
++                  {preparation?.overallProgress ?? 0}%
+                 </span>
+ 
+               </div>
+@@ -234,23 +296,20 @@ function CandidateDashboard() {
+ 
+               <div className="flex-1 space-y-3">
+ 
+-                <ProgressItem
+-                  label="Arrays"
+-                  value="85%"
+-                  progress="85"
+-                />
+-
+-                <ProgressItem
+-                  label="Graphs"
+-                  value="62%"
+-                  progress="62"
+-                />
++                {(preparation?.topicScores ?? []).slice(0, 3).map((topic) => (
++                  <ProgressItem
++                    key={topic.topic}
++                    label={topic.topic}
++                    value={`${topic.score}%`}
++                    progress={topic.score}
++                  />
++                ))}
+ 
+-                <ProgressItem
+-                  label="Dynamic Programming"
+-                  value="48%"
+-                  progress="48"
+-                />
++                {(!preparation || preparation.topicScores.length === 0) && (
++                  <p className="text-xs text-slate-400">
++                    Complete an interview to see topic progress.
++                  </p>
++                )}
+ 
+               </div>
+ 
+@@ -272,64 +331,37 @@ function CandidateDashboard() {
+         <SectionHeader
+           title="Your Performance"
+           action="View detailed results"
++          onAction={() => navigate('/candidate/results')}
+         />
+ 
+-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+-
+-          <DimensionCard
+-            title="Problem Understanding"
+-            score="85%"
+-            progress="85"
+-          />
+-
+-          <DimensionCard
+-            title="Reasoning & Approach"
+-            score="80%"
+-            progress="80"
+-          />
+-
+-          <DimensionCard
+-            title="Data Structures"
+-            score="76%"
+-            progress="76"
+-          />
+-
+-          <DimensionCard
+-            title="Algorithmic Correctness"
+-            score="88%"
+-            progress="88"
+-          />
++        {dimensionEntries.length > 0 ? (
++          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+ 
+-          <DimensionCard
+-            title="Time & Space Complexity"
+-            score="72%"
+-            progress="72"
+-          />
+-
+-          <DimensionCard
+-            title="Edge Cases"
+-            score="79%"
+-            progress="79"
+-          />
++            {dimensionEntries.map(([key, score]) => (
++              <DimensionCard
++                key={key}
++                title={DIMENSION_LABELS[key] || key}
++                score={`${score}%`}
++                progress={score}
++              />
++            ))}
+ 
+-          <DimensionCard
+-            title="Follow-up Responses"
+-            score="81%"
+-            progress="81"
+-          />
++            <div className="flex items-center justify-center border border-dashed border-slate-300 bg-white p-5">
+ 
+-          <div className="flex items-center justify-center border border-dashed border-slate-300 bg-white p-5">
++              <button
++                type="button"
++                onClick={() => navigate('/candidate/results')}
++                className="text-sm font-semibold text-[#285b8f] hover:underline"
++              >
++                View full evaluation →
++              </button>
+ 
+-            <button
+-              type="button"
+-              className="text-sm font-semibold text-[#285b8f] hover:underline"
+-            >
+-              View full evaluation →
+-            </button>
++            </div>
+ 
+           </div>
+-
+-        </div>
++        ) : (
++          <EmptyState message="Complete an interview to see your performance breakdown." />
++        )}
+ 
+       </div>
+ 
+@@ -347,42 +379,40 @@ function CandidateDashboard() {
+           <SectionHeader
+             title="Recent Feedback"
+             action="View all"
++            onAction={() => navigate('/candidate/results')}
+           />
+ 
+-          <div className="border border-slate-200 bg-white p-6">
+-
+-            <div className="flex gap-4">
++          {latestResult ? (
++            <div className="border border-slate-200 bg-white p-6">
+ 
+-              <div className="flex h-10 w-10 shrink-0 items-center justify-center bg-[#e7f2ff] text-[#3972a7]">
+-                <MessageIcon />
+-              </div>
++              <div className="flex gap-4">
+ 
+-              <div>
+-
+-                <p className="text-sm leading-6 text-slate-600">
++                <div className="flex h-10 w-10 shrink-0 items-center justify-center bg-[#e7f2ff] text-[#3972a7]">
++                  <MessageIcon />
++                </div>
+ 
+-                  Strong algorithmic reasoning and good problem
+-                  decomposition. Consider explaining your complexity
+-                  analysis more explicitly.
++                <div>
+ 
+-                </p>
++                  <p className="text-sm leading-6 text-slate-600">
++                    {latestResult.feedback}
++                  </p>
+ 
+-                <p className="mt-3 text-xs text-slate-400">
+-                  From your latest interview · 2 days ago
+-                </p>
++                </div>
+ 
+               </div>
+ 
+-            </div>
++              <button
++                type="button"
++                onClick={() => navigate(`/candidate/results/${latestResult.interviewId}`)}
++                className="mt-5 text-sm font-semibold text-[#285b8f] hover:underline"
++              >
++                View full feedback →
++              </button>
+ 
+-            <button
+-              type="button"
+-              className="mt-5 text-sm font-semibold text-[#285b8f] hover:underline"
+-            >
+-              View full feedback →
+-            </button>
+-
+-          </div>
++            </div>
++          ) : (
++            <EmptyState message="Feedback will appear after your first completed interview." />
++          )}
+ 
+         </div>
+ 
+@@ -394,60 +424,66 @@ function CandidateDashboard() {
+           <SectionHeader
+             title="Recommended for You"
+             action="View preparation"
++            onAction={() => navigate('/candidate/preparation')}
+           />
+ 
+-          <div className="border border-slate-200 bg-white p-6">
++          {topRecommendation ? (
++            <div className="border border-slate-200 bg-white p-6">
+ 
+-            <div className="flex items-center justify-between">
++              <div className="flex items-center justify-between">
+ 
+-              <div>
++                <div>
+ 
+-                <p className="text-xs font-semibold uppercase tracking-wider text-[#4b9bea]">
+-                  Focus Area
+-                </p>
++                  <p className="text-xs font-semibold uppercase tracking-wider text-[#4b9bea]">
++                    Focus Area
++                  </p>
+ 
+-                <h3 className="mt-2 text-lg font-semibold text-[#17324f]">
+-                  Dynamic Programming
+-                </h3>
++                  <h3 className="mt-2 text-lg font-semibold text-[#17324f]">
++                    {topRecommendation.topic}
++                  </h3>
+ 
+-                <p className="mt-1 text-sm text-slate-500">
+-                  Improve your problem-solving performance.
+-                </p>
++                  <p className="mt-1 text-sm text-slate-500">
++                    Improve your problem-solving performance.
++                  </p>
+ 
+-              </div>
++                </div>
+ 
+-              <div className="text-right">
++                <div className="text-right">
+ 
+-                <p className="text-2xl font-bold text-[#17324f]">
+-                  48%
+-                </p>
++                  <p className="text-2xl font-bold text-[#17324f]">
++                    {topRecommendation.score}%
++                  </p>
+ 
+-                <p className="text-xs text-slate-400">
+-                  Current score
+-                </p>
++                  <p className="text-xs text-slate-400">
++                    Current score
++                  </p>
+ 
+-              </div>
++                </div>
+ 
+-            </div>
++              </div>
+ 
+-            <div className="mt-5 h-2 overflow-hidden bg-slate-100">
++              <div className="mt-5 h-2 overflow-hidden bg-slate-100">
+ 
+-              <div
+-                className="h-full bg-[#4b9bea]"
+-                style={{ width: '48%' }}
+-              />
++                <div
++                  className="h-full bg-[#4b9bea]"
++                  style={{ width: `${topRecommendation.score}%` }}
++                />
+ 
+-            </div>
++              </div>
+ 
+-            <button
+-              type="button"
+-              className="mt-5 bg-[#eaf3fc] px-4 py-2.5 text-sm font-semibold text-[#285b8f] transition hover:bg-[#dcecff]"
+-            >
+-              Start Practice →
++              <button
++                type="button"
++                onClick={() => navigate('/candidate/preparation')}
++                className="mt-5 bg-[#eaf3fc] px-4 py-2.5 text-sm font-semibold text-[#285b8f] transition hover:bg-[#dcecff]"
++              >
++                Start Practice →
+ 
+-            </button>
++              </button>
+ 
+-          </div>
++            </div>
++          ) : (
++            <EmptyState message="Complete an interview to get a recommendation." />
++          )}
+ 
+         </div>
+ 
+@@ -458,6 +494,17 @@ function CandidateDashboard() {
+ }
+ 
+ 
++const DIMENSION_LABELS = {
++  algorithmCorrectness: 'Algorithmic Correctness',
++  logicalReasoning: 'Reasoning & Approach',
++  conceptCoverage: 'Concept Coverage',
++  completeness: 'Completeness',
++  dataStructure: 'Data Structures',
++  complexity: 'Time & Space Complexity',
++  edgeCases: 'Edge Cases',
++}
++
++
+ /* ============================================================
+    COMPONENTS
+ ============================================================ */
+@@ -495,7 +542,7 @@ function StatCard({ label, value, description, icon }) {
+ }
+ 
+ 
+-function SectionHeader({ title, action }) {
++function SectionHeader({ title, action, onAction }) {
+   return (
+     <div className="mb-3 flex items-center justify-between">
+ 
+@@ -505,6 +552,7 @@ function SectionHeader({ title, action }) {
+ 
+       <button
+         type="button"
++        onClick={onAction}
+         className="text-xs font-medium text-[#3972a7] hover:underline"
+       >
+         {action} →
+@@ -515,11 +563,11 @@ function SectionHeader({ title, action }) {
+ }
+ 
+ 
+-function Tag({ text }) {
++function EmptyState({ message }) {
+   return (
+-    <span className="bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-500">
+-      {text}
+-    </span>
++    <div className="border border-dashed border-slate-300 bg-white p-6 text-center text-xs text-slate-400">
++      {message}
++    </div>
+   )
+ }
+ 
+diff --git a/frontend/src/pages/candidate/CandidateInterview.jsx b/frontend/src/pages/candidate/CandidateInterview.jsx
+index b120c6e..803ee88 100644
+--- a/frontend/src/pages/candidate/CandidateInterview.jsx
++++ b/frontend/src/pages/candidate/CandidateInterview.jsx
+@@ -1,143 +1,242 @@
+-import { useState } from 'react'
++import { useCallback, useEffect, useRef, useState } from 'react'
++import { useNavigate, useParams } from 'react-router-dom'
+ import InterviewLayout from '../../components/candidate/interviews/InterviewLayout'
++import * as candidateApi from '../../api/candidate.api.js'
++
++const mapQuestion = (question) => ({
++  ...question,
++  status: candidateApi.toLowerStatus(question.status),
++})
++
++const mapMessage = (message) => ({
++  id: message.id,
++  sender: candidateApi.toChatSender(message.sender),
++  message: message.message,
++  questionId: message.questionId,
++  time: new Date(message.createdAt).toLocaleTimeString('en-US', {
++    hour: '2-digit',
++    minute: '2-digit',
++  }),
++})
+ 
+ function CandidateInterview() {
+-  const [currentQuestion, setCurrentQuestion] = useState(1)
+-
+-  const questions = [
+-    {
+-      id: 1,
+-      title: 'Two Sum',
+-      difficulty: 'Easy',
+-      topics: ['Arrays', 'Hash Map'],
+-      status: 'completed',
+-      description:
+-        'Given an array of integers and a target value, find two numbers that add up to the target.',
+-      examples: [
+-        {
+-          input: 'nums = [2,7,11,15], target = 9',
+-          output: '[0,1]',
+-          explanation: 'nums[0] + nums[1] = 2 + 7 = 9.',
+-        },
+-      ],
+-      constraints: [
+-        '2 <= nums.length <= 10⁴',
+-        '-10⁹ <= nums[i] <= 10⁹',
+-        '-10⁹ <= target <= 10⁹',
+-      ],
+-    },
++  const { id: interviewId } = useParams()
++  const navigate = useNavigate()
+ 
+-    {
+-      id: 2,
+-      title: 'Longest Substring Without Repeating Characters',
+-      difficulty: 'Medium',
+-      topics: ['Strings', 'Sliding Window'],
+-      status: 'current',
+-      description:
+-        'Given a string s, find the length of the longest substring without repeating characters.',
+-      examples: [
+-        {
+-          input: 's = "abcabcbb"',
+-          output: '3',
+-          explanation: 'The answer is "abc", with a length of 3.',
+-        },
+-        {
+-          input: 's = "bbbbb"',
+-          output: '1',
+-          explanation: 'The answer is "b", with a length of 1.',
+-        },
+-        {
+-          input: 's = "pwwkew"',
+-          output: '3',
+-          explanation: 'The answer is "wke", with a length of 3.',
+-        },
+-      ],
+-      constraints: [
+-        '0 <= s.length <= 5 × 10⁴',
+-        's consists of English letters, digits, symbols and spaces.',
+-        'The input string may contain duplicate characters.',
+-      ],
+-    },
++  const [loading, setLoading] = useState(true)
++  const [error, setError] = useState('')
+ 
+-    {
+-      id: 3,
+-      title: 'Binary Tree Traversal',
+-      difficulty: 'Medium',
+-      topics: ['Trees', 'Recursion'],
+-      status: 'pending',
+-      description:
+-        'Given the root of a binary tree, return the preorder traversal of its nodes.',
+-      examples: [
+-        {
+-          input: 'root = [1,null,2,3]',
+-          output: '[1,2,3]',
+-          explanation:
+-            'Visit the root first, followed by the left subtree and then the right subtree.',
+-        },
+-      ],
+-      constraints: [
+-        'The number of nodes is between 0 and 100.',
+-        '-100 <= Node.val <= 100',
+-      ],
+-    },
++  const [sessionId, setSessionId] = useState(null)
++  const [title, setTitle] = useState('Interview')
++  const [questions, setQuestions] = useState([])
++  const [activeQuestionId, setActiveQuestionId] = useState(null)
++  const [viewedQuestionId, setViewedQuestionId] = useState(null)
++  const [messages, setMessages] = useState([])
++  const [sending, setSending] = useState(false)
++  const [ending, setEnding] = useState(false)
++  const [sessionEnded, setSessionEnded] = useState(false)
+ 
+-    {
+-      id: 4,
+-      title: 'Graph Traversal',
+-      difficulty: 'Medium',
+-      topics: ['Graphs', 'BFS', 'DFS'],
+-      status: 'pending',
+-      description:
+-        'Given a graph, determine whether all nodes can be reached from a given starting node.',
+-      examples: [
+-        {
+-          input: 'graph = [[1,2],[0,2],[0,1]]',
+-          output: 'true',
+-          explanation:
+-            'All nodes are reachable from the starting node.',
+-        },
+-      ],
+-      constraints: [
+-        'The graph contains at least one node.',
+-        'Nodes may have multiple connections.',
+-      ],
+-    },
++  const [remainingSeconds, setRemainingSeconds] = useState(null)
++  const startedAtRef = useRef(null)
++  const durationSecondsRef = useRef(null)
++
++  useEffect(() => {
++    let cancelled = false
++
++    const init = async () => {
++      setLoading(true)
++      setError('')
++
++      try {
++        const interview = await candidateApi.getInterview(interviewId)
++        if (cancelled) return
++        setTitle(interview.title)
++
++        const started = await candidateApi.startInterview(interviewId)
++        if (cancelled) return
++
++        const [sessionData, messageData] = await Promise.all([
++          candidateApi.getSession(started.sessionId),
++          candidateApi.getMessages(started.sessionId),
++        ])
++
++        if (cancelled) return
+ 
+-    {
+-      id: 5,
+-      title: 'Dynamic Programming',
+-      difficulty: 'Hard',
+-      topics: ['DP', 'Optimization'],
+-      status: 'pending',
+-      description:
+-        'Solve the given optimization problem using an efficient dynamic programming approach.',
+-      examples: [
++        const mappedQuestions = sessionData.questions.map(mapQuestion)
++
++        setSessionId(started.sessionId)
++        setQuestions(mappedQuestions)
++        setActiveQuestionId(sessionData.session.currentQuestionId)
++        setViewedQuestionId(sessionData.session.currentQuestionId)
++        setMessages(messageData.map(mapMessage))
++        setSessionEnded(sessionData.session.status === 'COMPLETED')
++
++        startedAtRef.current = new Date(sessionData.session.startedAt).getTime()
++        durationSecondsRef.current = sessionData.session.duration
++      } catch (err) {
++        if (!cancelled) {
++          setError(err.message || 'Unable to load this interview.')
++        }
++      } finally {
++        if (!cancelled) setLoading(false)
++      }
++    }
++
++    init()
++
++    return () => {
++      cancelled = true
++    }
++  }, [interviewId])
++
++  // Countdown timer, derived from session start time + duration.
++  useEffect(() => {
++    if (!durationSecondsRef.current || sessionEnded) return
++
++    const tick = () => {
++      const elapsed = Math.floor((Date.now() - startedAtRef.current) / 1000)
++      const remaining = Math.max(0, durationSecondsRef.current - elapsed)
++      setRemainingSeconds(remaining)
++    }
++
++    tick()
++    const interval = setInterval(tick, 1000)
++
++    return () => clearInterval(interval)
++  }, [sessionId, sessionEnded])
++
++  const handleSendMessage = useCallback(
++    async (text) => {
++      if (!sessionId || !activeQuestionId || sending) return
++
++      setSending(true)
++
++      // Optimistically show the candidate's own message right away.
++      const optimisticId = `optimistic-${Date.now()}`
++      setMessages((prev) => [
++        ...prev,
+         {
+-          input: 'Input depends on the selected problem.',
+-          output: 'Optimal result',
+-          explanation:
+-            'Break the problem into overlapping subproblems and reuse computed results.',
++          id: optimisticId,
++          sender: 'candidate',
++          message: text,
++          questionId: activeQuestionId,
++          time: new Date().toLocaleTimeString('en-US', {
++            hour: '2-digit',
++            minute: '2-digit',
++          }),
+         },
+-      ],
+-      constraints: [
+-        'The solution should be optimized.',
+-        'Consider both time and space complexity.',
+-      ],
+-    },
+-  ]
++      ])
+ 
+-  const selectedQuestion = questions.find(
+-    (question) => question.id === currentQuestion
++      try {
++        const result = await candidateApi.sendMessage(sessionId, {
++          questionId: activeQuestionId,
++          message: text,
++        })
++
++        setMessages((prev) => [
++          ...prev.filter((m) => m.id !== optimisticId),
++          mapMessage(result.candidateMessage),
++          mapMessage(result.aiMessage),
++        ])
++
++        if (result.currentQuestionId && result.currentQuestionId !== activeQuestionId) {
++          setActiveQuestionId(result.currentQuestionId)
++          setViewedQuestionId(result.currentQuestionId)
++
++          // Refresh question statuses (one just completed, next is now current).
++          const sessionData = await candidateApi.getSession(sessionId)
++          setQuestions(sessionData.questions.map(mapQuestion))
++        } else if (!result.currentQuestionId) {
++          // No more questions left - refresh statuses to show the last one completed.
++          const sessionData = await candidateApi.getSession(sessionId)
++          setQuestions(sessionData.questions.map(mapQuestion))
++        }
++      } catch (err) {
++        setMessages((prev) => prev.filter((m) => m.id !== optimisticId))
++        setError(err.message || 'Unable to send your message. Please try again.')
++      } finally {
++        setSending(false)
++      }
++    },
++    [sessionId, activeQuestionId, sending],
+   )
+ 
++  const handleEndInterview = useCallback(async () => {
++    if (!sessionId || ending) return
++
++    const confirmed = window.confirm(
++      'Are you sure you want to end this interview? This cannot be undone.',
++    )
++    if (!confirmed) return
++
++    setEnding(true)
++    setError('')
++
++    try {
++      await candidateApi.endInterview(sessionId)
++      setSessionEnded(true)
++      navigate(`/candidate/results/${interviewId}`)
++    } catch (err) {
++      setError(err.message || 'Unable to end the interview. Please try again.')
++    } finally {
++      setEnding(false)
++    }
++  }, [sessionId, ending, interviewId, navigate])
++
++  if (loading) {
++    return (
++      <div className="flex h-screen w-full items-center justify-center bg-[#f4f8fc]">
++        <span className="h-8 w-8 animate-spin rounded-full border-2 border-[#285b8f]/30 border-t-[#285b8f]" />
++      </div>
++    )
++  }
++
++  if (error && !sessionId) {
++    return (
++      <div className="flex h-screen w-full flex-col items-center justify-center gap-4 bg-[#f4f8fc] px-6 text-center">
++        <p className="max-w-md text-sm text-red-600">{error}</p>
++        <button
++          type="button"
++          onClick={() => navigate('/candidate/interviews')}
++          className="bg-[#285b8f] px-5 py-2.5 text-sm font-semibold text-white"
++        >
++          Back to Interviews
++        </button>
++      </div>
++    )
++  }
++
++  const timeLabel =
++    remainingSeconds === null
++      ? null
++      : `${String(Math.floor(remainingSeconds / 60)).padStart(2, '0')}:${String(
++          remainingSeconds % 60,
++        ).padStart(2, '0')}`
++
+   return (
+-    <InterviewLayout
+-      questions={questions}
+-      currentQuestion={currentQuestion}
+-      selectedQuestion={selectedQuestion}
+-      onQuestionSelect={setCurrentQuestion}
+-    />
++    <>
++      {error && (
++        <div className="fixed left-1/2 top-4 z-50 -translate-x-1/2 border border-red-200 bg-red-50 px-4 py-2 text-xs text-red-600 shadow-sm">
++          {error}
++        </div>
++      )}
++
++      <InterviewLayout
++        title={title}
++        questions={questions}
++        activeQuestionId={activeQuestionId}
++        viewedQuestionId={viewedQuestionId}
++        onQuestionSelect={setViewedQuestionId}
++        messages={messages}
++        onSendMessage={handleSendMessage}
++        sending={sending}
++        sessionEnded={sessionEnded}
++        timeLabel={timeLabel}
++        onEndInterview={handleEndInterview}
++        ending={ending}
++      />
++    </>
+   )
+ }
+ 
+-export default CandidateInterview
+\ No newline at end of file
++export default CandidateInterview
+diff --git a/frontend/src/pages/candidate/CandidateInterviews.jsx b/frontend/src/pages/candidate/CandidateInterviews.jsx
+index c7cf545..424c210 100644
+--- a/frontend/src/pages/candidate/CandidateInterviews.jsx
++++ b/frontend/src/pages/candidate/CandidateInterviews.jsx
+@@ -1,83 +1,46 @@
+-import { useState } from 'react'
++import { useEffect, useState } from 'react'
+ import { useNavigate } from 'react-router-dom'
+ import CandidateLayout from '../../components/layout/CandidateLayout'
++import * as candidateApi from '../../api/candidate.api.js'
+ 
+ function CandidateInterviews() {
+   const navigate = useNavigate()
+ 
+   const [activeTab, setActiveTab] = useState('All')
+-
+-  const interviews = [
+-    {
+-      id: 'INT-001',
+-      title: 'Backend Developer',
+-      type: 'Technical Interview',
+-      company: 'Tech Solutions',
+-      date: 'Tomorrow',
+-      time: '10:30 AM',
+-      duration: '45 min',
+-      status: 'Upcoming',
+-      topics: ['Data Structures', 'Algorithms', 'Problem Solving'],
+-    },
+-    {
+-      id: 'INT-002',
+-      title: 'Software Engineer',
+-      type: 'Coding Assessment',
+-      company: 'Innovate Labs',
+-      date: 'Sep 04, 2026',
+-      time: '02:00 PM',
+-      duration: '60 min',
+-      status: 'Upcoming',
+-      topics: ['Arrays', 'Graphs', 'Dynamic Programming'],
+-    },
+-    {
+-      id: 'INT-003',
+-      title: 'Frontend Developer',
+-      type: 'Technical Interview',
+-      company: 'Digital Systems',
+-      date: 'Aug 24, 2026',
+-      time: '11:00 AM',
+-      duration: '45 min',
+-      status: 'Completed',
+-      score: 86,
+-      topics: ['React', 'JavaScript', 'Web Development'],
+-    },
+-    {
+-      id: 'INT-004',
+-      title: 'Software Engineer',
+-      type: 'Coding Interview',
+-      company: 'CloudWorks',
+-      date: 'Aug 20, 2026',
+-      time: '03:30 PM',
+-      duration: '45 min',
+-      status: 'Completed',
+-      score: 78,
+-      topics: ['Algorithms', 'Complexity', 'Data Structures'],
+-    },
+-    {
+-      id: 'INT-005',
+-      title: 'Backend Developer',
+-      type: 'Technical Interview',
+-      company: 'FinTech Labs',
+-      date: 'Aug 16, 2026',
+-      time: '10:00 AM',
+-      duration: '60 min',
+-      status: 'Completed',
+-      score: 82,
+-      topics: ['APIs', 'Databases', 'System Design'],
+-    },
+-    {
+-      id: 'INT-006',
+-      title: 'Algorithm Assessment',
+-      type: 'Coding Assessment',
+-      company: 'Tech Solutions',
+-      date: 'Aug 10, 2026',
+-      time: '01:00 PM',
+-      duration: '45 min',
+-      status: 'Expired',
+-      topics: ['Algorithms', 'Dynamic Programming'],
+-    },
+-  ]
++  const [loading, setLoading] = useState(true)
++  const [error, setError] = useState('')
++  const [interviews, setInterviews] = useState([])
++
++  useEffect(() => {
++    let cancelled = false
++
++    candidateApi
++      .listInterviews()
++      .then((data) => {
++        if (cancelled) return
++
++        setInterviews(
++          data.map((interview) => ({
++            id: interview.id,
++            title: interview.title,
++            type: interview.type,
++            company: interview.company,
++            date: candidateApi.formatDate(interview.scheduledAt),
++            time: candidateApi.formatTime(interview.scheduledAt),
++            duration: candidateApi.formatDuration(interview.duration),
++            status: candidateApi.toInterviewStatusLabel(interview.status),
++            score: interview.score,
++            topics: interview.topics,
++          })),
++        )
++      })
++      .catch((err) => !cancelled && setError(err.message || 'Unable to load interviews.'))
++      .finally(() => !cancelled && setLoading(false))
++
++    return () => {
++      cancelled = true
++    }
++  }, [])
+ 
+   const tabs = ['All', 'Upcoming', 'Completed', 'Expired']
+ 
+@@ -129,133 +92,148 @@ function CandidateInterviews() {
+ 
+       </div>
+ 
++      {error && (
++        <div className="mb-6 border border-red-200 bg-red-50 p-4 text-sm text-red-600">
++          {error}
++        </div>
++      )}
+ 
+-      {/* =====================================================
+-          SUMMARY
+-      ====================================================== */}
+-
+-      <div className="mb-6 grid gap-4 sm:grid-cols-3">
++      {loading ? (
++        <div className="flex h-48 items-center justify-center">
++          <span className="h-8 w-8 animate-spin rounded-full border-2 border-[#285b8f]/30 border-t-[#285b8f]" />
++        </div>
++      ) : (
++        <>
+ 
+-        <SummaryCard
+-          label="Total Interviews"
+-          value={interviews.length}
+-          description="All assigned interviews"
+-        />
++          {/* =====================================================
++              SUMMARY
++          ====================================================== */}
+ 
+-        <SummaryCard
+-          label="Upcoming"
+-          value={upcomingCount}
+-          description="Interviews waiting for you"
+-        />
++          <div className="mb-6 grid gap-4 sm:grid-cols-3">
+ 
+-        <SummaryCard
+-          label="Completed"
+-          value={completedCount}
+-          description="Interviews you've finished"
+-        />
++            <SummaryCard
++              label="Total Interviews"
++              value={interviews.length}
++              description="All assigned interviews"
++            />
+ 
+-      </div>
++            <SummaryCard
++              label="Upcoming"
++              value={upcomingCount}
++              description="Interviews waiting for you"
++            />
+ 
++            <SummaryCard
++              label="Completed"
++              value={completedCount}
++              description="Interviews you've finished"
++            />
+ 
+-      {/* =====================================================
+-          FILTERS
+-      ====================================================== */}
++          </div>
+ 
+-      <div className="mb-4 flex items-center justify-between border-b border-slate-200">
+ 
+-        <div className="flex gap-6">
++          {/* =====================================================
++              FILTERS
++          ====================================================== */}
+ 
+-          {tabs.map((tab) => (
++          <div className="mb-4 flex items-center justify-between border-b border-slate-200">
+ 
+-            <button
+-              key={tab}
+-              type="button"
+-              onClick={() => setActiveTab(tab)}
+-              className={`relative pb-3 text-sm font-medium transition ${
+-                activeTab === tab
+-                  ? 'text-[#285b8f]'
+-                  : 'text-slate-400 hover:text-slate-700'
+-              }`}
+-            >
++            <div className="flex gap-6">
+ 
+-              {tab}
++              {tabs.map((tab) => (
+ 
+-              {tab !== 'All' && (
+-                <span
+-                  className={`ml-2 text-xs ${
++                <button
++                  key={tab}
++                  type="button"
++                  onClick={() => setActiveTab(tab)}
++                  className={`relative pb-3 text-sm font-medium transition ${
+                     activeTab === tab
+-                      ? 'text-[#4b9bea]'
+-                      : 'text-slate-400'
++                      ? 'text-[#285b8f]'
++                      : 'text-slate-400 hover:text-slate-700'
+                   }`}
+                 >
+-                  {
+-                    interviews.filter(
+-                      (interview) => interview.status === tab
+-                    ).length
+-                  }
+-                </span>
+-              )}
+ 
+-              {activeTab === tab && (
+-                <span className="absolute bottom-0 left-0 h-0.5 w-full bg-[#285b8f]" />
+-              )}
++                  {tab}
++
++                  {tab !== 'All' && (
++                    <span
++                      className={`ml-2 text-xs ${
++                        activeTab === tab
++                          ? 'text-[#4b9bea]'
++                          : 'text-slate-400'
++                      }`}
++                    >
++                      {
++                        interviews.filter(
++                          (interview) => interview.status === tab
++                        ).length
++                      }
++                    </span>
++                  )}
++
++                  {activeTab === tab && (
++                    <span className="absolute bottom-0 left-0 h-0.5 w-full bg-[#285b8f]" />
++                  )}
++
++                </button>
+ 
+-            </button>
++              ))}
+ 
+-          ))}
++            </div>
+ 
+-        </div>
++          </div>
+ 
+-      </div>
+ 
++          {/* =====================================================
++              INTERVIEW LIST
++          ====================================================== */}
+ 
+-      {/* =====================================================
+-          INTERVIEW LIST
+-      ====================================================== */}
++          <div className="space-y-3">
+ 
+-      <div className="space-y-3">
++            {filteredInterviews.map((interview) => (
+ 
+-        {filteredInterviews.map((interview) => (
++              <InterviewListItem
++                key={interview.id}
++                interview={interview}
++                onOpen={() => {
++                  if (interview.status === 'Upcoming') {
++                    navigate(`/candidate/interview/${interview.id}`)
++                  }
+ 
+-          <InterviewListItem
+-            key={interview.id}
+-            interview={interview}
+-            onOpen={() => {
+-              if (interview.status === 'Upcoming') {
+-                navigate(`/candidate/interview/${interview.id}`)
+-              }
++                  if (interview.status === 'Completed') {
++                    navigate(`/candidate/results/${interview.id}`)
++                  }
++                }}
++              />
+ 
+-              if (interview.status === 'Completed') {
+-                navigate(`/candidate/results/${interview.id}`)
+-              }
+-            }}
+-          />
++            ))}
+ 
+-        ))}
++          </div>
+ 
+-      </div>
+ 
++          {/* =====================================================
++              EMPTY STATE
++          ====================================================== */}
+ 
+-      {/* =====================================================
+-          EMPTY STATE
+-      ====================================================== */}
++          {filteredInterviews.length === 0 && (
++            <div className="border border-dashed border-slate-300 bg-white px-6 py-16 text-center">
+ 
+-      {filteredInterviews.length === 0 && (
+-        <div className="border border-dashed border-slate-300 bg-white px-6 py-16 text-center">
++              <div className="mx-auto flex h-12 w-12 items-center justify-center bg-[#eaf3fc] text-[#3972a7]">
++                <CalendarIcon />
++              </div>
+ 
+-          <div className="mx-auto flex h-12 w-12 items-center justify-center bg-[#eaf3fc] text-[#3972a7]">
+-            <CalendarIcon />
+-          </div>
++              <h3 className="mt-4 text-sm font-semibold text-slate-700">
++                No interviews found
++              </h3>
+ 
+-          <h3 className="mt-4 text-sm font-semibold text-slate-700">
+-            No interviews found
+-          </h3>
++              <p className="mt-1 text-xs text-slate-400">
++                There are no interviews in this category.
++              </p>
+ 
+-          <p className="mt-1 text-xs text-slate-400">
+-            There are no interviews in this category.
+-          </p>
++            </div>
++          )}
+ 
+-        </div>
++        </>
+       )}
+ 
+     </CandidateLayout>
+@@ -332,7 +310,7 @@ function InterviewListItem({ interview, onOpen }) {
+             </div>
+ 
+             <p className="mt-1 text-xs text-slate-400">
+-              {interview.type} · {interview.company}
++              {interview.type}{interview.company ? ` · ${interview.company}` : ''}
+             </p>
+ 
+ 
+@@ -521,4 +499,4 @@ function CodeIcon() {
+ }
+ 
+ 
+-export default CandidateInterviews
+\ No newline at end of file
++export default CandidateInterviews
+diff --git a/frontend/src/pages/candidate/CandidatePreparation.jsx b/frontend/src/pages/candidate/CandidatePreparation.jsx
+index ea3bfbe..325fdaf 100644
+--- a/frontend/src/pages/candidate/CandidatePreparation.jsx
++++ b/frontend/src/pages/candidate/CandidatePreparation.jsx
+@@ -1,110 +1,89 @@
++import { useEffect, useState } from 'react'
+ import { useNavigate } from 'react-router-dom'
+ import CandidateLayout from '../../components/layout/CandidateLayout'
++import * as candidateApi from '../../api/candidate.api.js'
++
++const levelForScore = (score) => {
++  if (score >= 80) return 'Strong'
++  if (score >= 65) return 'Good'
++  return 'Needs Practice'
++}
++
++// Static practice-set catalog - there's no question-bank browsing endpoint
++// yet, so these stay illustrative until that's built.
++const practiceSets = [
++  {
++    title: 'Interview Warm-up',
++    description: 'Quick problems to get into interview mode.',
++    questions: 5,
++    duration: '20 min',
++    difficulty: 'Easy',
++  },
++  {
++    title: 'Algorithm Challenge',
++    description: 'Test your algorithmic reasoning under pressure.',
++    questions: 8,
++    duration: '40 min',
++    difficulty: 'Medium',
++  },
++  {
++    title: 'Advanced Problem Solving',
++    description: 'Complex problems requiring deeper reasoning.',
++    questions: 5,
++    duration: '45 min',
++    difficulty: 'Hard',
++  },
++]
+ 
+ function CandidatePreparation() {
+   const navigate = useNavigate()
+ 
+-  const topics = [
+-    {
+-      name: 'Arrays & Strings',
+-      category: 'Data Structures',
+-      score: 85,
+-      questions: 24,
+-      completed: 20,
+-      level: 'Strong',
+-    },
+-    {
+-      name: 'Linked Lists',
+-      category: 'Data Structures',
+-      score: 78,
+-      questions: 18,
+-      completed: 14,
+-      level: 'Good',
+-    },
+-    {
+-      name: 'Trees & Graphs',
+-      category: 'Data Structures',
+-      score: 62,
+-      questions: 26,
+-      completed: 16,
+-      level: 'Needs Practice',
+-    },
+-    {
+-      name: 'Dynamic Programming',
+-      category: 'Algorithms',
+-      score: 48,
+-      questions: 30,
+-      completed: 14,
+-      level: 'Needs Practice',
+-    },
+-    {
+-      name: 'Sorting & Searching',
+-      category: 'Algorithms',
+-      score: 82,
+-      questions: 20,
+-      completed: 17,
+-      level: 'Strong',
+-    },
+-    {
+-      name: 'Complexity Analysis',
+-      category: 'Problem Solving',
+-      score: 72,
+-      questions: 15,
+-      completed: 10,
+-      level: 'Good',
+-    },
+-  ]
+-
+-  const recommendations = [
+-    {
+-      title: 'Dynamic Programming',
+-      description:
+-        'Your recent interviews show that DP is currently your biggest improvement area.',
+-      score: 48,
+-      priority: 'High Priority',
+-      questions: 12,
+-    },
+-    {
+-      title: 'Trees & Graphs',
+-      description:
+-        'Improve graph traversal and tree-based problem solving.',
+-      score: 62,
+-      priority: 'Medium Priority',
+-      questions: 8,
+-    },
+-    {
+-      title: 'Complexity Analysis',
+-      description:
+-        'Practice explaining time and space complexity clearly.',
+-      score: 72,
+-      priority: 'Medium Priority',
+-      questions: 6,
+-    },
+-  ]
+-
+-  const practiceSets = [
+-    {
+-      title: 'Interview Warm-up',
+-      description: 'Quick problems to get into interview mode.',
+-      questions: 5,
+-      duration: '20 min',
+-      difficulty: 'Easy',
+-    },
+-    {
+-      title: 'Algorithm Challenge',
+-      description: 'Test your algorithmic reasoning under pressure.',
+-      questions: 8,
+-      duration: '40 min',
+-      difficulty: 'Medium',
+-    },
+-    {
+-      title: 'Advanced Problem Solving',
+-      description: 'Complex problems requiring deeper reasoning.',
+-      questions: 5,
+-      duration: '45 min',
+-      difficulty: 'Hard',
+-    },
+-  ]
++  const [loading, setLoading] = useState(true)
++  const [error, setError] = useState('')
++  const [preparation, setPreparation] = useState(null)
++
++  useEffect(() => {
++    let cancelled = false
++
++    candidateApi
++      .getPreparation()
++      .then((data) => !cancelled && setPreparation(data))
++      .catch((err) => !cancelled && setError(err.message || 'Unable to load your preparation data.'))
++      .finally(() => !cancelled && setLoading(false))
++
++    return () => {
++      cancelled = true
++    }
++  }, [])
++
++  if (loading) {
++    return (
++      <CandidateLayout>
++        <div className="flex h-64 items-center justify-center">
++          <span className="h-8 w-8 animate-spin rounded-full border-2 border-[#285b8f]/30 border-t-[#285b8f]" />
++        </div>
++      </CandidateLayout>
++    )
++  }
++
++  if (error) {
++    return (
++      <CandidateLayout>
++        <div className="border border-red-200 bg-red-50 p-6 text-sm text-red-600">
++          {error}
++        </div>
++      </CandidateLayout>
++    )
++  }
++
++  const recommendations = preparation.weakTopics.map((topic, index) => {
++    const match = preparation.topicScores.find((t) => t.topic === topic)
++    return {
++      title: topic,
++      score: match?.score ?? 0,
++      priority: index === 0 ? 'High Priority' : 'Medium Priority',
++    }
++  })
+ 
+   return (
+     <CandidateLayout>
+@@ -150,7 +129,7 @@ function CandidatePreparation() {
+               </p>
+ 
+               <h2 className="mt-2 text-3xl font-bold text-[#17324f]">
+-                74%
++                {preparation.overallProgress}%
+               </h2>
+ 
+             </div>
+@@ -165,7 +144,7 @@ function CandidatePreparation() {
+ 
+             <div
+               className="h-full bg-[#4b9bea]"
+-              style={{ width: '74%' }}
++              style={{ width: `${preparation.overallProgress}%` }}
+             />
+ 
+           </div>
+@@ -177,7 +156,9 @@ function CandidatePreparation() {
+             </span>
+ 
+             <span className="text-xs font-medium text-[#3972a7]">
+-              Interview Ready
++              {levelForScore(preparation.overallProgress) === 'Strong'
++                ? 'Interview Ready'
++                : levelForScore(preparation.overallProgress)}
+             </span>
+ 
+           </div>
+@@ -198,7 +179,7 @@ function CandidatePreparation() {
+               </p>
+ 
+               <h2 className="mt-2 text-3xl font-bold text-[#17324f]">
+-                96
++                {preparation.questionsSolved}
+               </h2>
+ 
+             </div>
+@@ -210,18 +191,13 @@ function CandidatePreparation() {
+           </div>
+ 
+           <p className="mt-5 text-xs text-slate-400">
+-            14 questions this week
++            Across all your interviews
+           </p>
+ 
+-          <div className="mt-3 flex items-center gap-2 text-xs font-medium text-[#3d8a60]">
+-            <span>↑</span>
+-            18% from last week
+-          </div>
+-
+         </div>
+ 
+ 
+-        {/* Practice Streak */}
++        {/* Interviews Completed */}
+ 
+         <div className="border border-slate-200 bg-white p-7">
+ 
+@@ -230,11 +206,11 @@ function CandidatePreparation() {
+             <div>
+ 
+               <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+-                Practice Streak
++                Interviews Completed
+               </p>
+ 
+               <h2 className="mt-2 text-3xl font-bold text-[#17324f]">
+-                7 days
++                {preparation.interviewsCompleted}
+               </h2>
+ 
+             </div>
+@@ -246,24 +222,9 @@ function CandidatePreparation() {
+           </div>
+ 
+           <p className="mt-5 text-xs text-slate-400">
+-            Keep practicing to extend your streak.
++            Keep completing interviews to sharpen your evaluation data.
+           </p>
+ 
+-          <div className="mt-4 flex gap-1.5">
+-
+-            {[true, true, true, true, true, true, true].map(
+-              (active, index) => (
+-                <div
+-                  key={index}
+-                  className={`h-2 flex-1 ${
+-                    active ? 'bg-[#6fa9dc]' : 'bg-slate-100'
+-                  }`}
+-                />
+-              )
+-            )}
+-
+-          </div>
+-
+         </div>
+ 
+       </div>
+@@ -292,22 +253,25 @@ function CandidatePreparation() {
+ 
+         </div>
+ 
++        {recommendations.length > 0 ? (
++          <div className="grid gap-4 xl:grid-cols-3">
+ 
+-        <div className="grid gap-4 xl:grid-cols-3">
+-
+-          {recommendations.map((item) => (
++            {recommendations.map((item) => (
+ 
+-            <RecommendationCard
+-              key={item.title}
+-              recommendation={item}
+-              onPractice={() => {
+-                console.log(`Practice ${item.title}`)
+-              }}
+-            />
++              <RecommendationCard
++                key={item.title}
++                recommendation={item}
++                onPractice={() => navigate('/candidate/interviews')}
++              />
+ 
+-          ))}
++            ))}
+ 
+-        </div>
++          </div>
++        ) : (
++          <div className="border border-dashed border-slate-300 bg-white p-6 text-center text-xs text-slate-400">
++            Complete an interview to get personalized focus areas.
++          </div>
++        )}
+ 
+       </div>
+ 
+@@ -332,43 +296,22 @@ function CandidatePreparation() {
+ 
+           </div>
+ 
+-          <button
+-            type="button"
+-            className="text-xs font-semibold text-[#3972a7] hover:underline"
+-          >
+-            View all topics →
+-          </button>
+-
+         </div>
+ 
+ 
+-        <div className="border border-slate-200 bg-white">
+-
+-          {/* Table Header */}
+-
+-          <div className="hidden grid-cols-[2fr_1.2fr_2fr_80px_110px] gap-6 border-b border-slate-100 px-6 py-3 text-[10px] font-semibold uppercase tracking-wider text-slate-400 md:grid">
++        {preparation.topicScores.length > 0 ? (
++          <div className="border border-slate-200 bg-white">
+ 
+-            <span>Topic</span>
+-            <span>Category</span>
+-            <span>Progress</span>
+-            <span>Score</span>
+-            <span>Status</span>
++            {preparation.topicScores.map((topic) => (
++              <TopicRow key={topic.topic} topic={topic} />
++            ))}
+ 
+           </div>
+-
+-
+-          {/* Rows */}
+-
+-          {topics.map((topic) => (
+-
+-            <TopicRow
+-              key={topic.name}
+-              topic={topic}
+-            />
+-
+-          ))}
+-
+-        </div>
++        ) : (
++          <div className="border border-dashed border-slate-300 bg-white p-6 text-center text-xs text-slate-400">
++            Complete an interview to see your topic breakdown.
++          </div>
++        )}
+ 
+       </div>
+ 
+@@ -403,9 +346,7 @@ function CandidatePreparation() {
+             <PracticeCard
+               key={set.title}
+               practiceSet={set}
+-              onStart={() => {
+-                console.log(`Starting ${set.title}`)
+-              }}
++              onStart={() => navigate('/candidate/interviews')}
+             />
+ 
+           ))}
+@@ -430,13 +371,13 @@ function CandidatePreparation() {
+             </p>
+ 
+             <h2 className="mt-2 text-xl font-bold text-[#17324f]">
+-              Your next 7 days
++              Your next steps
+             </h2>
+ 
+             <p className="mt-2 text-sm leading-6 text-[#58728d]">
+-              Spend the next few days strengthening Dynamic Programming,
+-              Trees &amp; Graphs, and complexity analysis before your next
+-              technical interview.
++              {preparation.weakTopics.length > 0
++                ? `Spend the next few days strengthening ${preparation.weakTopics.join(', ')} before your next technical interview.`
++                : 'Complete an interview to get a personalized preparation plan.'}
+             </p>
+ 
+           </div>
+@@ -487,11 +428,6 @@ function RecommendationCard({ recommendation, onPractice }) {
+ 
+       </div>
+ 
+-      <p className="mt-3 text-xs leading-5 text-slate-500">
+-        {recommendation.description}
+-      </p>
+-
+-
+       <div className="mt-4 h-1.5 bg-slate-100">
+ 
+         <div
+@@ -504,11 +440,7 @@ function RecommendationCard({ recommendation, onPractice }) {
+       </div>
+ 
+ 
+-      <div className="mt-4 flex items-center justify-between">
+-
+-        <span className="text-xs text-slate-400">
+-          {recommendation.questions} recommended questions
+-        </span>
++      <div className="mt-4 flex items-center justify-end">
+ 
+         <button
+           type="button"
+@@ -530,6 +462,8 @@ function RecommendationCard({ recommendation, onPractice }) {
+ ============================================================ */
+ 
+ function TopicRow({ topic }) {
++  const level = levelForScore(topic.score)
++
+   const statusStyles = {
+     Strong: 'bg-[#edf7f1] text-[#3d8a60]',
+     Good: 'bg-[#eaf5ff] text-[#3972a7]',
+@@ -537,49 +471,24 @@ function TopicRow({ topic }) {
+   }
+ 
+   return (
+-    <div className="flex flex-col gap-4 border-b border-slate-100 px-6 py-5 last:border-b-0 md:grid md:grid-cols-[2fr_1.2fr_2fr_80px_110px] md:items-center md:gap-6">
++    <div className="flex flex-col gap-4 border-b border-slate-100 px-6 py-5 last:border-b-0 md:grid md:grid-cols-[2fr_2fr_80px_110px] md:items-center md:gap-6">
+ 
+       <div>
+ 
+         <h3 className="text-sm font-semibold text-slate-700">
+-          {topic.name}
++          {topic.topic}
+         </h3>
+ 
+-        <p className="mt-1 text-xs text-slate-400 md:hidden">
+-          {topic.category}
+-        </p>
+-
+       </div>
+ 
+ 
+-      <span className="hidden text-xs text-slate-500 md:block">
+-        {topic.category}
+-      </span>
+-
+-
+       <div>
+ 
+-        <div className="mb-2 flex justify-between text-[10px] text-slate-400">
+-
+-          <span>
+-            {topic.completed} / {topic.questions} completed
+-          </span>
+-
+-          <span>
+-            {Math.round(
+-              (topic.completed / topic.questions) * 100
+-            )}%
+-          </span>
+-
+-        </div>
+-
+         <div className="h-1.5 bg-slate-100">
+ 
+           <div
+             className="h-full bg-[#6fa9dc]"
+-            style={{
+-              width: `${(topic.completed / topic.questions) * 100}%`,
+-            }}
++            style={{ width: `${topic.score}%` }}
+           />
+ 
+         </div>
+@@ -594,10 +503,10 @@ function TopicRow({ topic }) {
+ 
+       <span
+         className={`w-fit px-2 py-1 text-[10px] font-semibold ${
+-          statusStyles[topic.level]
++          statusStyles[level]
+         }`}
+       >
+-        {topic.level}
++        {level}
+       </span>
+ 
+     </div>
+@@ -714,4 +623,4 @@ function FireIcon() {
+ }
+ 
+ 
+-export default CandidatePreparation
+\ No newline at end of file
++export default CandidatePreparation
+diff --git a/frontend/src/pages/candidate/CandidateResultDetail.jsx b/frontend/src/pages/candidate/CandidateResultDetail.jsx
+new file mode 100644
+index 0000000..1a79e13
+--- /dev/null
++++ b/frontend/src/pages/candidate/CandidateResultDetail.jsx
+@@ -0,0 +1,190 @@
++import { useEffect, useState } from 'react'
++import { useNavigate, useParams } from 'react-router-dom'
++import CandidateLayout from '../../components/layout/CandidateLayout'
++import * as candidateApi from '../../api/candidate.api.js'
++
++const DIMENSION_META = {
++  algorithmCorrectness: 'Algorithmic Correctness',
++  logicalReasoning: 'Reasoning & Approach',
++  conceptCoverage: 'Concept Coverage',
++  completeness: 'Completeness',
++  dataStructure: 'Data Structure Selection',
++  complexity: 'Time & Space Complexity',
++  edgeCases: 'Edge Case Handling',
++}
++
++function CandidateResultDetail() {
++  const { id: interviewId } = useParams()
++  const navigate = useNavigate()
++
++  const [loading, setLoading] = useState(true)
++  const [error, setError] = useState('')
++  const [detail, setDetail] = useState(null)
++
++  useEffect(() => {
++    let cancelled = false
++
++    candidateApi
++      .getResultDetail(interviewId)
++      .then((data) => !cancelled && setDetail(data))
++      .catch((err) => !cancelled && setError(err.message || 'Unable to load this result.'))
++      .finally(() => !cancelled && setLoading(false))
++
++    return () => {
++      cancelled = true
++    }
++  }, [interviewId])
++
++  if (loading) {
++    return (
++      <CandidateLayout>
++        <div className="flex h-64 items-center justify-center">
++          <span className="h-8 w-8 animate-spin rounded-full border-2 border-[#285b8f]/30 border-t-[#285b8f]" />
++        </div>
++      </CandidateLayout>
++    )
++  }
++
++  if (error || !detail) {
++    return (
++      <CandidateLayout>
++        <div className="border border-red-200 bg-red-50 p-6 text-sm text-red-600">
++          {error || 'Result not found.'}
++        </div>
++      </CandidateLayout>
++    )
++  }
++
++  return (
++    <CandidateLayout>
++
++      <button
++        type="button"
++        onClick={() => navigate('/candidate/results')}
++        className="mb-6 text-xs font-semibold text-[#3972a7] hover:underline"
++      >
++        ← Back to all results
++      </button>
++
++      <div className="mb-8">
++
++        <p className="text-sm font-medium text-[#4b9bea]">
++          Detailed Report
++        </p>
++
++        <h1 className="mt-1 text-2xl font-bold tracking-tight text-[#17324f] lg:text-3xl">
++          Interview Result
++        </h1>
++
++      </div>
++
++
++      <div className="grid gap-6 lg:grid-cols-3">
++
++        <div className="border border-slate-200 bg-white p-7 lg:col-span-1">
++
++          <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
++            Overall Score
++          </p>
++
++          <p className="mt-4 text-5xl font-bold text-[#17324f]">
++            {detail.overallScore}%
++          </p>
++
++        </div>
++
++        <div className="border border-slate-200 bg-white p-7 lg:col-span-2">
++
++          <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
++            Feedback
++          </p>
++
++          <p className="mt-3 text-sm leading-6 text-slate-600">
++            {detail.feedback}
++          </p>
++
++        </div>
++
++      </div>
++
++
++      <div className="mt-6 border border-slate-200 bg-white">
++
++        {Object.entries(detail.dimensions).map(([key, score], index) => (
++          <div
++            key={key}
++            className="flex flex-col gap-4 border-b border-slate-100 p-5 last:border-b-0 md:flex-row md:items-center"
++          >
++            <div className="flex h-8 w-8 shrink-0 items-center justify-center bg-[#eaf3fc] text-xs font-bold text-[#3972a7]">
++              {String(index + 1).padStart(2, '0')}
++            </div>
++
++            <div className="w-full md:w-64">
++              <h3 className="text-sm font-semibold text-slate-700">
++                {DIMENSION_META[key] || key}
++              </h3>
++            </div>
++
++            <div className="flex-1">
++              <div className="h-2 bg-slate-100">
++                <div
++                  className="h-full bg-[#6fa9dc]"
++                  style={{ width: `${score}%` }}
++                />
++              </div>
++            </div>
++
++            <div className="w-12 text-right">
++              <span className="text-sm font-bold text-[#285b8f]">
++                {score}%
++              </span>
++            </div>
++          </div>
++        ))}
++
++      </div>
++
++
++      <div className="mt-6 grid gap-6 md:grid-cols-2">
++
++        <div className="border border-slate-200 bg-white p-6">
++
++          <p className="text-xs font-semibold uppercase tracking-wider text-[#3d8a60]">
++            Strengths
++          </p>
++
++          <ul className="mt-3 space-y-2">
++            {detail.strengths.map((item) => (
++              <li key={item} className="flex gap-2 text-sm text-slate-600">
++                <span className="text-[#3d8a60]">✓</span>
++                {item}
++              </li>
++            ))}
++          </ul>
++
++        </div>
++
++        <div className="border border-slate-200 bg-white p-6">
++
++          <p className="text-xs font-semibold uppercase tracking-wider text-[#b77a2d]">
++            Areas to Improve
++          </p>
++
++          <ul className="mt-3 space-y-2">
++            {detail.improvements.map((item) => (
++              <li key={item} className="flex gap-2 text-sm text-slate-600">
++                <span className="text-[#b77a2d]">→</span>
++                {item}
++              </li>
++            ))}
++          </ul>
++
++        </div>
++
++      </div>
++
++    </CandidateLayout>
++  )
++}
++
++export default CandidateResultDetail
+diff --git a/frontend/src/pages/candidate/CandidateResults.jsx b/frontend/src/pages/candidate/CandidateResults.jsx
+index d75accc..82be8ba 100644
+--- a/frontend/src/pages/candidate/CandidateResults.jsx
++++ b/frontend/src/pages/candidate/CandidateResults.jsx
+@@ -1,70 +1,148 @@
++import { useEffect, useState } from 'react'
+ import { useNavigate } from 'react-router-dom'
+ import CandidateLayout from '../../components/layout/CandidateLayout'
++import * as candidateApi from '../../api/candidate.api.js'
++
++const DIMENSION_META = {
++  algorithmCorrectness: {
++    name: 'Algorithmic Correctness',
++    description: 'Correctness and completeness of the algorithm.',
++  },
++  logicalReasoning: {
++    name: 'Reasoning & Approach',
++    description: 'Quality and clarity of the proposed solution.',
++  },
++  conceptCoverage: {
++    name: 'Concept Coverage',
++    description: 'Breadth of relevant concepts covered while explaining.',
++  },
++  completeness: {
++    name: 'Completeness',
++    description: 'How much of the interview was worked through.',
++  },
++  dataStructure: {
++    name: 'Data Structure Selection',
++    description: 'Appropriateness of the selected data structures.',
++  },
++  complexity: {
++    name: 'Time & Space Complexity',
++    description: 'Understanding and optimization of complexity.',
++  },
++  edgeCases: {
++    name: 'Edge Case Handling',
++    description: 'Ability to identify and handle edge cases.',
++  },
++}
++
++const levelForScore = (score) => {
++  if (score >= 80) return 'Strong'
++  if (score >= 65) return 'Good'
++  return 'Needs Practice'
++}
+ 
+ function CandidateResults() {
+   const navigate = useNavigate()
+ 
+-  const dimensions = [
+-    {
+-      name: 'Problem Understanding',
+-      score: 85,
+-      description: 'Ability to understand and clarify the problem.',
+-    },
+-    {
+-      name: 'Reasoning & Approach',
+-      score: 80,
+-      description: 'Quality and clarity of the proposed solution.',
+-    },
+-    {
+-      name: 'Data Structure Selection',
+-      score: 76,
+-      description: 'Appropriateness of the selected data structures.',
+-    },
+-    {
+-      name: 'Algorithmic Correctness',
+-      score: 88,
+-      description: 'Correctness and completeness of the algorithm.',
+-    },
+-    {
+-      name: 'Time & Space Complexity',
+-      score: 72,
+-      description: 'Understanding and optimization of complexity.',
+-    },
+-    {
+-      name: 'Edge Case Handling',
+-      score: 79,
+-      description: 'Ability to identify and handle edge cases.',
+-    },
+-    {
+-      name: 'Follow-up Response',
+-      score: 81,
+-      description: 'Quality of responses to adaptive follow-up questions.',
+-    },
+-  ]
+-
+-  const recentResults = [
+-    {
+-      id: 'INT-003',
+-      title: 'Frontend Developer',
+-      date: 'Aug 24, 2026',
+-      score: 86,
+-      level: 'Strong',
+-    },
+-    {
+-      id: 'INT-004',
+-      title: 'Software Engineer',
+-      date: 'Aug 20, 2026',
+-      score: 78,
+-      level: 'Good',
+-    },
+-    {
+-      id: 'INT-005',
+-      title: 'Backend Developer',
+-      date: 'Aug 16, 2026',
+-      score: 82,
+-      level: 'Strong',
+-    },
+-  ]
++  const [loading, setLoading] = useState(true)
++  const [error, setError] = useState('')
++  const [results, setResults] = useState([])
++  const [latestDetail, setLatestDetail] = useState(null)
++
++  useEffect(() => {
++    let cancelled = false
++
++    const load = async () => {
++      setLoading(true)
++      setError('')
++
++      try {
++        const resultsList = await candidateApi.listResults()
++        if (cancelled) return
++        setResults(resultsList)
++
++        if (resultsList.length > 0) {
++          const detail = await candidateApi.getResultDetail(resultsList[0].interviewId)
++          if (!cancelled) setLatestDetail(detail)
++        }
++      } catch (err) {
++        if (!cancelled) setError(err.message || 'Unable to load your results.')
++      } finally {
++        if (!cancelled) setLoading(false)
++      }
++    }
++
++    load()
++
++    return () => {
++      cancelled = true
++    }
++  }, [])
++
++  if (loading) {
++    return (
++      <CandidateLayout>
++        <div className="flex h-64 items-center justify-center">
++          <span className="h-8 w-8 animate-spin rounded-full border-2 border-[#285b8f]/30 border-t-[#285b8f]" />
++        </div>
++      </CandidateLayout>
++    )
++  }
++
++  if (error) {
++    return (
++      <CandidateLayout>
++        <div className="border border-red-200 bg-red-50 p-6 text-sm text-red-600">
++          {error}
++        </div>
++      </CandidateLayout>
++    )
++  }
++
++  if (results.length === 0) {
++    return (
++      <CandidateLayout>
++        <div className="mb-8">
++          <p className="text-sm font-medium text-[#4b9bea]">Performance</p>
++          <h1 className="mt-1 text-2xl font-bold tracking-tight text-[#17324f] lg:text-3xl">
++            Interview Results
++          </h1>
++        </div>
++
++        <div className="border border-dashed border-slate-300 bg-white px-6 py-16 text-center">
++          <h3 className="text-sm font-semibold text-slate-700">
++            No results yet
++          </h3>
++          <p className="mt-1 text-xs text-slate-400">
++            Complete an interview to see your results here.
++          </p>
++          <button
++            type="button"
++            onClick={() => navigate('/candidate/interviews')}
++            className="mt-5 bg-[#285b8f] px-5 py-2.5 text-sm font-semibold text-white"
++          >
++            View Interviews →
++          </button>
++        </div>
++      </CandidateLayout>
++    )
++  }
++
++  const dimensionEntries = latestDetail
++    ? Object.entries(latestDetail.dimensions)
++    : []
++
++  const strongest = dimensionEntries.length
++    ? dimensionEntries.reduce((a, b) => (b[1] > a[1] ? b : a))
++    : null
++
++  const weakest = dimensionEntries.length
++    ? dimensionEntries.reduce((a, b) => (b[1] < a[1] ? b : a))
++    : null
++
++  const previousScores = results.slice(1).map((r) => r.overallScore)
++  const previousAverage = previousScores.length
++    ? Math.round(previousScores.reduce((a, b) => a + b, 0) / previousScores.length)
++    : null
+ 
+   return (
+     <CandidateLayout>
+@@ -118,17 +196,16 @@ function CandidateResults() {
+ 
+           <div className="mt-6 flex items-center gap-6">
+ 
+-            <ScoreCircle score={82} />
++            <ScoreCircle score={results[0].overallScore} />
+ 
+             <div>
+ 
+               <p className="text-xl font-bold text-[#17324f]">
+-                Strong Performance
++                {levelForScore(results[0].overallScore)} Performance
+               </p>
+ 
+               <p className="mt-2 text-sm leading-6 text-slate-500">
+-                You're performing above average across most
+-                evaluation dimensions.
++                Based on your most recent completed interview.
+               </p>
+ 
+             </div>
+@@ -137,29 +214,26 @@ function CandidateResults() {
+ 
+           <div className="mt-7 border-t border-slate-100 pt-5">
+ 
+-            <div className="flex justify-between text-xs">
+-
+-              <span className="text-slate-400">
+-                Previous average
+-              </span>
+-
+-              <span className="font-semibold text-slate-600">
+-                76%
+-              </span>
+-
+-            </div>
+-
+-            <div className="mt-2 flex justify-between text-xs">
+-
+-              <span className="text-slate-400">
+-                Current average
+-              </span>
+-
+-              <span className="font-semibold text-[#3972a7]">
+-                82% ↑
+-              </span>
++            {previousAverage !== null ? (
++              <>
++                <div className="flex justify-between text-xs">
++                  <span className="text-slate-400">Previous average</span>
++                  <span className="font-semibold text-slate-600">{previousAverage}%</span>
++                </div>
+ 
+-            </div>
++                <div className="mt-2 flex justify-between text-xs">
++                  <span className="text-slate-400">Current score</span>
++                  <span className="font-semibold text-[#3972a7]">
++                    {results[0].overallScore}%
++                    {results[0].overallScore >= previousAverage ? ' ↑' : ' ↓'}
++                  </span>
++                </div>
++              </>
++            ) : (
++              <p className="text-xs text-slate-400">
++                Complete more interviews to see a trend.
++              </p>
++            )}
+ 
+           </div>
+ 
+@@ -183,7 +257,7 @@ function CandidateResults() {
+               </p>
+ 
+               <h3 className="mt-1 text-lg font-bold text-[#17324f]">
+-                Algorithmic Correctness
++                {strongest ? DIMENSION_META[strongest[0]]?.name || strongest[0] : '—'}
+               </h3>
+ 
+             </div>
+@@ -191,19 +265,18 @@ function CandidateResults() {
+           </div>
+ 
+           <p className="mt-6 text-3xl font-bold text-[#3d8a60]">
+-            88%
++            {strongest ? `${strongest[1]}%` : '—'}
+           </p>
+ 
+           <p className="mt-2 text-sm leading-6 text-slate-500">
+-            You consistently produce correct solutions and
+-            demonstrate a strong understanding of algorithms.
++            {strongest ? DIMENSION_META[strongest[0]]?.description : ''}
+           </p>
+ 
+           <div className="mt-5 h-1.5 bg-slate-100">
+ 
+             <div
+               className="h-full bg-[#6aa982]"
+-              style={{ width: '88%' }}
++              style={{ width: `${strongest ? strongest[1] : 0}%` }}
+             />
+ 
+           </div>
+@@ -228,7 +301,7 @@ function CandidateResults() {
+               </p>
+ 
+               <h3 className="mt-1 text-lg font-bold text-[#17324f]">
+-                Time & Space Complexity
++                {weakest ? DIMENSION_META[weakest[0]]?.name || weakest[0] : '—'}
+               </h3>
+ 
+             </div>
+@@ -236,19 +309,18 @@ function CandidateResults() {
+           </div>
+ 
+           <p className="mt-6 text-3xl font-bold text-[#b77a2d]">
+-            72%
++            {weakest ? `${weakest[1]}%` : '—'}
+           </p>
+ 
+           <p className="mt-2 text-sm leading-6 text-slate-500">
+-            Practice explaining complexity more clearly and
+-            identify optimization opportunities earlier.
++            {weakest ? DIMENSION_META[weakest[0]]?.description : ''}
+           </p>
+ 
+           <div className="mt-5 h-1.5 bg-slate-100">
+ 
+             <div
+               className="h-full bg-[#d29a50]"
+-              style={{ width: '72%' }}
++              style={{ width: `${weakest ? weakest[1] : 0}%` }}
+             />
+ 
+           </div>
+@@ -275,8 +347,7 @@ function CandidateResults() {
+           </h2>
+ 
+           <p className="mt-1 text-sm text-slate-500">
+-            A detailed breakdown of how your interview performance
+-            was evaluated.
++            From your most recent completed interview.
+           </p>
+ 
+         </div>
+@@ -284,11 +355,15 @@ function CandidateResults() {
+ 
+         <div className="border border-slate-200 bg-white">
+ 
+-          {dimensions.map((dimension, index) => (
++          {dimensionEntries.map(([key, score], index) => (
+ 
+             <DimensionRow
+-              key={dimension.name}
+-              dimension={dimension}
++              key={key}
++              dimension={{
++                name: DIMENSION_META[key]?.name || key,
++                description: DIMENSION_META[key]?.description || '',
++                score,
++              }}
+               index={index}
+             />
+ 
+@@ -332,10 +407,10 @@ function CandidateResults() {
+ 
+         <div className="border border-slate-200 bg-white">
+ 
+-          {recentResults.map((result) => (
++          {results.map((result) => (
+ 
+             <div
+-              key={result.id}
++              key={result.interviewId}
+               className="flex flex-col gap-4 border-b border-slate-100 p-5 last:border-b-0 sm:flex-row sm:items-center sm:justify-between"
+             >
+ 
+@@ -352,7 +427,7 @@ function CandidateResults() {
+                   </h3>
+ 
+                   <p className="mt-1 text-xs text-slate-400">
+-                    {result.date}
++                    {candidateApi.formatDate(result.completedAt)}
+                   </p>
+ 
+                 </div>
+@@ -369,7 +444,7 @@ function CandidateResults() {
+                   </p>
+ 
+                   <p className="text-sm font-semibold text-slate-600">
+-                    {result.level}
++                    {levelForScore(result.overallScore)}
+                   </p>
+ 
+                 </div>
+@@ -382,7 +457,7 @@ function CandidateResults() {
+                   </p>
+ 
+                   <p className="text-lg font-bold text-[#285b8f]">
+-                    {result.score}%
++                    {result.overallScore}%
+                   </p>
+ 
+                 </div>
+@@ -391,7 +466,7 @@ function CandidateResults() {
+                 <button
+                   type="button"
+                   onClick={() =>
+-                    navigate(`/candidate/results/${result.id}`)
++                    navigate(`/candidate/results/${result.interviewId}`)
+                   }
+                   className="border border-slate-200 px-4 py-2 text-xs font-semibold text-[#285b8f] transition hover:bg-slate-50"
+                 >
+@@ -413,44 +488,39 @@ function CandidateResults() {
+           INSIGHT
+       ====================================================== */}
+ 
+-      <div className="mt-8 border border-[#c9dff3] bg-[#eaf4ff] p-6">
++      {latestDetail && (
++        <div className="mt-8 border border-[#c9dff3] bg-[#eaf4ff] p-6">
+ 
+-        <div className="flex items-start gap-4">
++          <div className="flex items-start gap-4">
+ 
+-          <div className="flex h-10 w-10 shrink-0 items-center justify-center bg-white text-[#3972a7]">
+-            <InsightIcon />
+-          </div>
++            <div className="flex h-10 w-10 shrink-0 items-center justify-center bg-white text-[#3972a7]">
++              <InsightIcon />
++            </div>
+ 
+-          <div>
++            <div>
+ 
+-            <p className="text-xs font-semibold uppercase tracking-wider text-[#3972a7]">
+-              AI Performance Insight
+-            </p>
++              <p className="text-xs font-semibold uppercase tracking-wider text-[#3972a7]">
++                AI Performance Insight
++              </p>
+ 
+-            <h3 className="mt-1 text-base font-bold text-[#17324f]">
+-              Your reasoning is stronger than your complexity analysis.
+-            </h3>
++              <p className="mt-2 max-w-3xl text-sm leading-6 text-[#58728d]">
++                {latestDetail.feedback}
++              </p>
+ 
+-            <p className="mt-2 max-w-3xl text-sm leading-6 text-[#58728d]">
+-              Your recent interviews show strong problem decomposition
+-              and algorithmic thinking. Focus your preparation on
+-              articulating time and space complexity and identifying
+-              optimization opportunities.
+-            </p>
++              <button
++                type="button"
++                onClick={() => navigate('/candidate/preparation')}
++                className="mt-4 text-sm font-semibold text-[#285b8f] hover:underline"
++              >
++                Practice this area →
++              </button>
+ 
+-            <button
+-              type="button"
+-              onClick={() => navigate('/candidate/preparation')}
+-              className="mt-4 text-sm font-semibold text-[#285b8f] hover:underline"
+-            >
+-              Practice this area →
+-            </button>
++            </div>
+ 
+           </div>
+ 
+         </div>
+-
+-      </div>
++      )}
+ 
+     </CandidateLayout>
+   )
+@@ -637,4 +707,4 @@ function CodeIcon() {
+ }
+ 
+ 
+-export default CandidateResults
+\ No newline at end of file
++export default CandidateResults

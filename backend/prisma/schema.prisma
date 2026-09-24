@@ -1,0 +1,416 @@
+// InterviewAI Database Schema
+// Prisma 7
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────
+
+enum Role {
+  ADMIN
+  RECRUITER
+  CANDIDATE
+}
+
+enum InterviewStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  EXPIRED
+  CANCELLED
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum SessionStatus {
+  IN_PROGRESS
+  COMPLETED
+  EXPIRED
+}
+
+enum QuestionStatus {
+  PENDING
+  CURRENT
+  COMPLETED
+}
+
+enum MessageSender {
+  AI
+  CANDIDATE
+}
+
+enum JobStatus {
+  DRAFT
+  ACTIVE
+  CLOSED
+}
+
+// ─────────────────────────────────────────────
+// USER
+// ─────────────────────────────────────────────
+
+model User {
+  id String @id @default(cuid())
+
+  firstName String
+  lastName  String
+
+  email        String @unique
+  passwordHash String
+
+  role Role @default(CANDIDATE)
+
+  emailVerified Boolean @default(false)
+  isActive      Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  refreshTokens           RefreshToken[]
+  passwordResetTokens     PasswordResetToken[]
+  emailVerificationTokens EmailVerificationToken[]
+
+  candidateInterviews Interview[] @relation("CandidateInterviews")
+  recruiterInterviews Interview[] @relation("RecruiterInterviews")
+
+  interviewSessions InterviewSession[]
+  questionAttempts  QuestionAttempt[]
+  evaluations       Evaluation[]
+
+  jobs Job[] @relation("RecruiterJobs")
+
+  @@index([role])
+  @@index([isActive])
+}
+
+// ─────────────────────────────────────────────
+// REFRESH TOKEN
+// ─────────────────────────────────────────────
+
+model RefreshToken {
+  id String @id @default(cuid())
+
+  tokenHash String @unique
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  expiresAt DateTime
+  revokedAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+// ─────────────────────────────────────────────
+// PASSWORD RESET TOKEN
+// ─────────────────────────────────────────────
+
+model PasswordResetToken {
+  id String @id @default(cuid())
+
+  tokenHash String @unique
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  expiresAt DateTime
+  usedAt    DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+// ─────────────────────────────────────────────
+// EMAIL VERIFICATION TOKEN
+// ─────────────────────────────────────────────
+
+model EmailVerificationToken {
+  id String @id @default(cuid())
+
+  tokenHash String @unique
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  expiresAt DateTime
+  usedAt    DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+// ─────────────────────────────────────────────
+// QUESTION BANK
+// ─────────────────────────────────────────────
+
+model Question {
+  id String @id @default(cuid())
+
+  title      String
+  difficulty Difficulty @default(MEDIUM)
+  topics     String[]
+
+  description String
+  examples    Json     @default("[]")
+  constraints String[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  interviewQuestions InterviewQuestion[]
+  jobQuestions       JobQuestion[]
+  messages           Message[]
+  attempts           QuestionAttempt[]
+
+  @@index([difficulty])
+}
+
+// ─────────────────────────────────────────────
+// JOB
+// ─────────────────────────────────────────────
+
+model Job {
+  id String @id @default(cuid())
+
+  title      String
+  department String?
+  location   String?
+
+  description  String
+  requirements String[]
+
+  status JobStatus @default(DRAFT)
+
+  recruiterId String
+  recruiter   User   @relation("RecruiterJobs", fields: [recruiterId], references: [id], onDelete: Cascade)
+
+  questions JobQuestion[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([recruiterId])
+  @@index([status])
+}
+
+// ─────────────────────────────────────────────
+// JOB QUESTION
+// ─────────────────────────────────────────────
+
+model JobQuestion {
+  id String @id @default(cuid())
+
+  jobId String
+  job   Job    @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  order Int @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@unique([jobId, questionId])
+  @@index([jobId])
+  @@index([questionId])
+}
+
+// ─────────────────────────────────────────────
+// INTERVIEW
+// ─────────────────────────────────────────────
+
+model Interview {
+  id String @id @default(cuid())
+
+  title   String
+  type    String  @default("Technical Interview")
+  company String?
+
+  focusAreas String[]
+
+  scheduledAt DateTime
+  duration    Int      @default(45)
+
+  status InterviewStatus @default(SCHEDULED)
+
+  candidateId String
+  candidate   User   @relation("CandidateInterviews", fields: [candidateId], references: [id], onDelete: Cascade)
+
+  recruiterId String
+  recruiter   User   @relation("RecruiterInterviews", fields: [recruiterId], references: [id], onDelete: Cascade)
+
+  questions  InterviewQuestion[]
+  session    InterviewSession?
+  evaluation Evaluation?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([candidateId])
+  @@index([recruiterId])
+  @@index([status])
+}
+
+// ─────────────────────────────────────────────
+// INTERVIEW QUESTION
+// ─────────────────────────────────────────────
+
+model InterviewQuestion {
+  id String @id @default(cuid())
+
+  interviewId String
+  interview   Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  order Int @default(0)
+
+  status QuestionStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+
+  @@unique([interviewId, questionId])
+  @@index([interviewId])
+  @@index([questionId])
+}
+
+// ─────────────────────────────────────────────
+// INTERVIEW SESSION
+// ─────────────────────────────────────────────
+
+model InterviewSession {
+  id String @id @default(cuid())
+
+  interviewId String    @unique
+  interview   Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+
+  candidateId String
+  candidate   User   @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  status SessionStatus @default(IN_PROGRESS)
+
+  currentQuestionId String?
+
+  startedAt       DateTime  @default(now())
+  endedAt         DateTime?
+  durationSeconds Int?
+
+  messages   Message[]
+  attempts   QuestionAttempt[]
+  evaluation Evaluation?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([candidateId])
+  @@index([status])
+}
+
+// ─────────────────────────────────────────────
+// MESSAGE
+// ─────────────────────────────────────────────
+
+model Message {
+  id String @id @default(cuid())
+
+  sessionId String
+  session   InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  questionId String?
+  question   Question? @relation(fields: [questionId], references: [id])
+
+  sender MessageSender
+
+  message String
+
+  createdAt DateTime @default(now())
+
+  @@index([sessionId])
+  @@index([sessionId, createdAt])
+  @@index([questionId])
+}
+
+// ─────────────────────────────────────────────
+// QUESTION ATTEMPT
+// ─────────────────────────────────────────────
+
+model QuestionAttempt {
+  id String @id @default(cuid())
+
+  sessionId String
+  session   InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  candidateId String
+  candidate   User   @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  status QuestionStatus @default(CURRENT)
+
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([sessionId, questionId])
+  @@index([sessionId])
+  @@index([questionId])
+  @@index([candidateId])
+}
+
+// ─────────────────────────────────────────────
+// EVALUATION
+// ─────────────────────────────────────────────
+
+model Evaluation {
+  id String @id @default(cuid())
+
+  interviewId String    @unique
+  interview   Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+
+  sessionId String           @unique
+  session   InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  candidateId String
+  candidate   User   @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  overallScore Int
+
+  algorithmCorrectness Int
+  logicalReasoning     Int
+  conceptCoverage      Int
+  completeness         Int
+  dataStructure        Int
+  complexity           Int
+  edgeCases            Int
+
+  strengths    String[]
+  improvements String[]
+  feedback     String
+
+  createdAt DateTime @default(now())
+
+  @@index([candidateId])
+}

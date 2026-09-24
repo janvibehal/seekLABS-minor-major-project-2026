@@ -1,0 +1,163 @@
+# Candidate Answer Preprocessing Requirements
+
+## Goal
+
+Normalize the candidate's raw programming answer into a clean,
+consistent representation for downstream evaluation.
+
+The preprocessing stage must improve readability and consistency
+WITHOUT changing the candidate's intended meaning, programming logic,
+algorithm, reasoning, complexity claims, or edge-case discussion.
+
+## Input
+
+A raw candidate answer submitted for a programming/OA problem.
+
+The answer may contain:
+- Natural-language explanations
+- Pseudocode
+- Source code
+- Complexity analysis
+- Data structure explanations
+- Edge-case discussion
+- Mixed code and text
+- Formatting artifacts
+
+## Required Processing
+
+### 1. Whitespace Normalization
+
+Normalize:
+- Multiple consecutive spaces
+- Unnecessary blank lines
+- Leading and trailing whitespace
+- Inconsistent line breaks
+
+Do NOT remove whitespace that is meaningful to code,
+indentation-sensitive syntax, pseudocode structure, or formatting.
+
+### 2. Formatting Normalization
+
+Preserve the logical structure of the answer.
+
+Preserve:
+- Code blocks
+- Pseudocode
+- Lists
+- Numbered reasoning steps
+- Complexity statements
+- Headings
+- Important separators
+
+Do not rewrite the candidate's solution into a different algorithm.
+
+### 3. Repeated Text
+
+Remove only obvious accidental duplication, such as:
+- The exact same sentence repeated consecutively
+- The exact same paragraph repeated consecutively
+
+Do NOT remove repetition when it may represent:
+- Deliberate reasoning
+- A correction or clarification
+- Different steps of an algorithm
+- Repeated code constructs
+- Important edge-case discussion
+
+### 4. Special Characters
+
+Preserve programming-related characters exactly when they may
+carry meaning, including:
+
+- `()`
+- `{}`
+- `[]`
+- `<>`
+- `:`
+- `;`
+- `=`
+- `==`
+- `!=`
+- `<=`
+- `>=`
+- `->`
+- `&&`
+- `||`
+- `+`
+- `-`
+- `*`
+- `/`
+- `%`
+- `_`
+
+Do not remove or replace programming syntax merely because it
+looks like a special character.
+
+### 5. Empty Answers
+
+If the candidate answer is empty or contains only whitespace,
+return an empty normalized answer.
+
+Do not invent content.
+
+### 6. Very Long Answers
+
+For very long answers:
+
+- Preserve the original answer completely.
+- Do not summarize the answer.
+- Do not remove meaningful reasoning.
+- Do not remove code.
+- Do not remove complexity analysis.
+- Do not remove edge-case discussion.
+
+If length limits require downstream processing, truncation or
+summarization must be handled separately from normalization.
+
+### 7. Programming Logic Preservation
+
+The preprocessing stage MUST NOT:
+
+- Correct the candidate's algorithm
+- Fix incorrect code
+- Add missing logic
+- Remove incorrect logic
+- Change complexity claims
+- Add edge cases
+- Remove edge cases
+- Replace one algorithm with another
+- Infer an intended solution
+- Judge whether the solution is correct
+
+The normalized answer must represent what the candidate actually wrote.
+
+## Critical Rule
+
+Preprocessing is NOT evaluation.
+
+The preprocessing stage must never decide whether the candidate's
+answer is correct, incorrect, partially correct, efficient, or
+inefficient.
+
+Its only responsibility is to produce a cleaner representation
+of the candidate's original response.
+
+## Output Requirements
+
+Always preserve the original candidate answer exactly.
+
+Return ONLY valid JSON using this structure:
+
+{
+  "original_answer": "...",
+  "normalized_answer": "..."
+}
+
+## Output Rules
+
+- `original_answer` must be identical to the input.
+- `normalized_answer` must contain the cleaned version.
+- Do not add explanations.
+- Do not evaluate the answer.
+- Do not add missing information.
+- Do not include markdown outside the JSON object.

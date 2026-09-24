@@ -1,0 +1,80 @@
+{
+  "problem_id": "P004",
+  "candidate_test_answers": [
+    {
+      "test_answer_id": "P004_04",
+      "category": "fully_correct",
+      "answer": "I would sort the intervals by start time. Then keep the last merged interval and compare each new interval's start with its end. If they overlap, extend the end; otherwise append a new interval. Sorting dominates at O(n log n), and the merge pass is O(n). I would handle empty input and touching/overlapping boundaries consistently.",
+      "expected_evaluation": {
+        "algorithm_correctness": 96,
+        "logical_reasoning": 94,
+        "concept_coverage": 93,
+        "completeness": 95,
+        "data_structure_selection": 97,
+        "complexity_analysis": 94,
+        "edge_case_handling": 92,
+        "classification": "Correct"
+      }
+    },
+    {
+      "test_answer_id": "P004_04",
+      "category": "correct_but_inefficient",
+      "answer": "I would compare every interval against the others and repeatedly merge overlaps until no more merges are possible. This can work, but sorting once and doing a single pass is more efficient.",
+      "expected_evaluation": {
+        "algorithm_correctness": 86,
+        "logical_reasoning": 78,
+        "concept_coverage": 72,
+        "completeness": 78,
+        "data_structure_selection": 80,
+        "complexity_analysis": 80,
+        "edge_case_handling": 74,
+        "classification": "Fallback: Partially Correct"
+      }
+    },
+    {
+      "test_answer_id": "P004_04",
+      "category": "complexity_mistake",
+      "answer": "I would sort by start time and merge intervals in one pass. The logic is correct. I think the overall time is O(n) because after sorting we only traverse once, and sorting does not change the overall linear behavior.",
+      "expected_evaluation": {
+        "algorithm_correctness": 93,
+        "logical_reasoning": 82,
+        "concept_coverage": 90,
+        "completeness": 85,
+        "data_structure_selection": 96,
+        "complexity_analysis": 42,
+        "edge_case_handling": 78,
+        "classification": "Fallback: Partially Correct"
+      }
+    },
+    {
+      "test_answer_id": "P004_04",
+      "category": "edge_case_missing",
+      "answer": "I would sort intervals by their starting values and merge whenever the next start is less than the current end. I haven't considered whether touching intervals should merge, empty input, or intervals contained completely inside another interval.",
+      "expected_evaluation": {
+        "algorithm_correctness": 88,
+        "logical_reasoning": 80,
+        "concept_coverage": 84,
+        "completeness": 68,
+        "data_structure_selection": 94,
+        "complexity_analysis": 88,
+        "edge_case_handling": 45,
+        "classification": "Fallback: Partially Correct"
+      }
+    },
+    {
+      "test_answer_id": "P004_04",
+      "category": "partially_correct",
+      "answer": "I would compare each interval with the next interval and merge them if they overlap. I don't think sorting is necessary because the input already represents intervals that are close together.",
+      "expected_evaluation": {
+        "algorithm_correctness": 58,
+        "logical_reasoning": 55,
+        "concept_coverage": 62,
+        "completeness": 50,
+        "data_structure_selection": 58,
+        "complexity_analysis": 50,
+        "edge_case_handling": 48,
+        "classification": "Partially Correct"
+      }
+    }
+  ]
+}

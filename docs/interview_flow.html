@@ -1,0 +1,1951 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Minor Major — Interview Flow</title>
+
+<style>
+:root {
+  --bg: #f5f5f7;
+  --card: rgba(255,255,255,.86);
+  --card-solid: #fff;
+  --text: #1d1d1f;
+  --muted: #6e6e73;
+  --border: rgba(0,0,0,.08);
+  --accent: #007aff;
+  --accent-soft: rgba(0,122,255,.10);
+  --green: #34c759;
+  --orange: #ff9500;
+  --shadow: 0 8px 30px rgba(0,0,0,.06);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "SF Pro Display",
+    "SF Pro Text",
+    "Segoe UI",
+    sans-serif;
+  line-height: 1.55;
+}
+
+button {
+  font: inherit;
+}
+
+.container {
+  width: min(1080px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 48px 0 80px;
+}
+
+/* ---------------------------------------------------------
+   HERO
+--------------------------------------------------------- */
+
+.hero {
+  margin-bottom: 28px;
+}
+
+.eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+
+.hero h1 {
+  margin: 0;
+  font-size: clamp(32px, 5vw, 52px);
+  line-height: 1.05;
+  letter-spacing: -.035em;
+  font-weight: 700;
+}
+
+.hero p {
+  max-width: 720px;
+  margin: 16px 0 0;
+  color: var(--muted);
+  font-size: 17px;
+}
+
+/* ---------------------------------------------------------
+   TABS
+--------------------------------------------------------- */
+
+.tabs {
+  display: inline-flex;
+  padding: 4px;
+  margin-top: 25px;
+  border-radius: 12px;
+  background: rgba(0,0,0,.055);
+  gap: 3px;
+  flex-wrap: wrap;
+}
+
+.tab {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  padding: 8px 15px;
+  border-radius: 9px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: .2s ease;
+}
+
+.tab:hover {
+  color: var(--text);
+}
+
+.tab.active {
+  background: #fff;
+  color: var(--text);
+  box-shadow: 0 2px 8px rgba(0,0,0,.08);
+}
+
+/* ---------------------------------------------------------
+   PANELS
+--------------------------------------------------------- */
+
+.panel {
+  display: none;
+}
+
+.panel.active {
+  display: block;
+}
+
+/* ---------------------------------------------------------
+   SECTION HEADER
+--------------------------------------------------------- */
+
+.sectionHeader {
+  margin-bottom: 20px;
+}
+
+.sectionHeader h2 {
+  margin: 0;
+  font-size: 28px;
+  letter-spacing: -.025em;
+}
+
+.sectionHeader p {
+  margin: 7px 0 0;
+  color: var(--muted);
+}
+
+/* ---------------------------------------------------------
+   FLOW
+--------------------------------------------------------- */
+
+.flow {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.node {
+  position: relative;
+  min-height: 118px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--card);
+  backdrop-filter: blur(15px);
+  cursor: pointer;
+  transition:
+    transform .2s ease,
+    border-color .2s ease,
+    background .2s ease,
+    box-shadow .2s ease;
+}
+
+.node:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+}
+
+.node.selected {
+  border-color: rgba(0,122,255,.35);
+  background: var(--accent-soft);
+  box-shadow: 0 5px 20px rgba(0,122,255,.08);
+}
+
+.node-number {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.node-title {
+  margin-top: 8px;
+  font-weight: 650;
+  font-size: 16px;
+}
+
+.node-description {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* ---------------------------------------------------------
+   DETAIL
+--------------------------------------------------------- */
+
+.detail {
+  margin-top: 16px;
+  padding: 24px;
+  border-radius: 18px;
+  background: var(--card-solid);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  min-height: 170px;
+}
+
+.detail h3 {
+  margin: 0;
+  font-size: 21px;
+}
+
+.detail p {
+  color: var(--muted);
+}
+
+.detailOutput {
+  margin-top: 17px;
+  padding: 15px;
+  border-radius: 12px;
+  background: #f5f5f7;
+  font-size: 14px;
+}
+
+.detailNote {
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* ---------------------------------------------------------
+   STATE
+--------------------------------------------------------- */
+
+.stateSection {
+  margin-top: 18px;
+  padding: 22px;
+  border-radius: 18px;
+  background: var(--card-solid);
+  border: 1px solid var(--border);
+}
+
+.stateSection h3 {
+  margin: 0 0 14px;
+  font-size: 18px;
+}
+
+.stateRow {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 20px;
+  padding: 13px 0;
+  border-bottom: 1px solid rgba(0,0,0,.06);
+}
+
+.stateRow:last-child {
+  border-bottom: 0;
+}
+
+.stateKey {
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+}
+
+.stateValue {
+  font-size: 14px;
+  font-weight: 550;
+}
+
+/* ---------------------------------------------------------
+   CALLOUT
+--------------------------------------------------------- */
+
+.callout {
+  margin-top: 18px;
+  padding: 18px;
+  border-radius: 16px;
+  background: var(--accent-soft);
+  border: 1px solid rgba(0,122,255,.10);
+}
+
+.callout strong {
+  display: block;
+  margin-bottom: 5px;
+}
+
+.callout p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* ---------------------------------------------------------
+   TURN NAV
+--------------------------------------------------------- */
+
+.turnTabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.turnButton {
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--muted);
+  border-radius: 10px;
+  padding: 9px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.turnButton.active {
+  color: var(--text);
+  border-color: rgba(0,122,255,.25);
+  background: var(--accent-soft);
+}
+
+/* ---------------------------------------------------------
+   TURN
+--------------------------------------------------------- */
+
+.turn {
+  display: none;
+  padding: 24px;
+  border-radius: 18px;
+  background: var(--card-solid);
+  border: 1px solid var(--border);
+}
+
+.turn.active {
+  display: block;
+}
+
+.turnLabel {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.turn h3 {
+  margin: 20px 0 8px;
+  font-size: 18px;
+}
+
+.answer {
+  padding: 16px;
+  border-radius: 13px;
+  background: #f5f5f7;
+  color: #444;
+}
+
+.scores {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.score {
+  padding: 15px;
+  border-radius: 13px;
+  background: #f7f7f8;
+  border: 1px solid rgba(0,0,0,.05);
+}
+
+.score small {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.score strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 15px;
+}
+
+/* ---------------------------------------------------------
+   INSPECTOR
+--------------------------------------------------------- */
+
+.inspector {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(0,0,0,.07);
+}
+
+.inspectorTitle {
+  font-weight: 650;
+  margin-bottom: 10px;
+}
+
+.inspectorButtons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.inspectorButton {
+  border: 1px solid var(--border);
+  background: #fff;
+  padding: 9px 13px;
+  border-radius: 10px;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.inspectorButton:hover {
+  color: var(--text);
+}
+
+.inspectorOutput {
+  margin-top: 12px;
+  padding: 16px;
+  border-radius: 12px;
+  background: #f5f5f7;
+  color: var(--muted);
+  font-size: 14px;
+  min-height: 70px;
+}
+
+/* ---------------------------------------------------------
+   ARCHITECTURE
+--------------------------------------------------------- */
+
+.architecture {
+  display: grid;
+  gap: 10px;
+}
+
+.archStep {
+  display: grid;
+  grid-template-columns: 42px 1fr;
+  gap: 14px;
+  align-items: start;
+  padding: 18px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 15px;
+}
+
+.archNumber {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #f0f0f2;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.archStep h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.archStep p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* ---------------------------------------------------------
+   CODE FLOW
+--------------------------------------------------------- */
+
+.codeFlow {
+  margin-top: 18px;
+  padding: 20px;
+  border-radius: 16px;
+  background: #1d1d1f;
+  color: #f5f5f7;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  line-height: 1.9;
+  white-space: pre-wrap;
+  overflow-x: auto;
+}
+
+/* ---------------------------------------------------------
+   LAYER GRID
+--------------------------------------------------------- */
+
+.layerGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+
+.layerCard {
+  padding: 21px;
+  border-radius: 17px;
+  background: #fff;
+  border: 1px solid var(--border);
+}
+
+.layerCard h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.layerCard p {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.layerCard ul {
+  padding-left: 19px;
+  margin-bottom: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.fieldList {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+  margin-top: 13px;
+}
+
+.field {
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #f5f5f7;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+}
+
+/* ---------------------------------------------------------
+   RESPONSIVE
+--------------------------------------------------------- */
+
+@media (max-width: 800px) {
+  .flow {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .scores {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .layerGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 550px) {
+  .container {
+    width: min(100% - 22px, 1080px);
+    padding-top: 30px;
+  }
+
+  .tabs {
+    display: flex;
+  }
+
+  .tab {
+    flex: 1;
+  }
+
+  .flow {
+    grid-template-columns: 1fr;
+  }
+
+  .scores {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .stateRow {
+    grid-template-columns: 1fr;
+    gap: 5px;
+  }
+
+  .fieldList {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <!-- HERO -->
+
+  <section class="hero">
+
+    <div class="eyebrow">
+      Minor Major
+    </div>
+
+    <h1>
+      Adaptive Technical Interview Flow
+    </h1>
+
+    <p>
+      Follow one candidate answer through extraction,
+      reference matching, evaluation, adaptive reasoning,
+      and the next interview question.
+    </p>
+
+    <div class="tabs">
+
+      <button class="tab active" data-tab="flow">
+        Flow
+      </button>
+
+      <button class="tab" data-tab="turns">
+        3-Turn Example
+      </button>
+
+      <button class="tab" data-tab="architecture">
+        Architecture
+      </button>
+
+      <button class="tab" data-tab="layers">
+        Layer Outputs
+      </button>
+
+    </div>
+
+  </section>
+
+
+  <!-- =====================================================
+       FLOW
+  ====================================================== -->
+
+  <section id="flow" class="panel active">
+
+    <div class="sectionHeader">
+
+      <h2>
+        End-to-end flow
+      </h2>
+
+      <p>
+        Select a stage to see exactly what it does.
+      </p>
+
+    </div>
+
+
+    <div class="flow">
+
+      <button class="node selected" data-stage="answer">
+        <span class="node-number">01</span>
+        <span class="node-title">Candidate Answer</span>
+        <span class="node-description">
+          Raw response
+        </span>
+      </button>
+
+      <button class="node" data-stage="extract">
+        <span class="node-number">02</span>
+        <span class="node-title">NLP Extraction</span>
+        <span class="node-description">
+          Understand the answer
+        </span>
+      </button>
+
+      <button class="node" data-stage="reference">
+        <span class="node-number">03</span>
+        <span class="node-title">Reference Matching</span>
+        <span class="node-description">
+          Identify the current approach
+        </span>
+      </button>
+
+      <button class="node" data-stage="evaluate">
+        <span class="node-number">04</span>
+        <span class="node-title">Evaluation</span>
+        <span class="node-description">
+          Assess answer quality
+        </span>
+      </button>
+
+      <button class="node" data-stage="classify">
+        <span class="node-number">05</span>
+        <span class="node-title">Classification</span>
+        <span class="node-description">
+          Find strengths and gaps
+        </span>
+      </button>
+
+      <button class="node" data-stage="policy">
+        <span class="node-number">06</span>
+        <span class="node-title">Adaptive Policy</span>
+        <span class="node-description">
+          Decide what matters next
+        </span>
+      </button>
+
+      <button class="node" data-stage="followup">
+        <span class="node-number">07</span>
+        <span class="node-title">Follow-up</span>
+        <span class="node-description">
+          Generate focused question
+        </span>
+      </button>
+
+      <button class="node" data-stage="repeat">
+        <span class="node-number">08</span>
+        <span class="node-title">Next Turn</span>
+        <span class="node-description">
+          Update and repeat
+        </span>
+      </button>
+
+    </div>
+
+
+    <div id="detail" class="detail">
+
+      <h3>
+        Candidate Answer
+      </h3>
+
+      <p>
+        The candidate gives their solution using natural
+        language or pseudocode.
+      </p>
+
+      <div class="detailOutput">
+        <strong>Produces:</strong>
+        raw candidate answer
+      </div>
+
+    </div>
+
+
+    <div class="stateSection">
+
+      <h3>
+        Candidate state
+      </h3>
+
+      <div class="stateRow">
+
+        <div class="stateKey">
+          CandidateNLPState
+        </div>
+
+        <div class="stateValue">
+          What the candidate communicated
+        </div>
+
+      </div>
+
+      <div class="stateRow">
+
+        <div class="stateKey">
+          reference_answer_id
+        </div>
+
+        <div class="stateValue">
+          The reference that currently matches the candidate's approach
+        </div>
+
+      </div>
+
+      <div class="stateRow">
+
+        <div class="stateKey">
+          reference_match_confidence
+        </div>
+
+        <div class="stateValue">
+          LLM-generated confidence in that reference match
+        </div>
+
+      </div>
+
+      <div class="stateRow">
+
+        <div class="stateKey">
+          target_reference_id
+        </div>
+
+        <div class="stateValue">
+          Adaptive target; separate from the current reference match
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <div class="callout">
+
+      <strong>
+        The important distinction
+      </strong>
+
+      <p>
+        Reference Matching answers
+        <b>"Which reference matches the candidate now?"</b>
+        Evaluation answers
+        <b>"How good is the candidate's reasoning?"</b>
+        Adaptive Policy answers
+        <b>"What should we ask next?"</b>
+      </p>
+
+    </div>
+
+  </section>
+
+
+  <!-- =====================================================
+       THREE TURNS
+  ====================================================== -->
+
+  <section id="turns" class="panel">
+
+    <div class="sectionHeader">
+
+      <h2>
+        Three-turn example
+      </h2>
+
+      <p>
+        See how evidence accumulates across turns.
+      </p>
+
+    </div>
+
+
+    <div class="turnTabs">
+
+      <button class="turnButton active" data-turn="1">
+        Turn 1
+      </button>
+
+      <button class="turnButton" data-turn="2">
+        Turn 2
+      </button>
+
+      <button class="turnButton" data-turn="3">
+        Turn 3
+      </button>
+
+    </div>
+
+
+    <!-- TURN 1 -->
+
+    <article class="turn active" id="turn1">
+
+      <div class="turnLabel">
+        Initial evidence
+      </div>
+
+      <h3>
+        Candidate answer
+      </h3>
+
+      <div class="answer">
+        "I would use a HashMap to store previously seen
+        values and calculate the complement for every number."
+      </div>
+
+      <h3>
+        What the system knows
+      </h3>
+
+      <div class="scores">
+
+        <div class="score">
+          <small>Approach</small>
+          <strong>HashMap lookup</strong>
+        </div>
+
+        <div class="score">
+          <small>Data structure</small>
+          <strong>HashMap</strong>
+        </div>
+
+        <div class="score">
+          <small>Reasoning</small>
+          <strong>Partial</strong>
+        </div>
+
+        <div class="score">
+          <small>Complexity</small>
+          <strong>Missing</strong>
+        </div>
+
+      </div>
+
+      <div class="inspector">
+
+        <div class="inspectorTitle">
+          Inspect
+        </div>
+
+        <div class="inspectorButtons">
+
+          <button
+            class="inspectorButton"
+            data-inspect="turn1-nlp">
+            NLP State
+          </button>
+
+          <button
+            class="inspectorButton"
+            data-inspect="turn1-reference">
+            Reference Match
+          </button>
+
+          <button
+            class="inspectorButton"
+            data-inspect="turn1-next">
+            Why continue?
+          </button>
+
+        </div>
+
+        <div class="inspectorOutput">
+          Select an item to inspect this turn.
+        </div>
+
+      </div>
+
+    </article>
+
+
+    <!-- TURN 2 -->
+
+    <article class="turn" id="turn2">
+
+      <div class="turnLabel">
+        New evidence
+      </div>
+
+      <h3>
+        Candidate answer
+      </h3>
+
+      <div class="answer">
+        "The HashMap solution takes O(n) time because
+        we process the array once. It takes O(n) space
+        because the HashMap can store up to n elements."
+      </div>
+
+      <h3>
+        What changed
+      </h3>
+
+      <div class="scores">
+
+        <div class="score">
+          <small>Algorithm</small>
+          <strong>Present</strong>
+        </div>
+
+        <div class="score">
+          <small>Data structure</small>
+          <strong>Strong</strong>
+        </div>
+
+        <div class="score">
+          <small>Time complexity</small>
+          <strong>Covered</strong>
+        </div>
+
+        <div class="score">
+          <small>Edge cases</small>
+          <strong>Missing</strong>
+        </div>
+
+      </div>
+
+      <div class="callout">
+
+        <strong>
+          State is cumulative
+        </strong>
+
+        <p>
+          Turn 2 adds information to Turn 1.
+          The previous evidence is not discarded.
+        </p>
+
+      </div>
+
+      <div class="inspector">
+
+        <div class="inspectorTitle">
+          Inspect
+        </div>
+
+        <div class="inspectorButtons">
+
+          <button
+            class="inspectorButton"
+            data-inspect="turn2-state">
+            State Update
+          </button>
+
+          <button
+            class="inspectorButton"
+            data-inspect="turn2-reference">
+            Reference Match
+          </button>
+
+          <button
+            class="inspectorButton"
+            data-inspect="turn2-gap">
+            Remaining Gap
+          </button>
+
+        </div>
+
+        <div class="inspectorOutput">
+          Select an item to inspect this turn.
+        </div>
+
+      </div>
+
+    </article>
+
+
+    <!-- TURN 3 -->
+
+    <article class="turn" id="turn3">
+
+      <div class="turnLabel">
+        Sufficient evidence
+      </div>
+
+      <h3>
+        Candidate answer
+      </h3>
+
+      <div class="answer">
+        "For each number calculate target-current; check the
+        complement in the HashMap; store previous values or
+        indices; average O(1) lookup; add the current value
+        after checking to avoid using the same element twice;
+        handle duplicates, negatives, empty arrays, fewer than
+        two elements, and no solution."
+      </div>
+
+      <h3>
+        Reasoning profile
+      </h3>
+
+      <div class="scores">
+
+        <div class="score">
+          <small>Algorithm</small>
+          <strong>Strong</strong>
+        </div>
+
+        <div class="score">
+          <small>Reasoning</small>
+          <strong>Strong</strong>
+        </div>
+
+        <div class="score">
+          <small>Complexity</small>
+          <strong>Strong</strong>
+        </div>
+
+        <div class="score">
+          <small>Edge cases</small>
+          <strong>Strong</strong>
+        </div>
+
+      </div>
+
+      <div class="callout">
+
+        <strong>
+          Why stop?
+        </strong>
+
+        <p>
+          The system now has enough useful evidence.
+          Another question may not improve the assessment.
+        </p>
+
+      </div>
+
+      <div class="inspector">
+
+        <div class="inspectorTitle">
+          Inspect
+        </div>
+
+        <div class="inspectorButtons">
+
+          <button
+            class="inspectorButton"
+            data-inspect="turn3-state">
+            Final State
+          </button>
+
+          <button
+            class="inspectorButton"
+            data-inspect="turn3-reference">
+            Reference Match
+          </button>
+
+          <button
+            class="inspectorButton"
+            data-inspect="turn3-stop">
+            Why stop?
+          </button>
+
+        </div>
+
+        <div class="inspectorOutput">
+          Select an item to inspect this turn.
+        </div>
+
+      </div>
+
+    </article>
+
+  </section>
+
+
+  <!-- =====================================================
+       ARCHITECTURE
+  ====================================================== -->
+
+  <section id="architecture" class="panel">
+
+    <div class="sectionHeader">
+
+      <h2>
+        System architecture
+      </h2>
+
+      <p>
+        Each layer has one responsibility.
+      </p>
+
+    </div>
+
+
+    <div class="architecture">
+
+      <div class="archStep">
+
+        <div class="archNumber">1</div>
+
+        <div>
+          <h3>Candidate</h3>
+          <p>
+            Gives an answer in natural language or pseudocode.
+          </p>
+        </div>
+
+      </div>
+
+
+      <div class="archStep">
+
+        <div class="archNumber">2</div>
+
+        <div>
+          <h3>NLP Extraction</h3>
+          <p>
+            Extracts structured information about what
+            the candidate actually communicated.
+          </p>
+        </div>
+
+      </div>
+
+
+      <div class="archStep">
+
+        <div class="archNumber">3</div>
+
+        <div>
+          <h3>Candidate NLP State</h3>
+          <p>
+            Maintains the evolving semantic representation
+            of the candidate.
+          </p>
+        </div>
+
+      </div>
+
+
+      <div class="archStep">
+
+        <div class="archNumber">4</div>
+
+        <div>
+          <h3>Reference Matching</h3>
+          <p>
+            Compares the current candidate state with the
+            available reference solutions.
+          </p>
+        </div>
+
+      </div>
+
+
+      <div class="archStep">
+
+        <div class="archNumber">5</div>
+
+        <div>
+          <h3>Evaluation</h3>
+          <p>
+            Evaluates reasoning quality across seven dimensions.
+          </p>
+        </div>
+
+      </div>
+
+
+      <div class="archStep">
+
+        <div class="archNumber">6</div>
+
+        <div>
+          <h3>Classification and Gap Analysis</h3>
+          <p>
+            Identifies what is supported by evidence and
+            what remains insufficiently assessed.
+          </p>
+        </div>
+
+      </div>
+
+
+      <div class="archStep">
+
+        <div class="archNumber">7</div>
+
+        <div>
+          <h3>Adaptive Policy</h3>
+          <p>
+            Decides whether another turn is useful and
+            what should be probed next.
+          </p>
+        </div>
+
+      </div>
+
+
+      <div class="archStep">
+
+        <div class="archNumber">8</div>
+
+        <div>
+          <h3>Follow-up Generator</h3>
+          <p>
+            Generates a focused interviewer question from
+            the current state and missing evidence.
+          </p>
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <div class="codeFlow">Candidate Answer
+        ↓
+NLP Extraction
+        ↓
+Candidate NLP State
+        ↓
+Reference Matching
+        ↓
+reference_answer_id
++
+reference_match_confidence
+        ↓
+Evaluation
+        ↓
+Classification + Gap Analysis
+        ↓
+Adaptive Policy
+        ↓
+Follow-up Question
+        ↓
+Next Candidate Answer</div>
+
+
+    <div class="callout">
+
+      <strong>
+        Reference matching is not evaluation
+      </strong>
+
+      <p>
+        Reference Matching determines which existing approach
+        resembles the candidate's current reasoning.
+        Evaluation independently determines how good that
+        reasoning is.
+      </p>
+
+    </div>
+
+
+    <div class="callout">
+
+      <strong>
+        Confidence is not a score
+      </strong>
+
+      <p>
+        <code>reference_match_confidence</code> is generated by
+        the LLM matcher. It is not the candidate's correctness,
+        evaluation score, or progress percentage. Python does
+        not calculate it using a hardcoded formula.
+      </p>
+
+    </div>
+
+  </section>
+
+
+  <!-- =====================================================
+       LAYERS
+  ====================================================== -->
+
+  <section id="layers" class="panel">
+
+    <div class="sectionHeader">
+
+      <h2>
+        Layer outputs
+      </h2>
+
+      <p>
+        What each part of the system produces.
+      </p>
+
+    </div>
+
+
+    <div class="layerGrid">
+
+      <div class="layerCard">
+
+        <h3>
+          NLP Extraction
+        </h3>
+
+        <p>
+          Exactly 11 fields describe what the candidate communicated.
+        </p>
+
+        <div class="fieldList">
+
+          <div class="field">approach</div>
+          <div class="field">algorithms</div>
+          <div class="field">concepts</div>
+          <div class="field">operations</div>
+          <div class="field">data_structures</div>
+          <div class="field">time_complexity</div>
+          <div class="field">space_complexity</div>
+          <div class="field">edge_cases</div>
+          <div class="field">reasoning_summary</div>
+          <div class="field">assumptions</div>
+          <div class="field">optimization</div>
+
+        </div>
+
+      </div>
+
+
+      <div class="layerCard">
+
+        <h3>
+          Reference Matching
+        </h3>
+
+        <p>
+          Uses the candidate NLP state and the available reference
+          solutions.
+        </p>
+
+        <div class="fieldList">
+
+          <div class="field">
+            reference_answer_id
+          </div>
+
+          <div class="field">
+            reference_match_confidence
+          </div>
+
+        </div>
+
+        <div class="callout">
+
+          <strong>
+            Confidence meaning
+          </strong>
+
+          <p>
+            How confident is the LLM matcher that the selected
+            reference represents the candidate's current approach?
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <div class="layerCard">
+
+        <h3>
+          Evaluation
+        </h3>
+
+        <p>
+          Evaluates the quality of the candidate answer.
+        </p>
+
+        <ul>
+
+          <li>Algorithm correctness</li>
+          <li>Logical reasoning</li>
+          <li>Concept coverage</li>
+          <li>Completeness</li>
+          <li>Data structure</li>
+          <li>Complexity</li>
+          <li>Edge cases</li>
+
+        </ul>
+
+      </div>
+
+
+      <div class="layerCard">
+
+        <h3>
+          Candidate Evaluation State
+        </h3>
+
+        <p>
+          Stores the evolving interview state.
+        </p>
+
+        <ul>
+
+          <li>NLP state</li>
+          <li>Reference answer ID</li>
+          <li>Reference match confidence</li>
+          <li>Scores</li>
+          <li>Primary classification</li>
+          <li>Secondary classification</li>
+          <li>Adaptive classifications</li>
+          <li>Primary adaptive gap</li>
+          <li>Evidence</li>
+          <li>History</li>
+          <li>Current interviewer question</li>
+          <li>Should continue</li>
+
+        </ul>
+
+      </div>
+
+
+      <div class="layerCard">
+
+        <h3>
+          Adaptive Target
+        </h3>
+
+        <p>
+          This is intentionally separate from reference matching.
+        </p>
+
+        <div class="fieldList">
+
+          <div class="field">
+            target_reference_id
+          </div>
+
+          <div class="field">
+            adaptive gaps
+          </div>
+
+          <div class="field">
+            adaptive probe
+          </div>
+
+          <div class="field">
+            unassessed dimensions
+          </div>
+
+        </div>
+
+        <div class="callout">
+
+          <strong>
+            Ownership
+          </strong>
+
+          <p>
+            <code>target_reference_id</code> belongs to adaptive
+            or policy logic. The reference matcher does not set it.
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <div class="layerCard">
+
+        <h3>
+          State lifecycle
+        </h3>
+
+        <p>
+          Reference fields are initially empty and become populated
+          after the candidate provides evidence.
+        </p>
+
+        <div class="codeFlow">Session starts
+
+reference_answer_id = None
+reference_match_confidence = None
+target_reference_id = None
+
+        ↓
+
+Candidate submits answer
+
+        ↓
+
+NLP Extraction
+
+        ↓
+
+Reference Matching
+
+        ↓
+
+reference_answer_id = "P001-R2"
+reference_match_confidence = 0.91
+
+        ↓
+
+Evaluation
+
+        ↓
+
+Adaptive Policy</div>
+
+      </div>
+
+    </div>
+
+
+    <div class="callout">
+
+      <strong>
+        Core mental model
+      </strong>
+
+      <p>
+        The system continuously asks three different questions:
+        What did the candidate communicate?
+        Which reference matches that approach?
+        How good is the reasoning, and what should we ask next?
+      </p>
+
+    </div>
+
+  </section>
+
+</div>
+
+
+<script>
+(() => {
+
+  /* -------------------------------------------------------
+     TOP TABS
+  ------------------------------------------------------- */
+
+  const tabs = document.querySelectorAll(".tab");
+  const panels = document.querySelectorAll(".panel");
+
+  tabs.forEach(tab => {
+
+    tab.addEventListener("click", () => {
+
+      tabs.forEach(item => {
+        item.classList.remove("active");
+      });
+
+      panels.forEach(panel => {
+        panel.classList.remove("active");
+      });
+
+      tab.classList.add("active");
+
+      const panel =
+        document.getElementById(tab.dataset.tab);
+
+      if (panel) {
+        panel.classList.add("active");
+      }
+
+    });
+
+  });
+
+
+  /* -------------------------------------------------------
+     FLOW STAGES
+  ------------------------------------------------------- */
+
+  const stageInfo = {
+
+    answer: {
+      title: "Candidate Answer",
+      text:
+        "The candidate explains the solution using natural " +
+        "language or pseudocode.",
+      output:
+        "Raw candidate answer.",
+      note:
+        "At this point there is no reference match yet."
+    },
+
+    extract: {
+      title: "NLP Extraction",
+      text:
+        "The extractor turns the answer into structured " +
+        "information about what the candidate actually said.",
+      output:
+        "Candidate NLP State with exactly 11 fields.",
+      note:
+        "There is no implementation_details field."
+    },
+
+    reference: {
+      title: "Reference Matching",
+      text:
+        "The matcher compares the current Candidate NLP State " +
+        "with the available reference solutions.",
+      output:
+        "reference_answer_id + reference_match_confidence",
+      note:
+        "The confidence is generated by the LLM matcher. " +
+        "Python does not calculate it using a hardcoded formula. " +
+        "target_reference_id remains separate and belongs to adaptive logic."
+    },
+
+    evaluate: {
+      title: "Evaluation",
+      text:
+        "The evaluator assesses the quality of the candidate's " +
+        "reasoning across seven dimensions.",
+      output:
+        "Dimension scores and evaluation evidence.",
+      note:
+        "Evaluation quality is different from reference-match confidence."
+    },
+
+    classify: {
+      title: "Classification",
+      text:
+        "The system identifies strengths, weaknesses, and " +
+        "areas that still need evidence.",
+      output:
+        "Primary and secondary classifications plus adaptive information.",
+      note:
+        "Classification is based on the evaluation state."
+    },
+
+    policy: {
+      title: "Adaptive Policy",
+      text:
+        "The controller decides whether another turn would " +
+        "produce useful evidence.",
+      output:
+        "Continue or stop decision and adaptive direction.",
+      note:
+        "This is where target_reference_id may be relevant."
+    },
+
+    followup: {
+      title: "Follow-up",
+      text:
+        "A focused question is generated from the current state " +
+        "and remaining evidence gaps.",
+      output:
+        "Targeted interviewer question.",
+      note:
+        "The question should address a useful missing piece of evidence."
+    },
+
+    repeat: {
+      title: "Next Turn",
+      text:
+        "The candidate answers again and the new evidence is merged " +
+        "into the existing state.",
+      output:
+        "Updated state and another evaluation cycle.",
+      note:
+        "Reference Matching can run again because the candidate's approach may become clearer."
+    }
+
+  };
+
+
+  const nodes = document.querySelectorAll(".node");
+  const detail = document.getElementById("detail");
+
+  nodes.forEach(node => {
+
+    node.addEventListener("click", () => {
+
+      nodes.forEach(item => {
+        item.classList.remove("selected");
+      });
+
+      node.classList.add("selected");
+
+      const data = stageInfo[node.dataset.stage];
+
+      if (!data || !detail) {
+        return;
+      }
+
+      detail.innerHTML = `
+        <h3>${data.title}</h3>
+
+        <p>
+          ${data.text}
+        </p>
+
+        <div class="detailOutput">
+          <strong>Produces:</strong>
+          ${data.output}
+        </div>
+
+        <div class="detailNote">
+          ${data.note}
+        </div>
+      `;
+
+    });
+
+  });
+
+
+  /* -------------------------------------------------------
+     TURN SWITCHING
+  ------------------------------------------------------- */
+
+  const turnButtons =
+    document.querySelectorAll(".turnButton");
+
+  const turns =
+    document.querySelectorAll(".turn");
+
+  turnButtons.forEach(button => {
+
+    button.addEventListener("click", () => {
+
+      turnButtons.forEach(item => {
+        item.classList.remove("active");
+      });
+
+      turns.forEach(turn => {
+        turn.classList.remove("active");
+      });
+
+      button.classList.add("active");
+
+      const selected =
+        document.getElementById(
+          "turn" + button.dataset.turn
+        );
+
+      if (selected) {
+        selected.classList.add("active");
+      }
+
+    });
+
+  });
+
+
+  /* -------------------------------------------------------
+     TURN INSPECTOR
+  ------------------------------------------------------- */
+
+  const inspectorData = {
+
+    "turn1-nlp": `
+      <strong>NLP State</strong>
+      <p>
+        The system knows that the candidate mentioned a HashMap,
+        previously seen values, and complements. Complexity and
+        edge-case evidence is still incomplete.
+      </p>
+    `,
+
+    "turn1-reference": `
+      <strong>Reference Match</strong>
+      <p>
+        Reference Matching compares the current NLP state with
+        the available references.
+      </p>
+      <p>
+        The result is stored in
+        <code>reference_answer_id</code> and
+        <code>reference_match_confidence</code>.
+      </p>
+      <p>
+        Confidence means confidence in the reference match.
+        It is not the candidate's correctness score.
+      </p>
+    `,
+
+    "turn1-next": `
+      <strong>Why continue?</strong>
+      <p>
+        The candidate has explained the basic approach, but
+        important evidence such as complexity and edge cases
+        is still missing.
+      </p>
+    `,
+
+    "turn2-state": `
+      <strong>State Update</strong>
+      <p>
+        Turn 2 adds time and space complexity to the information
+        already collected from Turn 1.
+      </p>
+      <p>
+        The previous evidence remains part of the evolving state.
+      </p>
+    `,
+
+    "turn2-reference": `
+      <strong>Reference Match</strong>
+      <p>
+        Matching can run again after new evidence arrives.
+        The current reference can stay the same or change if
+        the candidate's approach becomes clearer.
+      </p>
+      <p>
+        The confidence is generated by the LLM matcher.
+        There is no Python formula calculating it.
+      </p>
+    `,
+
+    "turn2-gap": `
+      <strong>Remaining Gap</strong>
+      <p>
+        Complexity is now covered, but edge cases and some
+        detailed reasoning evidence may still be missing.
+      </p>
+    `,
+
+    "turn3-state": `
+      <strong>Final State</strong>
+      <p>
+        The candidate has now provided strong evidence across
+        the algorithm, operations, complexity, reasoning,
+        and edge-case dimensions.
+      </p>
+    `,
+
+    "turn3-reference": `
+      <strong>Reference Match</strong>
+      <p>
+        By this point the candidate's approach is much clearer.
+        The matcher can have a stronger confidence in the
+        current reference.
+      </p>
+    `,
+
+    "turn3-stop": `
+      <strong>Why stop?</strong>
+      <p>
+        Another question may no longer add meaningful evidence.
+        The goal is sufficient assessment, not maximum interview length.
+      </p>
+    `
+
+  };
+
+
+  document
+    .querySelectorAll(".inspectorButton")
+    .forEach(button => {
+
+      button.addEventListener("click", () => {
+
+        const turn =
+          button.closest(".turn");
+
+        if (!turn) {
+          return;
+        }
+
+        const output =
+          turn.querySelector(".inspectorOutput");
+
+        if (!output) {
+          return;
+        }
+
+        output.innerHTML =
+          inspectorData[button.dataset.inspect] ||
+          "No explanation available.";
+
+      });
+
+    });
+
+})();
+</script>
+
+</body>
+</html>

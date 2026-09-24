@@ -1,0 +1,80 @@
+{
+  "problem_id": "P002",
+  "candidate_test_answers": [
+    {
+      "test_answer_id": "P002_02",
+      "category": "fully_correct",
+      "answer": "I would use a stack. Push opening brackets. For a closing bracket, the stack must be non-empty and its top must be the matching opening bracket; otherwise return false. At the end the stack must be empty. This is O(n) time and O(n) space. Empty input and mismatched or early closing brackets are handled.",
+      "expected_evaluation": {
+        "algorithm_correctness": 96,
+        "logical_reasoning": 94,
+        "concept_coverage": 92,
+        "completeness": 94,
+        "data_structure_selection": 97,
+        "complexity_analysis": 92,
+        "edge_case_handling": 92,
+        "classification": "Correct"
+      }
+    },
+    {
+      "test_answer_id": "P002_02",
+      "category": "correct_but_inefficient",
+      "answer": "I can repeatedly remove valid pairs like (), {}, and [] from the string until no more replacements are possible. If the result is empty it is valid. This is correct, but repeated replacements can make it slower than a stack.",
+      "expected_evaluation": {
+        "algorithm_correctness": 88,
+        "logical_reasoning": 78,
+        "concept_coverage": 75,
+        "completeness": 82,
+        "data_structure_selection": 78,
+        "complexity_analysis": 72,
+        "edge_case_handling": 78,
+        "classification": "Correct"
+      }
+    },
+    {
+      "test_answer_id": "P002_02",
+      "category": "complexity_mistake",
+      "answer": "I would use a stack, push opening brackets, and pop when the matching closing bracket appears. The algorithm is correct. I believe the time is O(n^2) because every bracket may require checking the stack, and space is O(n).",
+      "expected_evaluation": {
+        "algorithm_correctness": 92,
+        "logical_reasoning": 80,
+        "concept_coverage": 88,
+        "completeness": 82,
+        "data_structure_selection": 94,
+        "complexity_analysis": 45,
+        "edge_case_handling": 78,
+        "classification": "Fallback: Partially Correct"
+      }
+    },
+    {
+      "test_answer_id": "P002_02",
+      "category": "edge_case_missing",
+      "answer": "I would use a stack to match opening and closing brackets. Push openings and pop when a closing bracket appears. The complexity is O(n) time and O(n) space. I would not specifically handle an empty string or a closing bracket appearing when the stack is empty.",
+      "expected_evaluation": {
+        "algorithm_correctness": 88,
+        "logical_reasoning": 78,
+        "concept_coverage": 84,
+        "completeness": 72,
+        "data_structure_selection": 92,
+        "complexity_analysis": 90,
+        "edge_case_handling": 42,
+        "classification": "Fallback: Partially Correct"
+      }
+    },
+    {
+      "test_answer_id": "P002_02",
+      "category": "partially_correct",
+      "answer": "I would push every bracket into a stack and then compare the brackets after reading the string. I am not sure how to handle different bracket types or an unmatched closing bracket.",
+      "expected_evaluation": {
+        "algorithm_correctness": 55,
+        "logical_reasoning": 55,
+        "concept_coverage": 60,
+        "completeness": 50,
+        "data_structure_selection": 70,
+        "complexity_analysis": 55,
+        "edge_case_handling": 45,
+        "classification": "Partially Correct"
+      }
+    }
+  ]
+}
