@@ -55,16 +55,8 @@ function CandidateSidebar() {
 
           {/* Logo */}
 
-          <div className="relative flex h-11 w-11 items-center justify-center rounded-2xl border border-blue-400/20 bg-blue-400/10">
-
-            <div className="absolute inset-0 rounded-2xl bg-blue-400/[0.06] blur-xl" />
-
-            <div className="relative flex h-6 w-6 items-center justify-center rounded-lg bg-blue-400">
-
-              <div className="h-2.5 w-2.5 rounded-full border-2 border-[#08090b]" />
-
-            </div>
-
+          <div className="relative flex h-11 w-11 items-center justify-center">
+            <img src="/public/image/logo-Photoroom.png" alt="SeekLABS" className="h-11 w-11 rounded-2xl object-contain"/>
           </div>
 
 
