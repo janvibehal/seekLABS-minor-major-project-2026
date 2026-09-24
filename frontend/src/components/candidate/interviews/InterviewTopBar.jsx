@@ -11,8 +11,12 @@ function InterviewTopBar({
 
       <div className="flex items-center gap-4">
 
-        <div className="flex h-9 w-9 items-center justify-center bg-[#173b63]">
-          <div className="h-4 w-4 rounded-full border-[3px] border-white border-r-[#8fc5ff]" />
+        <div className="flex h-10 w-10 items-center justify-center">
+          <img
+          src="/images/logo-blue.png"
+          alt="SeekLABS"
+          className="h-7 w-7 object-contain"
+          />
         </div>
 
         <div>

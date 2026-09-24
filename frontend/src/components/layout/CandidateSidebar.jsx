@@ -58,7 +58,7 @@ function CandidateSidebar() {
           {/* Logo */}
           <div className="relative flex h-11 w-11 shrink-0 items-center justify-center">
             <img
-            src="/images/logo-blue.png"
+            src="/images/logo-Photoroom.png"
             alt="SeekLABS"
             className="h-11 w-11 rounded-2xl object-contain"
           />
