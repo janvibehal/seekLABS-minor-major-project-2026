@@ -178,7 +178,11 @@ export const startInterview = async (
         problem: {
           id: firstQuestion.id,
           title: firstQuestion.title,
+          difficulty: firstQuestion.difficulty,
+          topics: firstQuestion.topics,
           description: firstQuestion.description,
+          examples: firstQuestion.examples,
+          constraints: firstQuestion.constraints,
         },
         candidateAnswer: "",
         history: [],
@@ -221,7 +225,11 @@ export const startInterview = async (
       problem: {
         id: firstQuestion.id,
         title: firstQuestion.title,
+        difficulty: firstQuestion.difficulty,
+        topics: firstQuestion.topics,
         description: firstQuestion.description,
+        examples: firstQuestion.examples,
+        constraints: firstQuestion.constraints,
       },
       candidateAnswer: "",
       history: [],

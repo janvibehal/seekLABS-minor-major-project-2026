@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 
 import { createInterview } from '../../../api/interview.api.js'
-import { getRecruiterQuestions } from '../../../api/question.api.js'
+import {
+  getRecruiterQuestions,
+  importRecruiterLeetCodeQuestion,
+} from '../../../api/question.api.js'
 import { getCandidateOptions } from '../../../api/recruiterCandidate.api.js'
 
 
@@ -13,7 +16,8 @@ function CreateInterviewModal({ onClose, onSuccess }) {
   const [title, setTitle] = useState('')
   const [type, setType] = useState('Technical Interview')
   const [company, setCompany] = useState('')
-  const [selectedCandidateIds, setSelectedCandidateIds] = useState([])
+  const [selectedCandidateIds, setSelectedCandidateIds] =
+    useState([])
   const [scheduledAt, setScheduledAt] = useState('')
   const [focusAreas, setFocusAreas] = useState([])
 
@@ -48,6 +52,12 @@ function CreateInterviewModal({ onClose, onSuccess }) {
     useState(false)
 
   const [questionError, setQuestionError] =
+    useState(null)
+
+  const [questionSearch, setQuestionSearch] =
+    useState('')
+
+  const [importingQuestionSlug, setImportingQuestionSlug] =
     useState(null)
 
 
@@ -136,27 +146,41 @@ function CreateInterviewModal({ onClose, onSuccess }) {
   useEffect(() => {
     let cancelled = false
 
-    const fetchQuestions = async () => {
+    const timer = setTimeout(async () => {
       try {
         setLoadingQuestions(true)
         setQuestionError(null)
 
-        const questionList =
+        const response =
           await getRecruiterQuestions(
             difficulty === 'ALL'
               ? undefined
               : difficulty,
+            questionSearch,
           )
 
-        if (!cancelled) {
-          setQuestions(
-            Array.isArray(questionList)
-              ? questionList
-              : [],
-          )
-
-          setCurrentPage(1)
+        if (cancelled) {
+          return
         }
+
+        // Support the response shapes used by the recruiter
+        // questions endpoint and older/local implementations.
+        const nextQuestions =
+          Array.isArray(response)
+            ? response
+            : Array.isArray(response?.data)
+              ? response.data
+              : Array.isArray(response?.questions)
+                ? response.questions
+                : Array.isArray(response?.data?.questions)
+                  ? response.data.questions
+                  : Array.isArray(response?.data?.data)
+                    ? response.data.data
+                    : []
+
+        // Always replace the visible library with the latest result.
+        setQuestions(nextQuestions)
+        setCurrentPage(1)
 
       } catch (err) {
         console.error(
@@ -168,7 +192,7 @@ function CreateInterviewModal({ onClose, onSuccess }) {
           setQuestionError(
             err?.response?.data?.message ||
             err?.message ||
-            'Failed to load questions.',
+            'Failed to load LeetCode questions.',
           )
         }
 
@@ -177,14 +201,16 @@ function CreateInterviewModal({ onClose, onSuccess }) {
           setLoadingQuestions(false)
         }
       }
-    }
-
-    fetchQuestions()
+    }, 300)
 
     return () => {
       cancelled = true
+      clearTimeout(timer)
     }
-  }, [difficulty])
+  }, [
+    difficulty,
+    questionSearch,
+  ])
 
 
   // ============================================================
@@ -193,11 +219,12 @@ function CreateInterviewModal({ onClose, onSuccess }) {
 
   const normalizedQuestions = useMemo(() => {
     return questions.map((question) => ({
-      id:
+      remoteId:
+        question.leetcode_id ||
         question.questionFrontendId ||
+        question.problem_id ||
         question.id ||
         question.titleSlug ||
-        question.slug ||
         question.title,
 
       title:
@@ -205,8 +232,14 @@ function CreateInterviewModal({ onClose, onSuccess }) {
         'Untitled Question',
 
       slug:
+        question.title_slug ||
         question.titleSlug ||
         question.slug ||
+        '',
+
+      leetcodeId:
+        question.leetcode_id ||
+        question.questionFrontendId ||
         '',
 
       difficulty:
@@ -214,9 +247,13 @@ function CreateInterviewModal({ onClose, onSuccess }) {
         'UNKNOWN',
 
       topics:
+        question.topic_tags ||
         question.topicTags ||
         question.tags ||
         [],
+
+      referenceSupported:
+        question.reference_supported !== false,
     }))
   }, [questions])
 
@@ -237,7 +274,6 @@ function CreateInterviewModal({ onClose, onSuccess }) {
     normalizedQuestions.slice(
       (currentPage - 1) *
         QUESTIONS_PER_PAGE,
-
       currentPage *
         QUESTIONS_PER_PAGE,
     )
@@ -247,28 +283,97 @@ function CreateInterviewModal({ onClose, onSuccess }) {
   // SELECT / REMOVE QUESTION
   // ============================================================
 
-  const toggleQuestion = (question) => {
-    setSelectedQuestions((previous) => {
-      const exists = previous.some(
-        (item) =>
-          item.id === question.id,
+  const toggleQuestion = async (question) => {
+    const existing = selectedQuestions.find(
+      (item) =>
+        item.remoteId === question.remoteId,
+    )
+
+    if (existing) {
+      setSelectedQuestions((previous) =>
+        previous.filter(
+          (item) =>
+            item.remoteId !== question.remoteId,
+        ),
+      )
+      return
+    }
+
+    if (!question.referenceSupported) {
+      setQuestionError(
+        'This problem is currently unavailable because the AI reference dataset does not contain a reference solution for it.',
+      )
+      return
+    }
+
+    if (!question.slug) {
+      setQuestionError(
+        'This LeetCode problem does not have a valid slug.',
+      )
+      return
+    }
+
+    try {
+      setQuestionError(null)
+      setImportingQuestionSlug(
+        question.slug,
       )
 
-      if (exists) {
-        return previous.filter(
-          (item) =>
-            item.id !== question.id,
+      const imported =
+        await importRecruiterLeetCodeQuestion(
+          question.slug,
         )
-      }
 
-      return [
-        ...previous,
-        {
-          ...question,
-          time: 10,
-        },
-      ]
-    })
+      setSelectedQuestions((previous) => {
+        if (
+          previous.some(
+            (item) =>
+              item.id === imported.id,
+          )
+        ) {
+          return previous
+        }
+
+        return [
+          ...previous,
+          {
+            ...question,
+
+            id: imported.id,
+
+            title:
+              imported.title ||
+              question.title,
+
+            difficulty:
+              imported.difficulty ||
+              question.difficulty,
+
+            topics:
+              imported.topics ||
+              question.topics,
+
+            // Every newly selected question starts at 10 minutes.
+            time: 10,
+          },
+        ]
+      })
+
+    } catch (err) {
+      console.error(
+        'LeetCode import error:',
+        err,
+      )
+
+      setQuestionError(
+        err?.response?.data?.message ||
+        err?.message ||
+        'Failed to add this LeetCode question.',
+      )
+
+    } finally {
+      setImportingQuestionSlug(null)
+    }
   }
 
 
@@ -280,6 +385,54 @@ function CreateInterviewModal({ onClose, onSuccess }) {
     questionId,
     value,
   ) => {
+    // Allow the input to temporarily be empty while typing.
+    if (value === '') {
+      setSelectedQuestions((previous) =>
+        previous.map((question) =>
+          question.id === questionId
+            ? {
+                ...question,
+                time: '',
+              }
+            : question,
+        ),
+      )
+
+      return
+    }
+
+    const time = Number(value)
+
+    if (
+      !Number.isFinite(time)
+    ) {
+      return
+    }
+
+    setSelectedQuestions((previous) =>
+      previous.map((question) =>
+        question.id === questionId
+          ? {
+              ...question,
+              time:
+                time < 1
+                  ? 1
+                  : time,
+            }
+          : question,
+      ),
+    )
+  }
+
+
+  // ============================================================
+  // NORMALIZE TIME AFTER TYPING
+  // ============================================================
+
+  const normalizeQuestionTime = (
+    questionId,
+    value,
+  ) => {
     const time = Number(value)
 
     setSelectedQuestions((previous) =>
@@ -287,15 +440,50 @@ function CreateInterviewModal({ onClose, onSuccess }) {
         question.id === questionId
           ? {
               ...question,
-
               time:
-                Number.isNaN(time) ||
+                !Number.isFinite(time) ||
                 time < 1
-                  ? 1
-                  : time,
+                  ? 10
+                  : Math.floor(time),
             }
           : question,
       ),
+    )
+  }
+
+
+  // ============================================================
+  // INCREASE QUESTION TIME
+  // ============================================================
+
+  const increaseQuestionTime = (
+    questionId,
+    currentTime,
+  ) => {
+    const time =
+      Number(currentTime) || 10
+
+    updateQuestionTime(
+      questionId,
+      time + 5,
+    )
+  }
+
+
+  // ============================================================
+  // DECREASE QUESTION TIME
+  // ============================================================
+
+  const decreaseQuestionTime = (
+    questionId,
+    currentTime,
+  ) => {
+    const time =
+      Number(currentTime) || 10
+
+    updateQuestionTime(
+      questionId,
+      Math.max(10, time - 5),
     )
   }
 
@@ -308,7 +496,7 @@ function CreateInterviewModal({ onClose, onSuccess }) {
     selectedQuestions.reduce(
       (total, question) =>
         total +
-        Number(question.time || 0),
+        (Number(question.time) || 0),
       0,
     )
 
@@ -350,7 +538,6 @@ function CreateInterviewModal({ onClose, onSuccess }) {
 
     setError(null)
 
-
     if (!title.trim()) {
       setError(
         'Please enter an interview title.',
@@ -358,14 +545,15 @@ function CreateInterviewModal({ onClose, onSuccess }) {
       return
     }
 
-
-    if (selectedCandidateIds.length === 0) {
+    if (
+      selectedCandidateIds.length ===
+      0
+    ) {
       setError(
         'Please select at least one candidate.',
       )
       return
     }
-
 
     if (!scheduledAt) {
       setError(
@@ -374,14 +562,15 @@ function CreateInterviewModal({ onClose, onSuccess }) {
       return
     }
 
-
-    if (selectedQuestions.length === 0) {
+    if (
+      selectedQuestions.length ===
+      0
+    ) {
       setError(
         'Please select at least one question.',
       )
       return
     }
-
 
     try {
       setCreating(true)
@@ -392,9 +581,11 @@ function CreateInterviewModal({ onClose, onSuccess }) {
         type,
 
         company:
-          company.trim() || undefined,
+          company.trim() ||
+          undefined,
 
-        candidateIds: selectedCandidateIds,
+        candidateIds:
+          selectedCandidateIds,
 
         focusAreas,
 
@@ -407,19 +598,17 @@ function CreateInterviewModal({ onClose, onSuccess }) {
 
         questionIds:
           selectedQuestions.map(
-            (question) => question.id,
+            (question) =>
+              question.id,
           ),
       }
-
 
       console.log(
         'CREATE INTERVIEW PAYLOAD:',
         payload,
       )
 
-
       await createInterview(payload)
-
 
       onSuccess?.()
 
@@ -448,10 +637,7 @@ function CreateInterviewModal({ onClose, onSuccess }) {
 
       <div className="my-8 flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden border border-zinc-800 bg-[#111111] shadow-2xl">
 
-
-        {/* =====================================================
-            HEADER
-        ====================================================== */}
+        {/* HEADER */}
 
         <div className="flex shrink-0 items-center justify-between border-b border-zinc-800 px-6 py-5">
 
@@ -471,7 +657,6 @@ function CreateInterviewModal({ onClose, onSuccess }) {
 
           </div>
 
-
           <button
             type="button"
             onClick={onClose}
@@ -483,10 +668,6 @@ function CreateInterviewModal({ onClose, onSuccess }) {
         </div>
 
 
-        {/* =====================================================
-            FORM
-        ====================================================== */}
-
         <form
           onSubmit={handleCreateInterview}
           className="min-h-0 flex-1 overflow-y-auto"
@@ -494,10 +675,7 @@ function CreateInterviewModal({ onClose, onSuccess }) {
 
           <div className="space-y-8 p-6">
 
-
-            {/* =================================================
-                INTERVIEW DETAILS
-            ================================================== */}
+            {/* INTERVIEW DETAILS */}
 
             <section>
 
@@ -505,11 +683,7 @@ function CreateInterviewModal({ onClose, onSuccess }) {
                 Interview Details
               </SectionTitle>
 
-
               <div className="mt-5 grid gap-5 md:grid-cols-2">
-
-
-                {/* TITLE */}
 
                 <Field
                   label="Interview Title"
@@ -529,8 +703,6 @@ function CreateInterviewModal({ onClose, onSuccess }) {
 
                 </Field>
 
-
-                {/* TYPE */}
 
                 <Field label="Interview Type">
 
@@ -561,8 +733,6 @@ function CreateInterviewModal({ onClose, onSuccess }) {
                 </Field>
 
 
-                {/* COMPANY */}
-
                 <Field label="Company">
 
                   <input
@@ -579,8 +749,6 @@ function CreateInterviewModal({ onClose, onSuccess }) {
                 </Field>
 
 
-                {/* CANDIDATE SELECTION */}
-
                 <Field
                   label="Candidates"
                   required
@@ -591,123 +759,255 @@ function CreateInterviewModal({ onClose, onSuccess }) {
                     <div className="flex items-center justify-between border-b border-zinc-800 px-4 py-3">
 
                       <label className="flex cursor-pointer items-center gap-3 text-xs text-zinc-300">
+
                         <span className="relative flex h-4 w-4 shrink-0 items-center justify-center">
+
                           <input
                             type="checkbox"
                             checked={
-                              candidates.length > 0 &&
-                              selectedCandidateIds.length === candidates.length
+                              candidates.length >
+                                0 &&
+                              selectedCandidateIds.length ===
+                                candidates.length
                             }
                             onChange={(event) => {
-                              if (event.target.checked) {
+
+                              if (
+                                event.target.checked
+                              ) {
+
                                 setSelectedCandidateIds(
-                                  candidates.map((candidate) => candidate.id),
+                                  candidates.map(
+                                    (candidate) =>
+                                      candidate.id,
+                                  ),
                                 )
+
                               } else {
-                                setSelectedCandidateIds([])
+
+                                setSelectedCandidateIds(
+                                  [],
+                                )
+
                               }
+
                             }}
                             disabled={
                               loadingCandidates ||
-                              candidates.length === 0
+                              candidates.length ===
+                                0
                             }
                             className="peer absolute inset-0 h-4 w-4 cursor-pointer opacity-0 disabled:cursor-not-allowed"
                           />
+
                           <span className="pointer-events-none flex h-4 w-4 items-center justify-center rounded-sm border border-zinc-600 bg-[#181818] transition-colors peer-checked:border-blue-500 peer-checked:bg-blue-500 peer-focus-visible:ring-2 peer-focus-visible:ring-blue-500/40">
-                            {selectedCandidateIds.length === candidates.length && candidates.length > 0 && (
-                              <svg viewBox="0 0 16 16" fill="none" className="h-3 w-3 text-white" aria-hidden="true">
-                                <path d="M3.5 8.25 6.5 11l6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+
+                            {selectedCandidateIds.length ===
+                              candidates.length &&
+                              candidates.length >
+                                0 && (
+
+                              <svg
+                                viewBox="0 0 16 16"
+                                fill="none"
+                                className="h-3 w-3 text-white"
+                                aria-hidden="true"
+                              >
+
+                                <path
+                                  d="M3.5 8.25 6.5 11l6-6"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+
                               </svg>
+
                             )}
+
                           </span>
+
                         </span>
+
                         <span>
-                          {selectedCandidateIds.length === candidates.length && candidates.length > 0
+
+                          {selectedCandidateIds.length ===
+                            candidates.length &&
+                          candidates.length >
+                            0
                             ? 'Deselect All'
                             : 'Select All'}
+
                         </span>
+
                       </label>
 
+
                       <span className="text-[10px] font-medium uppercase tracking-wider text-zinc-500">
-                        {selectedCandidateIds.length} selected
+
+                        {
+                          selectedCandidateIds.length
+                        }{' '}
+
+                        selected
+
                       </span>
 
                     </div>
 
+
                     <div className="max-h-48 overflow-y-auto">
 
                       {loadingCandidates ? (
+
                         <p className="px-4 py-4 text-xs text-zinc-500">
                           Loading candidates...
                         </p>
-                      ) : candidates.length === 0 ? (
+
+                      ) : candidates.length ===
+                        0 ? (
+
                         <p className="px-4 py-4 text-xs text-zinc-500">
                           No candidates available.
                         </p>
+
                       ) : (
-                        candidates.map((candidate) => {
-                          const name =
-                            candidate.name ||
-                            `${candidate.firstName || ''} ${candidate.lastName || ''}`.trim()
 
-                          const selected = selectedCandidateIds.includes(
-                            candidate.id,
-                          )
+                        candidates.map(
+                          (
+                            candidate,
+                          ) => {
 
-                          return (
-                            <label
-                              key={candidate.id}
-                              className="flex cursor-pointer items-center gap-3 border-b border-zinc-800/70 px-4 py-3 last:border-b-0 hover:bg-zinc-800/40"
-                            >
-                              <span className="relative flex h-4 w-4 shrink-0 items-center justify-center">
-                                <input
-                                  type="checkbox"
-                                  checked={selected}
-                                  onChange={() => {
-                                    setSelectedCandidateIds((previous) =>
-                                      previous.includes(candidate.id)
-                                        ? previous.filter((id) => id !== candidate.id)
-                                        : [...previous, candidate.id],
-                                    )
-                                  }}
-                                  className="peer absolute inset-0 h-4 w-4 cursor-pointer opacity-0"
-                                />
-                                <span className="pointer-events-none flex h-4 w-4 items-center justify-center rounded-sm border border-zinc-600 bg-[#181818] transition-colors peer-checked:border-blue-500 peer-checked:bg-blue-500 peer-focus-visible:ring-2 peer-focus-visible:ring-blue-500/40">
-                                  {selected && (
-                                    <svg viewBox="0 0 16 16" fill="none" className="h-3 w-3 text-white" aria-hidden="true">
-                                      <path d="M3.5 8.25 6.5 11l6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                    </svg>
-                                  )}
+                            const name =
+                              candidate.name ||
+                              `${
+                                candidate.firstName ||
+                                ''
+                              } ${
+                                candidate.lastName ||
+                                ''
+                              }`.trim()
+
+                            const selected =
+                              selectedCandidateIds.includes(
+                                candidate.id,
+                              )
+
+                            return (
+
+                              <label
+                                key={
+                                  candidate.id
+                                }
+                                className="flex cursor-pointer items-center gap-3 border-b border-zinc-800/70 px-4 py-3 last:border-b-0 hover:bg-zinc-800/40"
+                              >
+
+                                <span className="relative flex h-4 w-4 shrink-0 items-center justify-center">
+
+                                  <input
+                                    type="checkbox"
+                                    checked={
+                                      selected
+                                    }
+                                    onChange={() => {
+
+                                      setSelectedCandidateIds(
+                                        (
+                                          previous,
+                                        ) =>
+                                          previous.includes(
+                                            candidate.id,
+                                          )
+                                            ? previous.filter(
+                                                (
+                                                  id,
+                                                ) =>
+                                                  id !==
+                                                  candidate.id,
+                                              )
+                                            : [
+                                                ...previous,
+                                                candidate.id,
+                                              ],
+                                      )
+
+                                    }}
+                                    className="peer absolute inset-0 h-4 w-4 cursor-pointer opacity-0"
+                                  />
+
+                                  <span className="pointer-events-none flex h-4 w-4 items-center justify-center rounded-sm border border-zinc-600 bg-[#181818] transition-colors peer-checked:border-blue-500 peer-checked:bg-blue-500 peer-focus-visible:ring-2 peer-focus-visible:ring-blue-500/40">
+
+                                    {selected && (
+
+                                      <svg
+                                        viewBox="0 0 16 16"
+                                        fill="none"
+                                        className="h-3 w-3 text-white"
+                                        aria-hidden="true"
+                                      >
+
+                                        <path
+                                          d="M3.5 8.25 6.5 11l6-6"
+                                          stroke="currentColor"
+                                          strokeWidth="2"
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                        />
+
+                                      </svg>
+
+                                    )}
+
+                                  </span>
+
                                 </span>
-                              </span>
 
-                              <div className="min-w-0">
-                                <p className="truncate text-sm text-white">
-                                  {name || 'Unnamed Candidate'}
-                                </p>
-                                <p className="truncate text-[10px] text-zinc-500">
-                                  {candidate.email}
-                                </p>
-                              </div>
-                            </label>
-                          )
-                        })
+
+                                <div className="min-w-0">
+
+                                  <p className="truncate text-sm text-white">
+
+                                    {name ||
+                                      'Unnamed Candidate'}
+
+                                  </p>
+
+
+                                  <p className="truncate text-[10px] text-zinc-500">
+
+                                    {
+                                      candidate.email
+                                    }
+
+                                  </p>
+
+                                </div>
+
+                              </label>
+
+                            )
+
+                          },
+                        )
+
                       )}
 
                     </div>
 
                   </div>
 
+
                   {candidateError && (
+
                     <p className="mt-2 text-[10px] text-red-400">
                       {candidateError}
                     </p>
+
                   )}
 
                 </Field>
 
-
-                {/* SCHEDULE */}
 
                 <Field
                   label="Schedule"
@@ -722,259 +1022,202 @@ function CreateInterviewModal({ onClose, onSuccess }) {
                         event.target.value,
                       )
                     }
-                    className="w-full border border-zinc-700 bg-[#181818] px-4 py-3 text-sm text-white outline-none transition focus:border-blue-500"
+                    className="w-full border border-zinc-700 bg-[#181818] px-4 py-3 text-sm text-white outline-none transition focus:border-blue-500 [color-scheme:dark]"
                   />
 
                 </Field>
 
-
-                {/* FOCUS AREA */}
-
-                <Field label="Focus Area">
-
-                  <select
-                    value=""
-                    onChange={(event) => {
-                      const value =
-                        event.target.value
-
-                      if (
-                        value &&
-                        !focusAreas.includes(
-                          value,
-                        )
-                      ) {
-                        setFocusAreas([
-                          ...focusAreas,
-                          value,
-                        ])
-                      }
-                    }}
-                    className="w-full border border-zinc-700 bg-[#181818] px-4 py-3 text-sm text-zinc-300 outline-none transition focus:border-blue-500"
-                  >
-
-                    <option value="">
-                      Select a topic
-                    </option>
-
-                    <option value="Arrays">
-                      Arrays
-                    </option>
-
-                    <option value="Strings">
-                      Strings
-                    </option>
-
-                    <option value="Trees">
-                      Trees
-                    </option>
-
-                    <option value="Graphs">
-                      Graphs
-                    </option>
-
-                    <option value="Dynamic Programming">
-                      Dynamic Programming
-                    </option>
-
-                    <option value="Binary Search">
-                      Binary Search
-                    </option>
-
-                    <option value="Linked Lists">
-                      Linked Lists
-                    </option>
-
-                    <option value="Stacks">
-                      Stacks
-                    </option>
-
-                    <option value="Queues">
-                      Queues
-                    </option>
-
-                  </select>
-
-                </Field>
-
               </div>
-
-
-              {/* SELECTED FOCUS AREAS */}
-
-              {focusAreas.length > 0 && (
-
-                <div className="mt-4 flex flex-wrap gap-2">
-
-                  {focusAreas.map((area) => (
-
-                    <button
-                      key={area}
-                      type="button"
-                      onClick={() =>
-                        setFocusAreas(
-                          focusAreas.filter(
-                            (item) =>
-                              item !== area,
-                          ),
-                        )
-                      }
-                      className="flex items-center gap-2 border border-blue-500/20 bg-blue-500/10 px-3 py-1.5 text-[10px] font-medium text-blue-400 transition hover:bg-red-500/10 hover:text-red-400"
-                    >
-
-                      {area}
-
-                      <span className="text-sm">
-                        ×
-                      </span>
-
-                    </button>
-
-                  ))}
-
-                </div>
-
-              )}
 
             </section>
 
 
-            {/* =================================================
-                SELECTED QUESTIONS
-            ================================================== */}
+            {/* SELECTED QUESTIONS */}
 
-            <section className="overflow-hidden border border-zinc-800 bg-[#151515]">
+            <section>
 
-              <div className="flex items-center justify-between border-b border-zinc-800 px-5 py-4">
+              <SectionTitle>
+                Selected Questions
+              </SectionTitle>
 
-                <div>
+              <div className="mt-4 space-y-2">
 
-                  <SectionTitle>
-                    Selected Questions
-                  </SectionTitle>
+                {selectedQuestions.length ===
+                0 ? (
 
-                  <p className="mt-2 text-[10px] text-zinc-500">
-                    Configure an individual time limit for every question.
-                  </p>
+                  <div className="border border-zinc-800 bg-[#111111] px-5 py-8 text-center">
 
-                </div>
+                    <p className="text-xs text-zinc-600">
+                      No questions selected yet.
+                    </p>
 
+                  </div>
 
-                <div className="text-right">
+                ) : (
 
-                  <p className="text-[9px] font-semibold uppercase tracking-wider text-zinc-600">
-                    Total Duration
-                  </p>
-
-                  <p className="mt-1 text-lg font-semibold text-white">
-                    {totalTime} min
-                  </p>
-
-                </div>
-
-              </div>
-
-
-              {selectedQuestions.length === 0 ? (
-
-                <div className="px-5 py-10 text-center">
-
-                  <p className="text-xs text-zinc-500">
-                    No questions selected yet.
-                  </p>
-
-                </div>
-
-              ) : (
-
-                <div className="divide-y divide-zinc-800">
-
-                  {selectedQuestions.map(
-                    (question, index) => (
+                  selectedQuestions.map(
+                    (
+                      question,
+                      index,
+                    ) => (
 
                       <div
                         key={question.id}
-                        className="flex items-center gap-4 px-5 py-4"
+                        className="flex items-center gap-4 border border-zinc-800 bg-[#111111] px-4 py-3"
                       >
 
-                        <span className="flex h-7 w-7 shrink-0 items-center justify-center bg-blue-500/10 text-[10px] font-semibold text-blue-400">
+                        <span className="w-6 text-[10px] font-semibold text-zinc-600">
                           {index + 1}
                         </span>
 
 
                         <div className="min-w-0 flex-1">
 
-                          <p className="truncate text-xs font-medium text-zinc-200">
-                            {question.title}
+                          <div className="flex items-center gap-3">
+
+                            <span className="text-[10px] font-semibold text-blue-400">
+
+                              #
+
+                              {
+                                question.leetcodeId ||
+                                '—'
+                              }
+
+                            </span>
+
+
+                            <p className="truncate text-xs font-medium text-zinc-200">
+
+                              {
+                                question.title
+                              }
+
+                            </p>
+
+                          </div>
+
+
+                          <p className="mt-1 text-[9px] text-zinc-600">
+
+                            {
+                              question.difficulty
+                            }
+
                           </p>
 
-                          <span
-                            className={`mt-2 inline-block px-2 py-1 text-[9px] font-semibold ${getDifficultyClass(
-                              question.difficulty,
-                            )}`}
-                          >
-                            {question.difficulty}
-                          </span>
+                        </div>
+
+
+                        {/* TIME COUNTER */}
+
+                        <div className="flex items-center gap-3">
+
+                          <label className="text-[9px] uppercase tracking-wider text-zinc-600">
+                            Minutes
+                          </label>
+
+
+                          <div className="flex items-center border border-zinc-700 bg-[#181818]">
+
+                            {/* DECREASE BY 5 */}
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                decreaseQuestionTime(
+                                  question.id,
+                                  question.time,
+                                )
+                              }
+                              disabled={
+                                Number(
+                                  question.time ||
+                                    10,
+                                ) <= 1
+                              }
+                              className="flex h-9 w-9 items-center justify-center border-r border-zinc-700 text-lg leading-none text-zinc-400 transition hover:bg-zinc-800 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                              aria-label="Decrease interview time by 5 minutes"
+                            >
+                              −
+                            </button>
+
+
+                            {/* TYPE TIME */}
+
+                            <input
+                              type="number"
+                              min="10"
+                              step="5"
+                              value={question.time}
+                              onChange={(event) =>
+                                updateQuestionTime(
+                                  question.id,
+                                  event.target.value,
+                                )
+                              }
+                              onBlur={(event) =>
+                                normalizeQuestionTime(
+                                  question.id,
+                                  event.target.value,
+                                )
+                              }
+                              className="h-9 w-16 appearance-none border-0 bg-transparent px-1 text-center text-sm font-medium text-white outline-none focus:ring-1 focus:ring-inset focus:ring-blue-500 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                            />
+
+
+                            {/* INCREASE BY 5 */}
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                increaseQuestionTime(
+                                  question.id,
+                                  question.time,
+                                )
+                              }
+                              className="flex h-9 w-9 items-center justify-center border-l border-zinc-700 text-lg leading-none text-zinc-400 transition hover:bg-zinc-800 hover:text-white"
+                              aria-label="Increase interview time by 5 minutes"
+                            >
+                              +
+                            </button>
+
+                          </div>
 
                         </div>
 
 
-                        <div className="flex items-center gap-2">
+                        {/* REMOVE */}
 
-                          <input
-                            type="number"
-                            min="1"
-                            value={question.time}
-                            onChange={(event) =>
-                              updateQuestionTime(
-                                question.id,
-                                event.target.value,
-                              )
-                            }
-                            className="w-16 border border-zinc-700 bg-[#0d0d0d] px-2 py-2 text-center text-xs text-white outline-none focus:border-blue-500"
-                          />
-
-                          <span className="text-[10px] text-zinc-500">
-                            min
-                          </span>
-
-
-                          <button
-                            type="button"
-                            onClick={() =>
-                              toggleQuestion(
-                                question,
-                              )
-                            }
-                            className="ml-2 text-lg text-zinc-500 transition hover:text-red-400"
-                          >
-                            ×
-                          </button>
-
-                        </div>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            toggleQuestion(
+                              question,
+                            )
+                          }
+                          className="border border-red-500/20 bg-red-500/10 px-3 py-2 text-[10px] font-semibold text-red-400 transition hover:bg-red-500/20"
+                        >
+                          Remove
+                        </button>
 
                       </div>
 
                     ),
-                  )}
+                  )
 
-                </div>
+                )}
 
-              )}
+              </div>
 
             </section>
 
 
-            {/* =================================================
-                QUESTION LIBRARY
-            ================================================== */}
+            {/* QUESTION LIBRARY */}
 
-            <section className="overflow-hidden border border-zinc-800 bg-[#151515]">
+            <section>
 
-
-              {/* HEADER */}
-
-              <div className="flex items-center justify-between border-b border-zinc-800 px-5 py-4">
+              <div className="flex items-end justify-between">
 
                 <div>
 
@@ -982,108 +1225,179 @@ function CreateInterviewModal({ onClose, onSuccess }) {
                     Question Library
                   </SectionTitle>
 
-                  <p className="mt-2 text-[10px] text-zinc-500">
-                    Select questions from your backend question bank.
+
+                  <p className="mt-2 text-xs text-zinc-500">
+                    Search the full free LeetCode problem library by ID or name.
                   </p>
 
                 </div>
 
 
-                {/* DIFFICULTY FILTER */}
+                <div className="text-[10px] text-zinc-600">
 
-                <div className="relative">
+                  {
+                    normalizedQuestions.length
+                  }{' '}
 
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setShowDifficultyMenu(
-                        !showDifficultyMenu,
-                      )
-                    }
-                    className="flex h-9 items-center gap-2 border border-zinc-700 px-3 text-[10px] font-medium text-zinc-400 transition hover:border-zinc-600 hover:text-white"
-                  >
-
-                    <SortIcon />
-
-                    {difficulty}
-
-                  </button>
-
-
-                  {showDifficultyMenu && (
-
-                    <div className="absolute right-0 top-11 z-30 w-40 overflow-hidden border border-zinc-700 bg-[#181818] shadow-2xl">
-
-                      {[
-                        'ALL',
-                        'EASY',
-                        'MEDIUM',
-                        'HARD',
-                      ].map((item) => (
-
-                        <button
-                          key={item}
-                          type="button"
-                          onClick={() => {
-                            setDifficulty(item)
-
-                            setShowDifficultyMenu(
-                              false,
-                            )
-                          }}
-                          className={`block w-full px-4 py-3 text-left text-[10px] transition hover:bg-zinc-800 ${
-                            difficulty === item
-                              ? 'text-blue-400'
-                              : 'text-zinc-400'
-                          }`}
-                        >
-
-                          {item === 'ALL'
-                            ? 'All Questions'
-                            : item}
-
-                        </button>
-
-                      ))}
-
-                    </div>
-
-                  )}
+                  visible
 
                 </div>
 
               </div>
 
 
-              {/* LOADING */}
+              <div className="mt-5 border border-zinc-800 bg-[#111111]">
 
-              {loadingQuestions && (
+                {/* SEARCH */}
 
-                <div className="px-5 py-14 text-center">
+                <div className="flex flex-col gap-3 border-b border-zinc-800 p-4 md:flex-row">
 
-                  <div className="mx-auto h-7 w-7 animate-spin rounded-full border-2 border-zinc-700 border-t-blue-400" />
+                  <div className="relative flex-1">
 
-                  <p className="mt-4 text-xs text-zinc-500">
-                    Loading questions...
-                  </p>
+                    <input
+                      value={questionSearch}
+                      onChange={(
+                        event,
+                      ) => {
+
+                        setQuestionSearch(
+                          event.target
+                            .value,
+                        )
+
+                        setCurrentPage(
+                          1,
+                        )
+
+                      }}
+                      placeholder="Search by LeetCode ID or problem name..."
+                      className="w-full border border-zinc-700 bg-[#181818] px-4 py-3 text-xs text-white outline-none placeholder:text-zinc-600 transition focus:border-blue-500"
+                    />
+
+                  </div>
+
+
+                  <div className="relative">
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setShowDifficultyMenu(
+                          (
+                            previous,
+                          ) =>
+                            !previous,
+                        )
+                      }
+                      className="flex min-w-[170px] items-center justify-between border border-zinc-700 bg-[#181818] px-4 py-3 text-xs text-zinc-300 transition hover:border-zinc-600"
+                    >
+
+                      <span>
+
+                        {
+                          {
+                            ALL:
+                              'All Difficulties',
+                            EASY:
+                              'Easy',
+                            MEDIUM:
+                              'Medium',
+                            HARD:
+                              'Hard',
+                          }[
+                            difficulty
+                          ]
+                        }
+
+                      </span>
+
+
+                      <SortIcon />
+
+                    </button>
+
+
+                    {showDifficultyMenu && (
+
+                      <div className="absolute right-0 top-full z-20 mt-1 min-w-[170px] border border-zinc-700 bg-[#181818] shadow-xl">
+
+                        {[
+                          {
+                            value: 'ALL',
+                            label:
+                              'All Difficulties',
+                          },
+                          {
+                            value: 'EASY',
+                            label: 'Easy',
+                          },
+                          {
+                            value: 'MEDIUM',
+                            label:
+                              'Medium',
+                          },
+                          {
+                            value: 'HARD',
+                            label: 'Hard',
+                          },
+                        ].map(
+                          (
+                            option,
+                          ) => (
+
+                            <button
+                              key={
+                                option.value
+                              }
+                              type="button"
+                              onClick={() => {
+
+                                setDifficulty(
+                                  option.value,
+                                )
+
+                                setShowDifficultyMenu(
+                                  false,
+                                )
+
+                                setCurrentPage(
+                                  1,
+                                )
+
+                              }}
+                              className={`block w-full px-4 py-3 text-left text-xs transition ${
+                                difficulty ===
+                                option.value
+                                  ? 'bg-blue-500/10 text-blue-400'
+                                  : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
+                              }`}
+                            >
+
+                              {
+                                option.label
+                              }
+
+                            </button>
+
+                          ),
+                        )}
+
+                      </div>
+
+                    )}
+
+                  </div>
 
                 </div>
 
-              )}
 
+                {/* ERROR */}
 
-              {/* QUESTION ERROR */}
+                {questionError && (
 
-              {questionError &&
-                !loadingQuestions && (
+                  <div className="border-b border-amber-500/20 bg-amber-500/5 px-4 py-3">
 
-                  <div className="px-5 py-12 text-center">
-
-                    <p className="text-xs font-medium text-red-400">
-                      Failed to load questions
-                    </p>
-
-                    <p className="mt-2 text-[10px] text-zinc-500">
+                    <p className="text-[10px] text-amber-400">
                       {questionError}
                     </p>
 
@@ -1092,133 +1406,265 @@ function CreateInterviewModal({ onClose, onSuccess }) {
                 )}
 
 
-              {/* QUESTIONS */}
+                {/* QUESTIONS */}
 
-              {!loadingQuestions &&
-                !questionError && (
+                <div className="relative min-h-[430px]">
 
-                  <div className="divide-y divide-zinc-800">
+                  {/* Keep existing questions visible while
+                      search/filter results are loading. */}
 
-                    {paginatedQuestions.map(
-                      (question) => {
+                  {paginatedQuestions.length >
+                    0 && (
 
-                        const selected =
-                          selectedQuestions.some(
-                            (item) =>
-                              item.id ===
-                              question.id,
-                          )
+                    <div
+                      className={
+                        loadingQuestions
+                          ? 'pointer-events-none opacity-50 transition-opacity'
+                          : 'transition-opacity'
+                      }
+                    >
 
-                        return (
+                      {paginatedQuestions.map(
+                        (
+                          question,
+                        ) => {
 
-                          <div
-                            key={question.id}
-                            className="flex items-center gap-4 px-5 py-5 transition hover:bg-zinc-900/50"
-                          >
+                          const selected =
+                            selectedQuestions.some(
+                              (
+                                item,
+                              ) =>
+                                item.remoteId ===
+                                question.remoteId,
+                            )
 
-                            <div className="min-w-0 flex-1">
+                          return (
 
-                              <p className="text-sm font-medium text-zinc-200">
-                                {question.title}
-                              </p>
+                            <div
+                              key={
+                                question.remoteId
+                              }
+                              className={`flex items-center justify-between gap-4 border-b border-zinc-800 px-5 py-4 transition ${
+                                selected
+                                  ? 'bg-blue-500/5'
+                                  : 'hover:bg-zinc-900'
+                              }`}
+                            >
+
+                              <div className="min-w-0 flex-1">
+
+                                <div className="flex items-center gap-3">
+
+                                  <span className="shrink-0 text-[10px] font-semibold text-blue-400">
+
+                                    #
+
+                                    {
+                                      question.leetcodeId ||
+                                      '—'
+                                    }
+
+                                  </span>
 
 
-                              <div className="mt-3 flex flex-wrap gap-2">
+                                  <p className="truncate text-sm font-medium text-zinc-200">
 
-                                <span
-                                  className={`px-2 py-1 text-[9px] font-semibold ${getDifficultyClass(
-                                    question.difficulty,
-                                  )}`}
-                                >
-                                  {question.difficulty}
-                                </span>
+                                    {
+                                      question.title
+                                    }
+
+                                  </p>
+
+                                </div>
 
 
-                                {question.topics
-                                  ?.slice(0, 3)
-                                  .map(
-                                    (topic, index) => {
+                                <div className="mt-3 flex flex-wrap gap-2">
 
-                                      const topicName =
-                                        typeof topic ===
-                                        'string'
-                                          ? topic
-                                          : topic?.name ||
-                                            topic?.slug ||
-                                            `Topic ${index + 1}`
+                                  <span
+                                    className={`px-2 py-1 text-[9px] font-semibold ${getDifficultyClass(
+                                      question.difficulty,
+                                    )}`}
+                                  >
 
-                                      return (
+                                    {
+                                      question.difficulty
+                                    }
 
-                                        <span
-                                          key={`${topicName}-${index}`}
-                                          className="border border-zinc-800 bg-zinc-900 px-2 py-1 text-[9px] text-zinc-500"
-                                        >
-                                          {topicName}
-                                        </span>
+                                  </span>
 
-                                      )
-                                    },
-                                  )}
+
+                                  {question.topics
+                                    ?.slice(
+                                      0,
+                                      3,
+                                    )
+                                    .map(
+                                      (
+                                        topic,
+                                        index,
+                                      ) => {
+
+                                        const topicName =
+                                          typeof topic ===
+                                          'string'
+                                            ? topic
+                                            : topic?.name ||
+                                              topic?.slug ||
+                                              `Topic ${
+                                                index +
+                                                1
+                                              }`
+
+                                        return (
+
+                                          <span
+                                            key={`${topicName}-${index}`}
+                                            className="border border-zinc-800 bg-zinc-900 px-2 py-1 text-[9px] text-zinc-500"
+                                          >
+
+                                            {
+                                              topicName
+                                            }
+
+                                          </span>
+
+                                        )
+
+                                      },
+                                    )}
+
+                                </div>
 
                               </div>
 
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  toggleQuestion(
+                                    question,
+                                  )
+                                }
+                                disabled={
+                                  !question.referenceSupported ||
+                                  importingQuestionSlug ===
+                                    question.slug
+                                }
+                                className={`min-w-[80px] px-4 py-2 text-[10px] font-semibold transition ${
+                                  !question.referenceSupported
+                                    ? 'cursor-not-allowed border border-zinc-800 bg-zinc-900 text-zinc-600'
+                                    : selected
+                                      ? 'border border-red-500/20 bg-red-500/10 text-red-400 hover:bg-red-500/20'
+                                      : 'border border-blue-500/20 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20'
+                                } disabled:cursor-wait disabled:opacity-70`}
+                              >
+
+                                {
+                                  importingQuestionSlug ===
+                                  question.slug
+                                    ? 'Adding...'
+                                    : !question.referenceSupported
+                                      ? 'Unavailable'
+                                      : selected
+                                        ? 'Remove'
+                                        : 'Add'
+                                }
+
+                              </button>
+
                             </div>
 
+                          )
 
-                            <button
-                              type="button"
-                              onClick={() =>
-                                toggleQuestion(
-                                  question,
-                                )
-                              }
-                              className={`min-w-[80px] px-4 py-2 text-[10px] font-semibold transition ${
-                                selected
-                                  ? 'border border-red-500/20 bg-red-500/10 text-red-400 hover:bg-red-500/20'
-                                  : 'border border-blue-500/20 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20'
-                              }`}
-                            >
-                              {selected
-                                ? 'Remove'
-                                : 'Add'}
-                            </button>
+                        },
+                      )}
 
-                          </div>
+                    </div>
 
-                        )
-                      },
-                    )}
+                  )}
 
 
-                    {paginatedQuestions.length ===
+                  {/* INITIAL LOADING */}
+
+                  {paginatedQuestions.length ===
+                    0 &&
+                    loadingQuestions && (
+
+                    <div className="flex min-h-[430px] items-center justify-center">
+
+                      <div className="text-center">
+
+                        <span className="mx-auto block h-6 w-6 animate-spin rounded-full border-2 border-zinc-700 border-t-blue-400" />
+
+                        <p className="mt-4 text-xs text-zinc-600">
+                          Loading questions...
+                        </p>
+
+                      </div>
+
+                    </div>
+
+                  )}
+
+
+                  {/* NO RESULTS */}
+
+                  {!loadingQuestions &&
+                    paginatedQuestions.length ===
                       0 && (
 
-                      <div className="px-5 py-14 text-center">
+                    <div className="flex min-h-[430px] items-center justify-center px-5 text-center">
+
+                      <div>
 
                         <p className="text-xs text-zinc-500">
                           No questions found.
                         </p>
 
+                        <p className="mt-2 text-[10px] text-zinc-700">
+                          Try a different problem ID or problem name.
+                        </p>
+
                       </div>
 
-                    )}
+                    </div>
 
-                  </div>
-
-                )}
+                  )}
 
 
-              {/* PAGINATION */}
+                  {/* UPDATING INDICATOR */}
 
-              {!loadingQuestions &&
-                !questionError &&
-                normalizedQuestions.length > 0 && (
+                  {loadingQuestions &&
+                    paginatedQuestions.length >
+                      0 && (
+
+                    <div className="absolute right-4 top-4 z-10 flex items-center gap-2 border border-zinc-700 bg-[#181818] px-3 py-2 text-[10px] text-zinc-500">
+
+                      <span className="h-2.5 w-2.5 animate-spin rounded-full border border-zinc-600 border-t-blue-400" />
+
+                      Updating...
+
+                    </div>
+
+                  )}
+
+                </div>
+
+
+                {/* PAGINATION */}
+
+                {!loadingQuestions &&
+                  normalizedQuestions.length >
+                    0 && (
 
                   <div className="flex items-center justify-between border-t border-zinc-800 bg-[#111111] px-5 py-4">
 
                     <p className="text-[10px] text-zinc-500">
+
                       Page {currentPage} of{' '}
+
                       {totalPages}
+
                     </p>
 
 
@@ -1227,12 +1673,16 @@ function CreateInterviewModal({ onClose, onSuccess }) {
                       <button
                         type="button"
                         disabled={
-                          currentPage === 1
+                          currentPage ===
+                          1
                         }
                         onClick={() =>
                           setCurrentPage(
-                            (previous) =>
-                              previous - 1,
+                            (
+                              previous,
+                            ) =>
+                              previous -
+                              1,
                           )
                         }
                         className="border border-zinc-700 px-4 py-2 text-[10px] text-zinc-400 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
@@ -1249,8 +1699,11 @@ function CreateInterviewModal({ onClose, onSuccess }) {
                         }
                         onClick={() =>
                           setCurrentPage(
-                            (previous) =>
-                              previous + 1,
+                            (
+                              previous,
+                            ) =>
+                              previous +
+                              1,
                           )
                         }
                         className="border border-zinc-700 px-4 py-2 text-[10px] text-zinc-400 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
@@ -1264,12 +1717,12 @@ function CreateInterviewModal({ onClose, onSuccess }) {
 
                 )}
 
+              </div>
+
             </section>
 
 
-            {/* =================================================
-                ERROR
-            ================================================== */}
+            {/* ERROR */}
 
             {error && (
 
@@ -1286,19 +1739,24 @@ function CreateInterviewModal({ onClose, onSuccess }) {
           </div>
 
 
-          {/* ===================================================
-              FOOTER
-          ==================================================== */}
+          {/* FOOTER */}
 
           <div className="sticky bottom-0 flex shrink-0 items-center justify-between border-t border-zinc-800 bg-[#111111] px-6 py-4">
 
             <div className="text-[10px] text-zinc-500">
 
-              {selectedQuestions.length}{' '}
+              {
+                selectedQuestions.length
+              }{' '}
+
               question
-              {selectedQuestions.length !== 1
-                ? 's'
-                : ''}{' '}
+              {
+                selectedQuestions.length !==
+                1
+                  ? 's'
+                  : ''
+              }{' '}
+
               selected
 
             </div>
@@ -1320,13 +1778,21 @@ function CreateInterviewModal({ onClose, onSuccess }) {
                 type="submit"
                 disabled={
                   creating ||
-                  loadingCandidates
+                  loadingCandidates ||
+                  selectedCandidateIds.length ===
+                    0 ||
+                  selectedQuestions.length ===
+                    0 ||
+                  !scheduledAt ||
+                  !title.trim()
                 }
                 className="bg-blue-600 px-6 py-2.5 text-xs font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
               >
+
                 {creating
                   ? 'Creating Interview...'
                   : `Create Interview (${totalTime} min)`}
+
               </button>
 
             </div>
@@ -1346,7 +1812,9 @@ function CreateInterviewModal({ onClose, onSuccess }) {
    REUSABLE COMPONENTS
 ============================================================ */
 
-function SectionTitle({ children }) {
+function SectionTitle({
+  children,
+}) {
   return (
     <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-blue-400">
       {children}
@@ -1368,12 +1836,15 @@ function Field({
         {label}
 
         {required && (
+
           <span className="ml-1 text-red-400">
             *
           </span>
+
         )}
 
       </label>
+
 
       {children}
 
@@ -1395,7 +1866,9 @@ function CloseIcon() {
       stroke="currentColor"
       strokeWidth="1.8"
     >
+
       <path d="m6 6 12 12M18 6 6 18" />
+
     </svg>
   )
 }
@@ -1410,10 +1883,15 @@ function SortIcon() {
       stroke="currentColor"
       strokeWidth="1.8"
     >
+
       <path d="M4 7h10" />
+
       <path d="M4 12h16" />
+
       <path d="M4 17h7" />
+
       <path d="m16 5 3 2-3 2" />
+
     </svg>
   )
 }

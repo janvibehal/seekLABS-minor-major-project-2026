@@ -20,6 +20,7 @@ import {
 import {
   createQuestionController,
   getQuestionsController,
+  importLeetCodeQuestionController,
 } from "../../controllers/recruiters/question.controller.js";
 
 import {
@@ -105,6 +106,14 @@ router.get(
   authenticate,
   requireRole("RECRUITER"),
   getQuestionsController,
+);
+
+
+router.post(
+  "/questions/import-leetcode",
+  authenticate,
+  requireRole("RECRUITER"),
+  importLeetCodeQuestionController,
 );
 
 

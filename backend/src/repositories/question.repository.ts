@@ -28,6 +28,12 @@ export const findQuestionById = async (questionId: string) => {
   });
 };
 
+export const findQuestionByTitle = async (title: string) => {
+  return prisma.question.findFirst({
+    where: { title },
+  });
+};
+
 export const findQuestionsByIds = async (questionIds: string[]) => {
   return prisma.question.findMany({
     where: {

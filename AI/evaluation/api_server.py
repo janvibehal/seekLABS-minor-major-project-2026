@@ -1,6 +1,6 @@
 from typing import Any
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from AI.evaluation.extraction.extraction_service import (
@@ -11,32 +11,107 @@ from AI.evaluation.interviewer.followup_generator import (
     generate_followup_question,
 )
 from AI.evaluation.scoring.classification import classify_answer
+from AI.evaluation.problem_provider import (
+    ProblemProvider,
+    ProblemProviderError,
+)
 
 
 app = FastAPI(title="Interview Evaluation API")
+
+problem_provider = ProblemProvider()
+
+
+def search_problem_catalog(
+    query: str = "",
+    difficulty: str | None = None,
+    limit: int = 5,
+    skip: int = 0,
+) -> tuple[list[dict[str, Any]], bool]:
+    """
+    Search the complete free LeetCode catalog.
+
+    Filtering is performed by the ProblemProvider before pagination,
+    so each page contains up to exactly `limit` matching questions.
+    """
+
+    normalized_query = query.strip()
+    normalized_difficulty = (
+        difficulty.strip().upper()
+        if difficulty
+        else None
+    )
+
+    if normalized_difficulty not in {
+        None,
+        "EASY",
+        "MEDIUM",
+        "HARD",
+    }:
+        raise ValueError(
+            "difficulty must be one of: EASY, MEDIUM, HARD"
+        )
+
+    if skip < 0:
+        raise ValueError(
+            "skip must be greater than or equal to 0"
+        )
+
+    if limit < 1:
+        raise ValueError(
+            "limit must be greater than 0"
+        )
+
+    supported_ids = (
+        problem_provider.get_reference_supported_problem_ids()
+    )
+
+    # Ask the provider for one extra result so we can determine
+    # whether another page exists while returning exactly `limit`
+    # questions to the frontend.
+    provider_limit = limit + 1
+
+    problems = problem_provider.list_problems(
+        limit=provider_limit,
+        skip=skip,
+        difficulty=normalized_difficulty,
+        paid_only=False,
+        search_keyword=normalized_query,
+        category_slug="all-code-essentials",
+    )
+
+    has_next_page = len(problems) > limit
+
+    visible_problems = problems[:limit]
+
+    for problem in visible_problems:
+        problem["reference_supported"] = (
+            str(
+                problem.get(
+                    "problem_id",
+                    "",
+                )
+            )
+            .strip()
+            .upper()
+            in supported_ids
+        )
+
+    return visible_problems, has_next_page
 
 
 class EvaluationRequest(BaseModel):
     problem: dict[str, Any]
     candidate_answer: str = Field(default="")
-    history: list[dict[str, Any]] = Field(default_factory=list)
+    history: list[dict[str, Any]] = Field(
+        default_factory=list
+    )
 
 
 def evaluate_answer(
     request: EvaluationRequest,
 ) -> dict[str, Any]:
 
-    # IMPORTANT:
-    # extract_candidate_features() expects:
-    #
-    #     extract_candidate_features(answer, problem)
-    #
-    # The previous API server passed the arguments in the opposite
-    # order, which caused the problem dictionary to reach the
-    # extractor as `answer` and produced:
-    #
-    #     Candidate answer must be a string.
-    #
     features = extract_candidate_features(
         request.candidate_answer,
         request.problem,
@@ -61,21 +136,26 @@ def evaluate_answer(
         candidate_state={
             "history": request.history,
             "nlp_state": features,
-            "scores": evaluation.get("scores", {}),
+            "scores": evaluation.get(
+                "scores",
+                {},
+            ),
         },
         followup_strategy={
             "adaptive_gap": classification.get(
                 "primary_adaptive_gap",
                 "concept coverage",
             ),
-            "objective": "clarify the candidate's reasoning",
+            "objective": (
+                "clarify the candidate's reasoning"
+            ),
             "focus": classification.get(
                 "adaptive_classifications",
                 [],
             ),
             "instruction": (
-                "Ask the next most useful interview question "
-                "based on the evidence."
+                "Ask the next most useful interview "
+                "question based on the evidence."
             ),
         },
     )
@@ -94,9 +174,109 @@ def evaluate_answer(
     }
 
 
+@app.get("/v1/problems/search")
+def search_problems(
+    query: str = Query(
+        default="",
+        max_length=120,
+    ),
+    difficulty: str | None = Query(
+        default=None,
+    ),
+    limit: int = Query(
+        default=5,
+        ge=1,
+        le=100,
+    ),
+    skip: int = Query(
+        default=0,
+        ge=0,
+    ),
+) -> dict[str, Any]:
+
+    try:
+        problems, has_next_page = search_problem_catalog(
+            query=query,
+            difficulty=difficulty,
+            limit=limit,
+            skip=skip,
+        )
+
+        return {
+            "success": True,
+            "data": problems,
+            "pagination": {
+                "page": (skip // limit) + 1,
+                "limit": limit,
+                "skip": skip,
+                "hasNextPage": has_next_page,
+            },
+        }
+
+    except (
+        ProblemProviderError,
+        ValueError,
+        FileNotFoundError,
+    ) as error:
+        raise HTTPException(
+            status_code=502,
+            detail=str(error),
+        ) from error
+
+    except Exception as error:
+        raise HTTPException(
+            status_code=502,
+            detail=str(error),
+        ) from error
+
+
+@app.get("/v1/problems/{title_slug}")
+def get_problem(
+    title_slug: str,
+) -> dict[str, Any]:
+
+    try:
+        problem = problem_provider.get_problem(
+            title_slug
+        )
+
+        supported_ids = (
+            problem_provider.get_reference_supported_problem_ids()
+        )
+
+        problem["reference_supported"] = (
+            str(
+                problem.get(
+                    "problem_id",
+                    "",
+                )
+            )
+            .strip()
+            .upper()
+            in supported_ids
+        )
+
+        return {
+            "success": True,
+            "data": problem,
+        }
+
+    except (
+        ProblemProviderError,
+        ValueError,
+        FileNotFoundError,
+    ) as error:
+        raise HTTPException(
+            status_code=404,
+            detail=str(error),
+        ) from error
+
+
 @app.get("/health")
 def health() -> dict[str, bool]:
-    return {"ok": True}
+    return {
+        "ok": True,
+    }
 
 
 @app.post("/v1/evaluate/turn")
@@ -140,89 +320,3 @@ def evaluate_opening(
             status_code=502,
             detail=str(error),
         ) from error
-
-
-@app.post("/v1/evaluate/final")
-def evaluate_final(
-    request: EvaluationRequest,
-) -> dict[str, Any]:
-
-    try:
-        # IMPORTANT:
-        # extract_candidate_features() expects:
-        #
-        #     extract_candidate_features(answer, problem)
-        #
-        # Keep the same argument order as the turn endpoint.
-        features = extract_candidate_features(
-            request.candidate_answer,
-            request.problem,
-        )
-
-        evaluation = evaluate_with_llm(
-            candidate_features=features,
-            problem=request.problem,
-            candidate_state={
-                "history": request.history,
-            },
-        )
-
-        classification = classify_answer(
-            features,
-            evaluation,
-        )
-
-        scores = evaluation.get(
-            "scores",
-            {},
-        )
-
-        numeric_scores = [
-            value["score"]
-            for value in scores.values()
-            if (
-                isinstance(value, dict)
-                and isinstance(
-                    value.get("score"),
-                    (int, float),
-                )
-            )
-        ]
-
-        overall_score = (
-            round(
-                sum(numeric_scores)
-                / len(numeric_scores)
-            )
-            if numeric_scores
-            else 0
-        )
-
-        return {
-            "success": True,
-            "data": {
-                "message": (
-                    "Interview evaluation completed"
-                ),
-                "evaluation": evaluation,
-                "classification": classification,
-                "features": features,
-                "overallScore": overall_score,
-            },
-        }
-
-    except Exception as error:
-        raise HTTPException(
-            status_code=502,
-            detail=str(error),
-        ) from error
-
-
-if __name__ == "__main__":
-    import uvicorn
-
-    uvicorn.run(
-        app,
-        host="127.0.0.1",
-        port=8000,
-    )
