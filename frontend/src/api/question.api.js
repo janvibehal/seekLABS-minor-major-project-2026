@@ -37,14 +37,3 @@ export const importRecruiterLeetCodeQuestion = async (
 
   return result.data
 }
-
-export const createRecruiterQuestion = async (
-  data,
-) => {
-  const result = await apiClient.post(
-    '/recruiter/questions',
-    data,
-  )
-
-  return result.data
-}

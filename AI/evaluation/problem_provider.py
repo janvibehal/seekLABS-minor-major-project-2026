@@ -413,6 +413,57 @@ class ProblemProvider:
         return text.strip()
 
     # ========================================================
+    # STRIP EXAMPLES / CONSTRAINTS FROM DESCRIPTION
+    # ========================================================
+
+    @staticmethod
+    def _strip_examples_and_constraints(
+        plain_text: str,
+    ) -> str:
+        """
+        Return only the problem-statement portion of LeetCode's
+        plain-text content, cutting off before the first
+        "Example N:" block or a "Constraints:" heading —
+        whichever comes first.
+
+        Examples and constraints are already extracted into
+        their own structured fields (`examples`, `constraints`),
+        so the description should not also contain them
+        verbatim, or the UI ends up rendering the same content
+        twice.
+        """
+
+        if not plain_text:
+            return ""
+
+        cut_points: list[int] = []
+
+        example_match = re.search(
+            r"(?im)^\s*Example\s+\d+\s*:",
+            plain_text,
+        )
+
+        if example_match:
+            cut_points.append(
+                example_match.start()
+            )
+
+        constraints_match = re.search(
+            r"(?im)^\s*Constraints\s*:?\s*$",
+            plain_text,
+        )
+
+        if constraints_match:
+            cut_points.append(
+                constraints_match.start()
+            )
+
+        if not cut_points:
+            return plain_text.strip()
+
+        return plain_text[: min(cut_points)].strip()
+
+    # ========================================================
     # EXTRACT CONSTRAINTS
     # ========================================================
 
@@ -463,6 +514,38 @@ class ProblemProvider:
 
         return ""
 
+    @staticmethod
+    def _examples_section_boundary(
+        plain_text: str,
+    ) -> int:
+        """
+        Find where the Examples section ends, so example
+        parsing never bleeds into Constraints/Follow-up/etc.
+        that comes after the last example block.
+        """
+
+        boundary_patterns = [
+            r"(?im)^\s*Constraints\s*:?\s*$",
+            r"(?im)^\s*Follow-up\s*:?",
+            r"(?im)^\s*Related Topics\s*:?",
+            r"(?im)^\s*Companies\s*:?",
+            r"(?im)^\s*Similar Questions\s*:?",
+        ]
+
+        earliest = len(plain_text)
+
+        for pattern in boundary_patterns:
+
+            match = re.search(
+                pattern,
+                plain_text,
+            )
+
+            if match and match.start() < earliest:
+                earliest = match.start()
+
+        return earliest
+
     # ========================================================
     # EXTRACT EXAMPLES
     # ========================================================
@@ -477,6 +560,18 @@ class ProblemProvider:
             return []
 
         plain_text = ProblemProvider._html_to_text(content)
+
+        # Never let the last example's capture run past the
+        # Examples section — otherwise trailing Constraints (or
+        # Follow-up, etc.) text gets appended to its Output/
+        # Explanation field.
+        boundary = (
+            ProblemProvider._examples_section_boundary(
+                plain_text
+            )
+        )
+
+        plain_text = plain_text[:boundary]
 
         matches = list(
             re.finditer(
@@ -1180,9 +1275,19 @@ class ProblemProvider:
             )
 
         # Convert HTML statement to plain text.
-        description = (
+        full_text = (
             self._html_to_text(
                 content
+            )
+        )
+
+        # Keep only the actual problem statement — examples
+        # and constraints are extracted separately below and
+        # rendered in their own UI sections, so they should not
+        # also be duplicated inside the description text.
+        description = (
+            self._strip_examples_and_constraints(
+                full_text
             )
         )
 

@@ -33,13 +33,17 @@ function QuestionPanel({
           description={question.description}
         />
 
-        <Examples
-          examples={question.examples}
-        />
+        {question.examples?.length > 0 && (
+          <Examples
+            examples={question.examples}
+          />
+        )}
 
-        <Constraints
-          constraints={question.constraints}
-        />
+        {question.constraints?.length > 0 && (
+          <Constraints
+            constraints={question.constraints}
+          />
+        )}
 
       </div>
 

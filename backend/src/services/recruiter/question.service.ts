@@ -3,6 +3,7 @@ import type { InputJsonValue } from '@prisma/client/runtime/client'
 import {
   createQuestion,
   findQuestionByTitle,
+  updateQuestionContent,
 } from '../../repositories/question.repository.js'
 
 import {
@@ -151,13 +152,7 @@ export const importLeetCodeQuestion =
         problem.title,
       )
 
-    if (existing) {
-      return existing
-    }
-
-    return createQuestion({
-      title: problem.title,
-
+    const normalizedFields = {
       difficulty:
         normalizeDifficulty(
           problem.difficulty,
@@ -183,5 +178,22 @@ export const importLeetCodeQuestion =
         normalizeConstraints(
           problem.constraints,
         ),
+    }
+
+    if (existing) {
+      // Refresh the stored copy instead of silently returning
+      // a stale one — this is what lets a previously-imported
+      // question pick up fixes made on the LeetCode/evaluation
+      // side (e.g. a cleaned-up description) without recruiters
+      // having to delete and re-add it manually.
+      return updateQuestionContent(
+        existing.id,
+        normalizedFields,
+      )
+    }
+
+    return createQuestion({
+      title: problem.title,
+      ...normalizedFields,
     })
   }
