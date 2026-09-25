@@ -28,15 +28,15 @@ function ScoreDistribution() {
   ]
 
   return (
-    <section className="border border-slate-200 bg-white">
+    <section className="border border-white/10 bg-[#111111]">
 
-      <div className="border-b border-slate-100 px-5 py-4">
+      <div className="border-b border-white/[0.06] px-5 py-4">
 
-        <h2 className="text-sm font-bold text-[#17324f]">
+        <h2 className="text-sm font-bold text-zinc-100">
           Score Distribution
         </h2>
 
-        <p className="mt-1 text-[10px] text-slate-400">
+        <p className="mt-1 text-[10px] text-zinc-500">
           Candidate scores from completed interviews.
         </p>
 
@@ -45,7 +45,7 @@ function ScoreDistribution() {
 
       <div className="p-5">
 
-        <div className="flex h-44 items-end gap-4 border-b border-slate-200">
+        <div className="flex h-44 items-end gap-4 border-b border-white/10">
 
           {distribution.map((item) => (
             <div
@@ -81,11 +81,11 @@ function ScoreDistribution() {
               className="flex-1 text-center"
             >
 
-              <p className="text-[9px] text-slate-400">
+              <p className="text-[9px] text-zinc-500">
                 {item.range}
               </p>
 
-              <p className="mt-1 text-xs font-semibold text-[#17324f]">
+              <p className="mt-1 text-xs font-semibold text-zinc-100">
                 {item.count}
               </p>
 

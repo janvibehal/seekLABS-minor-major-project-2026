@@ -15,11 +15,13 @@ import RecruiterJobs from './pages/recruiter/RecruiterJobs'
 import RecruiterCandidates from './pages/recruiter/RecruiterCandidates'
 import RecruiterInterviews from './pages/recruiter/RecruiterInterviews'
 import RecruiterAnalytics from './pages/recruiter/RecruiterAnalytics'
+import RecruiterSettings from './pages/recruiter/RecruiterSettings'
 
 import CandidateDashboard from './pages/candidate/CandidateDashboard'
 import CandidateInterviews from './pages/candidate/CandidateInterviews'
 import CandidateResults from './pages/candidate/CandidateResults'
 import CandidateResultDetail from './pages/candidate/CandidateResultDetail'
+import CandidatePreparation from './pages/candidate/CandidatePreparation'
 import CandidateInterview from './pages/candidate/CandidateInterview'
 
 function App() {
@@ -77,6 +79,15 @@ function App() {
 
 
 
+          <Route
+            path="/recruiter/settings"
+            element={
+              <ProtectedRoute allowedRoles={['RECRUITER']}>
+                <RecruiterSettings />
+              </ProtectedRoute>
+            }
+          />
+
           {/* Candidate */}
           <Route
             path="/candidate/dashboard"
@@ -107,6 +118,14 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={['CANDIDATE']}>
                 <CandidateResultDetail />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/candidate/preparation"
+            element={
+              <ProtectedRoute allowedRoles={['CANDIDATE']}>
+                <CandidatePreparation />
               </ProtectedRoute>
             }
           />

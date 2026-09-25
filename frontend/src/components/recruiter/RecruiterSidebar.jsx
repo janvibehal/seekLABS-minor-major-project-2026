@@ -75,15 +75,23 @@ function RecruiterSidebar() {
 
       <div className="flex h-20 shrink-0 items-center border-b border-white/10 px-7">
 
-        <div>
+        <div className="flex items-center gap-3">
 
-          <p className="text-base font-semibold tracking-tight text-white">
-            SeekLABS
-          </p>
+          <img
+            src="/images/logo-Photoroom.png"
+            alt="SeekLABS"
+            className="h-8 w-8 object-contain"
+          />
 
-          <p className="mt-1 text-[10px] font-medium uppercase tracking-[0.2em] text-neutral-500">
-            Recruiter Workspace
-          </p>
+          <div>
+            <p className="text-base font-semibold tracking-tight text-white">
+              SeekLABS
+            </p>
+
+            <p className="mt-1 text-[10px] font-medium uppercase tracking-[0.2em] text-neutral-500">
+              Recruiter Workspace
+            </p>
+          </div>
 
         </div>
 
@@ -114,15 +122,15 @@ function RecruiterSidebar() {
                 className={({ isActive }) =>
                   `group relative flex items-center gap-3 px-3 py-3 text-sm transition ${
                     isActive
-                      ? 'bg-white/[0.06] font-medium text-white'
-                      : 'text-neutral-500 hover:bg-white/[0.03] hover:text-neutral-200'
+                      ? 'bg-[#111111]/[0.06] font-medium text-white'
+                      : 'text-neutral-500 hover:bg-[#111111]/[0.03] hover:text-neutral-200'
                   }`
                 }
               >
                 {({ isActive }) => (
                   <>
                     {isActive && (
-                      <span className="absolute bottom-0 left-0 top-0 w-px bg-white" />
+                      <span className="absolute bottom-0 left-0 top-0 w-px bg-[#111111]" />
                     )}
 
                     <Icon />
@@ -155,15 +163,15 @@ function RecruiterSidebar() {
                 className={({ isActive }) =>
                   `relative flex items-center gap-3 px-3 py-3 text-sm transition ${
                     isActive
-                      ? 'bg-white/[0.06] font-medium text-white'
-                      : 'text-neutral-500 hover:bg-white/[0.03] hover:text-neutral-200'
+                      ? 'bg-[#111111]/[0.06] font-medium text-white'
+                      : 'text-neutral-500 hover:bg-[#111111]/[0.03] hover:text-neutral-200'
                   }`
                 }
               >
                 {({ isActive }) => (
                   <>
                     {isActive && (
-                      <span className="absolute bottom-0 left-0 top-0 w-px bg-white" />
+                      <span className="absolute bottom-0 left-0 top-0 w-px bg-[#111111]" />
                     )}
 
                     <Icon />
@@ -217,7 +225,7 @@ function RecruiterSidebar() {
         <button
           type="button"
           onClick={handleLogout}
-          className="flex w-full items-center gap-3 border-t border-white/10 px-7 py-4 text-sm text-neutral-500 transition hover:bg-white/[0.03] hover:text-white"
+          className="flex w-full items-center gap-3 border-t border-white/10 px-7 py-4 text-sm text-neutral-500 transition hover:bg-[#111111]/[0.03] hover:text-white"
         >
 
           <LogoutIcon />

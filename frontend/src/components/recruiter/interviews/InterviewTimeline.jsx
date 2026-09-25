@@ -87,7 +87,7 @@ function InterviewTable({ onInterviewSelect, onCreateInterview }) {
           className="
             flex items-center gap-2
             border border-white/20
-            bg-white
+            bg-[#111111]
             px-4 py-2.5
             text-xs font-semibold
             text-black
@@ -228,7 +228,7 @@ function InterviewTable({ onInterviewSelect, onCreateInterview }) {
                   text-xs font-medium
                   text-zinc-300
                   transition
-                  hover:bg-white/5
+                  hover:bg-[#111111]/5
                   hover:text-white
                 "
               >
@@ -282,7 +282,7 @@ function InterviewTable({ onInterviewSelect, onCreateInterview }) {
                 className="
                   mt-6
                   border border-white
-                  bg-white
+                  bg-[#111111]
                   px-5 py-2.5
                   text-xs font-semibold
                   text-black

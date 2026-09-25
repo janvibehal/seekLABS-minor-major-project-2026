@@ -4,20 +4,20 @@ function CandidateRow({ candidate, onClick }) {
       ? 'text-[#3d8a60]'
       : candidate.score >= 70
         ? 'text-[#3972a7]'
-        : 'text-slate-500'
+        : 'text-zinc-400'
 
   const statusClass =
     candidate.status === 'Shortlisted'
-      ? 'bg-[#edf7f1] text-[#3d8a60]'
+      ? 'bg-[#13251b] text-[#3d8a60]'
       : candidate.status === 'In Progress'
-        ? 'bg-[#edf5fc] text-[#3972a7]'
-        : 'bg-slate-100 text-slate-500'
+        ? 'bg-[#122033] text-[#3972a7]'
+        : 'bg-white/[0.06] text-zinc-400'
 
   return (
     <button
       type="button"
       onClick={onClick}
-      className="grid w-full grid-cols-[2fr_1.5fr_0.7fr_1fr_1fr_40px] items-center px-5 py-4 text-left transition hover:bg-slate-50"
+      className="grid w-full grid-cols-[2fr_1.5fr_0.7fr_1fr_1fr_40px] items-center px-5 py-4 text-left transition hover:bg-[#151515]"
     >
 
       {/* Candidate */}
@@ -30,11 +30,11 @@ function CandidateRow({ candidate, onClick }) {
 
         <div className="min-w-0">
 
-          <p className="truncate text-xs font-semibold text-slate-700">
+          <p className="truncate text-xs font-semibold text-zinc-200">
             {candidate.name}
           </p>
 
-          <p className="mt-1 truncate text-[10px] text-slate-400">
+          <p className="mt-1 truncate text-[10px] text-zinc-500">
             {candidate.email}
           </p>
 
@@ -47,11 +47,11 @@ function CandidateRow({ candidate, onClick }) {
 
       <div className="min-w-0 pr-4">
 
-        <p className="truncate text-xs text-slate-600">
+        <p className="truncate text-xs text-zinc-300">
           {candidate.job}
         </p>
 
-        <p className="mt-1 text-[9px] text-slate-400">
+        <p className="mt-1 text-[9px] text-zinc-500">
           {candidate.date}
         </p>
 
@@ -66,7 +66,7 @@ function CandidateRow({ candidate, onClick }) {
           {candidate.score}
         </span>
 
-        <span className="text-[9px] text-slate-400">
+        <span className="text-[9px] text-zinc-500">
           /100
         </span>
 
@@ -80,7 +80,7 @@ function CandidateRow({ candidate, onClick }) {
         <p
           className={`text-[10px] font-medium ${
             candidate.interview === 'Completed'
-              ? 'text-slate-600'
+              ? 'text-zinc-300'
               : 'text-[#3972a7]'
           }`}
         >
@@ -103,7 +103,7 @@ function CandidateRow({ candidate, onClick }) {
 
       {/* Arrow */}
 
-      <div className="flex justify-end text-slate-300">
+      <div className="flex justify-end text-zinc-600">
 
         <ArrowIcon />
 

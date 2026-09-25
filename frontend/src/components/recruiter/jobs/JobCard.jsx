@@ -2,7 +2,7 @@ function JobCard({ job }) {
   const isActive = job.status === 'Active'
 
   return (
-    <div className="border border-slate-200 bg-white transition hover:border-slate-300">
+    <div className="border border-white/10 bg-[#111111] transition hover:border-slate-300">
 
       <div className="p-5">
 
@@ -14,15 +14,15 @@ function JobCard({ job }) {
 
             <div className="flex flex-wrap items-center gap-3">
 
-              <h2 className="text-sm font-bold text-[#17324f]">
+              <h2 className="text-sm font-bold text-zinc-100">
                 {job.title}
               </h2>
 
               <span
                 className={`px-2 py-1 text-[9px] font-semibold ${
                   isActive
-                    ? 'bg-[#edf7f1] text-[#3d8a60]'
-                    : 'bg-slate-100 text-slate-500'
+                    ? 'bg-[#13251b] text-[#3d8a60]'
+                    : 'bg-white/[0.06] text-zinc-400'
                 }`}
               >
                 {job.status}
@@ -31,9 +31,9 @@ function JobCard({ job }) {
             </div>
 
 
-            <p className="mt-2 text-xs text-slate-400">
+            <p className="mt-2 text-xs text-zinc-500">
               {job.department}
-              <span className="mx-2 text-slate-300">
+              <span className="mx-2 text-zinc-600">
                 •
               </span>
               {job.type}
@@ -46,7 +46,7 @@ function JobCard({ job }) {
 
           <button
             type="button"
-            className="flex h-8 w-8 shrink-0 items-center justify-center text-slate-400 transition hover:bg-slate-50 hover:text-slate-600"
+            className="flex h-8 w-8 shrink-0 items-center justify-center text-zinc-500 transition hover:bg-[#151515] hover:text-zinc-200"
           >
             <MoreIcon />
           </button>
@@ -61,7 +61,7 @@ function JobCard({ job }) {
           {job.skills.map((skill) => (
             <span
               key={skill}
-              className="bg-[#f4f8fc] px-2.5 py-1 text-[9px] font-medium text-slate-500"
+              className="bg-[#0a0a0a] px-2.5 py-1 text-[9px] font-medium text-zinc-400"
             >
               {skill}
             </span>
@@ -72,7 +72,7 @@ function JobCard({ job }) {
 
         {/* Bottom Stats */}
 
-        <div className="mt-5 flex flex-wrap items-end justify-between gap-5 border-t border-slate-100 pt-4">
+        <div className="mt-5 flex flex-wrap items-end justify-between gap-5 border-t border-white/[0.06] pt-4">
 
           <div className="flex gap-8">
 
@@ -115,11 +115,11 @@ function Stat({ label, value }) {
   return (
     <div>
 
-      <p className="text-[9px] uppercase tracking-wider text-slate-400">
+      <p className="text-[9px] uppercase tracking-wider text-zinc-500">
         {label}
       </p>
 
-      <p className="mt-1 text-xs font-semibold text-slate-600">
+      <p className="mt-1 text-xs font-semibold text-zinc-300">
         {value}
       </p>
 

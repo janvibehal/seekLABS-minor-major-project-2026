@@ -424,7 +424,7 @@ function CandidateDetails({ candidate, onClose }) {
                   <div className="mt-3 h-1.5 w-full overflow-hidden bg-zinc-800">
 
                     <div
-                      className="h-full bg-white transition-all duration-500"
+                      className="h-full bg-[#111111] transition-all duration-500"
                       style={{
                         width: `${Math.min(
                           Math.max(overallScore || 0, 0),

@@ -69,11 +69,11 @@ function InterviewFilters({
 
           <div>
 
-            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-zinc-500">
               Interview Filters
             </p>
 
-            <p className="mt-2 text-xs leading-relaxed text-slate-500">
+            <p className="mt-2 text-xs leading-relaxed text-zinc-400">
               Search and filter interviews by candidate,
               schedule, status, and evaluation score.
             </p>
@@ -96,10 +96,10 @@ function InterviewFilters({
               font-semibold
               uppercase
               tracking-wider
-              text-slate-400
+              text-zinc-500
               transition
               hover:border-white/30
-              hover:bg-white/5
+              hover:bg-[#111111]/5
               hover:text-white
               disabled:cursor-not-allowed
               disabled:opacity-30
@@ -124,7 +124,7 @@ function InterviewFilters({
 
         <div className="xl:col-span-2">
 
-          <label className="mb-2 block text-[9px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+          <label className="mb-2 block text-[9px] font-semibold uppercase tracking-[0.18em] text-zinc-400">
             Search
           </label>
 
@@ -160,9 +160,9 @@ function InterviewFilters({
                 bg-transparent
                 py-3.5
                 text-xs
-                text-slate-200
+                text-zinc-700
                 outline-none
-                placeholder:text-slate-600
+                placeholder:text-zinc-300
               "
             />
 
@@ -397,14 +397,14 @@ function InterviewFilters({
 
         <div className="flex flex-wrap items-center gap-2">
 
-          <span className="mr-2 text-[9px] font-semibold uppercase tracking-[0.18em] text-slate-600">
+          <span className="mr-2 text-[9px] font-semibold uppercase tracking-[0.18em] text-zinc-300">
             Active Filters
           </span>
 
 
           {!hasActiveFilters && (
 
-            <span className="border border-white/10 bg-white/[0.03] px-3 py-1.5 text-[9px] font-medium text-slate-500">
+            <span className="border border-white/10 bg-[#111111]/[0.03] px-3 py-1.5 text-[9px] font-medium text-zinc-400">
               All Interviews
             </span>
 
@@ -542,7 +542,7 @@ function FilterSelect({
   return (
     <div className="min-w-0">
 
-      <label className="mb-2 block text-[9px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+      <label className="mb-2 block text-[9px] font-semibold uppercase tracking-[0.18em] text-zinc-400">
         {label}
       </label>
 
@@ -565,7 +565,7 @@ function FilterSelect({
             py-3.5
             pr-10
             text-xs
-            text-slate-300
+            text-zinc-600
             outline-none
             transition
             hover:border-white/20
@@ -578,7 +578,7 @@ function FilterSelect({
             <option
               key={option.value}
               value={option.value}
-              className="bg-[#111111] text-slate-200"
+              className="bg-[#111111] text-zinc-700"
             >
               {option.label}
             </option>
@@ -588,7 +588,7 @@ function FilterSelect({
         </select>
 
 
-        <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-500">
+        <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400">
           <ChevronDownIcon />
         </div>
 
@@ -617,15 +617,15 @@ function ActiveFilter({
         gap-2
         border
         border-white/10
-        bg-white/[0.03]
+        bg-[#111111]/[0.03]
         px-3
         py-1.5
         text-[9px]
         font-medium
-        text-slate-400
+        text-zinc-500
         transition
         hover:border-white/25
-        hover:bg-white/[0.06]
+        hover:bg-[#111111]/[0.06]
         hover:text-white
       "
     >
@@ -634,7 +634,7 @@ function ActiveFilter({
         {label}
       </span>
 
-      <span className="text-xs leading-none text-slate-600">
+      <span className="text-xs leading-none text-zinc-300">
         ×
       </span>
 
@@ -707,7 +707,7 @@ function formatSortFilter(sort) {
 function SearchIcon() {
   return (
     <svg
-      className="h-4 w-4 shrink-0 text-slate-500"
+      className="h-4 w-4 shrink-0 text-zinc-400"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"

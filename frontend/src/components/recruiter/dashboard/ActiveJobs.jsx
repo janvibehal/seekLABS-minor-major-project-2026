@@ -24,17 +24,17 @@ function ActiveJobs() {
   ]
 
   return (
-    <section className="border border-slate-200 bg-white">
+    <section className="border border-white/10 bg-[#111111]">
 
-      <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+      <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-4">
 
         <div>
 
-          <h2 className="text-sm font-bold text-[#17324f]">
+          <h2 className="text-sm font-bold text-zinc-100">
             Active Jobs
           </h2>
 
-          <p className="mt-1 text-[10px] text-slate-400">
+          <p className="mt-1 text-[10px] text-zinc-500">
             Currently hiring
           </p>
 
@@ -50,29 +50,29 @@ function ActiveJobs() {
       </div>
 
 
-      <div className="divide-y divide-slate-100">
+      <div className="divide-y divide-white/[0.06]">
 
         {jobs.map((job) => (
           <div
             key={job.title}
-            className="px-5 py-4 transition hover:bg-slate-50"
+            className="px-5 py-4 transition hover:bg-[#151515]"
           >
 
             <div className="flex items-start justify-between">
 
               <div>
 
-                <p className="text-xs font-semibold text-slate-700">
+                <p className="text-xs font-semibold text-zinc-200">
                   {job.title}
                 </p>
 
-                <p className="mt-1 text-[10px] text-slate-400">
+                <p className="mt-1 text-[10px] text-zinc-500">
                   {job.department}
                 </p>
 
               </div>
 
-              <span className="bg-[#edf7f1] px-2 py-1 text-[9px] font-semibold text-[#3d8a60]">
+              <span className="bg-[#13251b] px-2 py-1 text-[9px] font-semibold text-[#3d8a60]">
                 {job.status}
               </span>
 
@@ -83,11 +83,11 @@ function ActiveJobs() {
 
               <div>
 
-                <p className="text-[9px] uppercase tracking-wider text-slate-400">
+                <p className="text-[9px] uppercase tracking-wider text-zinc-500">
                   Candidates
                 </p>
 
-                <p className="mt-1 text-xs font-semibold text-slate-600">
+                <p className="mt-1 text-xs font-semibold text-zinc-300">
                   {job.candidates}
                 </p>
 
@@ -95,11 +95,11 @@ function ActiveJobs() {
 
               <div>
 
-                <p className="text-[9px] uppercase tracking-wider text-slate-400">
+                <p className="text-[9px] uppercase tracking-wider text-zinc-500">
                   Interviews
                 </p>
 
-                <p className="mt-1 text-xs font-semibold text-slate-600">
+                <p className="mt-1 text-xs font-semibold text-zinc-300">
                   {job.interviews}
                 </p>
 

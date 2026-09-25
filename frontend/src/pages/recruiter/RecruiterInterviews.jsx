@@ -219,7 +219,7 @@ function RecruiterInterviews() {
                     font-medium
                     text-zinc-300
                     transition
-                    hover:bg-white/5
+                    hover:bg-[#111111]/5
                     hover:text-white
                   "
                 >

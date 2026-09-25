@@ -90,10 +90,10 @@ function DimensionPerformance() {
 
   if (loading) {
     return (
-      <section className="border border-slate-200 bg-white">
+      <section className="border border-white/10 bg-[#111111]">
         <div className="flex min-h-[300px] flex-col items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-200 border-t-[#3972a7]" />
-          <p className="mt-4 text-xs text-slate-400">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/10 border-t-[#3972a7]" />
+          <p className="mt-4 text-xs text-zinc-500">
             Loading evaluation performance...
           </p>
         </div>
@@ -107,12 +107,12 @@ function DimensionPerformance() {
 
   if (error) {
     return (
-      <section className="border border-slate-200 bg-white">
+      <section className="border border-white/10 bg-[#111111]">
         <div className="flex min-h-[300px] flex-col items-center justify-center px-6 text-center">
           <p className="text-sm font-semibold text-red-500">
             Failed to load evaluation dimensions
           </p>
-          <p className="mt-2 text-xs text-slate-400">{error}</p>
+          <p className="mt-2 text-xs text-zinc-500">{error}</p>
         </div>
       </section>
     )
@@ -124,22 +124,22 @@ function DimensionPerformance() {
 
   if (dimensions.length === 0) {
     return (
-      <section className="border border-slate-200 bg-white">
-        <div className="border-b border-slate-100 px-5 py-4">
-          <h2 className="text-sm font-bold text-[#17324f]">
+      <section className="border border-white/10 bg-[#111111]">
+        <div className="border-b border-white/[0.06] px-5 py-4">
+          <h2 className="text-sm font-bold text-zinc-100">
             Evaluation Dimensions
           </h2>
-          <p className="mt-1 text-[10px] text-slate-400">
+          <p className="mt-1 text-[10px] text-zinc-500">
             Candidate performance across evaluation dimensions.
           </p>
         </div>
 
         <div className="flex min-h-[220px] items-center justify-center px-6 text-center">
           <div>
-            <p className="text-sm font-semibold text-slate-600">
+            <p className="text-sm font-semibold text-zinc-300">
               No evaluation available
             </p>
-            <p className="mt-2 text-xs text-slate-400">
+            <p className="mt-2 text-xs text-zinc-500">
               Evaluation dimensions will appear once your interviews have been evaluated.
             </p>
           </div>
@@ -153,12 +153,12 @@ function DimensionPerformance() {
   // ============================================================
 
   return (
-    <section className="border border-slate-200 bg-white">
-      <div className="border-b border-slate-100 px-5 py-4">
-        <h2 className="text-sm font-bold text-[#17324f]">
+    <section className="border border-white/10 bg-[#111111]">
+      <div className="border-b border-white/[0.06] px-5 py-4">
+        <h2 className="text-sm font-bold text-zinc-100">
           Evaluation Dimensions
         </h2>
-        <p className="mt-1 text-[10px] text-slate-400">
+        <p className="mt-1 text-[10px] text-zinc-500">
           Candidate performance across evaluation dimensions.
         </p>
       </div>
@@ -188,18 +188,18 @@ function Dimension({ name, score }) {
     <div>
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
-          <p className="truncate text-xs font-medium text-slate-600">{name}</p>
+          <p className="truncate text-xs font-medium text-zinc-300">{name}</p>
         </div>
 
         <div className="flex shrink-0 items-center gap-3">
-          <span className="text-[9px] text-slate-400">{scoreLabel}</span>
-          <span className="w-7 text-right text-xs font-bold text-[#17324f]">
+          <span className="text-[9px] text-zinc-500">{scoreLabel}</span>
+          <span className="w-7 text-right text-xs font-bold text-zinc-100">
             {normalizedScore}
           </span>
         </div>
       </div>
 
-      <div className="mt-2 h-1.5 overflow-hidden bg-slate-100">
+      <div className="mt-2 h-1.5 overflow-hidden bg-white/[0.06]">
         <div
           className="h-full bg-[#6fa9dc] transition-all duration-500"
           style={{ width: `${normalizedScore}%` }}

@@ -1,17 +1,17 @@
 function JobFilters() {
   return (
-    <div className="flex flex-col gap-3 border border-slate-200 bg-white p-4 md:flex-row">
+    <div className="flex flex-col gap-3 border border-white/10 bg-[#111111] p-4 md:flex-row">
 
       {/* Search */}
 
-      <div className="flex flex-1 items-center border border-slate-200 bg-slate-50 px-3">
+      <div className="flex flex-1 items-center border border-white/10 bg-[#151515] px-3">
 
         <SearchIcon />
 
         <input
           type="text"
           placeholder="Search jobs..."
-          className="ml-2 w-full bg-transparent py-2 text-xs text-slate-600 outline-none placeholder:text-slate-400"
+          className="ml-2 w-full bg-transparent py-2 text-xs text-zinc-300 outline-none placeholder:text-zinc-500"
         />
 
       </div>
@@ -21,7 +21,7 @@ function JobFilters() {
 
       <select
         defaultValue="all"
-        className="border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600 outline-none"
+        className="border border-white/10 bg-[#111111] px-3 py-2 text-xs text-zinc-300 outline-none"
       >
         <option value="all">
           All Status
@@ -45,7 +45,7 @@ function JobFilters() {
 
       <select
         defaultValue="all"
-        className="border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600 outline-none"
+        className="border border-white/10 bg-[#111111] px-3 py-2 text-xs text-zinc-300 outline-none"
       >
         <option value="all">
           All Departments
@@ -72,7 +72,7 @@ function JobFilters() {
 function SearchIcon() {
   return (
     <svg
-      className="h-4 w-4 shrink-0 text-slate-400"
+      className="h-4 w-4 shrink-0 text-zinc-500"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"

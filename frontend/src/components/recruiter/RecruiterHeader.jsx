@@ -45,19 +45,19 @@ function RecruiterHeader() {
         <button
           type="button"
           aria-label="Notifications"
-          className="relative flex h-9 w-9 items-center justify-center border border-transparent text-neutral-500 transition hover:border-white/10 hover:bg-white/[0.03] hover:text-neutral-200"
+          className="relative flex h-9 w-9 items-center justify-center border border-transparent text-neutral-500 transition hover:border-white/10 hover:bg-[#111111]/[0.03] hover:text-neutral-200"
         >
 
           <BellIcon />
 
-          <span className="absolute right-2.5 top-2.5 h-1 w-1 bg-white" />
+          <span className="absolute right-2.5 top-2.5 h-1 w-1 bg-[#111111]" />
 
         </button>
 
 
         {/* DIVIDER */}
 
-        <div className="h-7 w-px bg-white/10" />
+        <div className="h-7 w-px bg-[#111111]/10" />
 
 
         {/* PROFILE */}

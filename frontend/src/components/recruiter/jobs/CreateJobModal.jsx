@@ -369,13 +369,13 @@ function CreateJobModal({ onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#07111f]/50 p-4">
 
-      <div className="flex max-h-[94vh] w-full max-w-6xl flex-col bg-white shadow-2xl">
+      <div className="flex max-h-[94vh] w-full max-w-6xl flex-col bg-[#111111] shadow-2xl">
 
         {/* =====================================================
             HEADER
         ====================================================== */}
 
-        <div className="flex shrink-0 items-center justify-between border-b border-slate-200 px-6 py-5">
+        <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-6 py-5">
 
           <div>
 
@@ -383,11 +383,11 @@ function CreateJobModal({ onClose }) {
               New Position
             </p>
 
-            <h2 className="mt-1 text-lg font-bold text-[#17324f]">
+            <h2 className="mt-1 text-lg font-bold text-zinc-100">
               Create Interview Job
             </h2>
 
-            <p className="mt-1 text-[10px] text-slate-400">
+            <p className="mt-1 text-[10px] text-zinc-500">
               Configure the position, hiring scope,
               and interview.
             </p>
@@ -397,7 +397,7 @@ function CreateJobModal({ onClose }) {
           <button
             type="button"
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center text-slate-400 transition hover:bg-slate-50 hover:text-slate-600"
+            className="flex h-8 w-8 items-center justify-center text-zinc-500 transition hover:bg-[#151515] hover:text-zinc-200"
           >
             <CloseIcon />
           </button>
@@ -424,11 +424,11 @@ function CreateJobModal({ onClose }) {
 
               <div>
 
-                <h3 className="text-xs font-bold text-[#17324f]">
+                <h3 className="text-xs font-bold text-zinc-100">
                   Job Information
                 </h3>
 
-                <p className="mt-1 text-[10px] text-slate-400">
+                <p className="mt-1 text-[10px] text-zinc-500">
                   Define the position candidates are
                   applying for.
                 </p>
@@ -482,7 +482,7 @@ function CreateJobModal({ onClose }) {
 
               <div className="mt-4">
 
-                <label className="text-[10px] font-semibold text-slate-500">
+                <label className="text-[10px] font-semibold text-zinc-400">
                   Job Description
                 </label>
 
@@ -494,7 +494,7 @@ function CreateJobModal({ onClose }) {
                   onChange={handleChange}
                   rows={3}
                   placeholder="Describe the role and responsibilities..."
-                  className="mt-2 w-full resize-none border border-slate-200 px-3 py-2.5 text-xs text-slate-600 outline-none placeholder:text-slate-400 focus:border-[#8eb9df]"
+                  className="mt-2 w-full resize-none border border-white/10 px-3 py-2.5 text-xs text-zinc-300 outline-none placeholder:text-zinc-500 focus:border-[#8eb9df]"
                 />
 
               </div>
@@ -506,15 +506,15 @@ function CreateJobModal({ onClose }) {
                 HIRING SCOPE
             ================================================== */}
 
-            <section className="border-t border-slate-100 pt-6">
+            <section className="border-t border-white/[0.06] pt-6">
 
               <div>
 
-                <h3 className="text-xs font-bold text-[#17324f]">
+                <h3 className="text-xs font-bold text-zinc-100">
                   Hiring Scope
                 </h3>
 
-                <p className="mt-1 text-[10px] text-slate-400">
+                <p className="mt-1 text-[10px] text-zinc-500">
                   Choose whether this is a general posting
                   or targeted recruitment.
                 </p>
@@ -528,7 +528,7 @@ function CreateJobModal({ onClose }) {
 
                 <div>
 
-                  <label className="text-[10px] font-semibold text-slate-500">
+                  <label className="text-[10px] font-semibold text-zinc-400">
                     Posting Type
                   </label>
 
@@ -538,7 +538,7 @@ function CreateJobModal({ onClose }) {
                       formData.postingType
                     }
                     onChange={handleChange}
-                    className="mt-2 w-full border border-slate-200 bg-white px-3 py-2.5 text-xs text-slate-600 outline-none focus:border-[#8eb9df]"
+                    className="mt-2 w-full border border-white/10 bg-[#111111] px-3 py-2.5 text-xs text-zinc-300 outline-none focus:border-[#8eb9df]"
                   >
 
                     <option value="General">
@@ -555,7 +555,7 @@ function CreateJobModal({ onClose }) {
 
                   </select>
 
-                  <p className="mt-2 text-[9px] leading-4 text-slate-400">
+                  <p className="mt-2 text-[9px] leading-4 text-zinc-500">
                     Choose how candidates will be
                     recruited for this position.
                   </p>
@@ -567,7 +567,7 @@ function CreateJobModal({ onClose }) {
 
                 <div>
 
-                  <label className="text-[10px] font-semibold text-slate-500">
+                  <label className="text-[10px] font-semibold text-zinc-400">
                     College
                   </label>
 
@@ -577,7 +577,7 @@ function CreateJobModal({ onClose }) {
                       formData.college
                     }
                     onChange={handleChange}
-                    className="mt-2 w-full border border-slate-200 bg-white px-3 py-2.5 text-xs text-slate-600 outline-none focus:border-[#8eb9df]"
+                    className="mt-2 w-full border border-white/10 bg-[#111111] px-3 py-2.5 text-xs text-zinc-300 outline-none focus:border-[#8eb9df]"
                   >
 
                     <option value="All Colleges">
@@ -614,7 +614,7 @@ function CreateJobModal({ onClose }) {
 
                   </select>
 
-                  <p className="mt-2 text-[9px] leading-4 text-slate-400">
+                  <p className="mt-2 text-[9px] leading-4 text-zinc-500">
                     Select a specific college for
                     targeted recruitment.
                   </p>
@@ -641,7 +641,7 @@ function CreateJobModal({ onClose }) {
                     )}
                   </p>
 
-                  <p className="mt-0.5 text-[9px] text-slate-400">
+                  <p className="mt-0.5 text-[9px] text-zinc-500">
                     {getScopeDescription(
                       formData.postingType,
                       formData.college
@@ -659,17 +659,17 @@ function CreateJobModal({ onClose }) {
                 INTERVIEW CONFIGURATION
             ================================================== */}
 
-            <section className="border-t border-slate-100 pt-6">
+            <section className="border-t border-white/[0.06] pt-6">
 
               <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
 
                 <div>
 
-                  <h3 className="text-xs font-bold text-[#17324f]">
+                  <h3 className="text-xs font-bold text-zinc-100">
                     Interview Configuration
                   </h3>
 
-                  <p className="mt-1 text-[10px] text-slate-400">
+                  <p className="mt-1 text-[10px] text-zinc-500">
                     Select questions and configure
                     the time allocated to each.
                   </p>
@@ -683,11 +683,11 @@ function CreateJobModal({ onClose }) {
 
                   <div>
 
-                    <p className="text-[9px] font-semibold uppercase tracking-wider text-slate-400">
+                    <p className="text-[9px] font-semibold uppercase tracking-wider text-zinc-500">
                       Total Interview Time
                     </p>
 
-                    <p className="mt-1 text-xl font-bold text-[#17324f]">
+                    <p className="mt-1 text-xl font-bold text-zinc-100">
                       {formatDuration(
                         totalTime
                       )}
@@ -701,7 +701,7 @@ function CreateJobModal({ onClose }) {
 
                   <div>
 
-                    <p className="text-[9px] font-semibold uppercase tracking-wider text-slate-400">
+                    <p className="text-[9px] font-semibold uppercase tracking-wider text-zinc-500">
                       Recommended
                     </p>
 
@@ -726,25 +726,25 @@ function CreateJobModal({ onClose }) {
                     QUESTION BANK
                 ================================================== */}
 
-                <div className="flex min-h-0 flex-col border border-slate-200">
+                <div className="flex min-h-0 flex-col border border-white/10">
 
-                  <div className="shrink-0 border-b border-slate-200 p-4">
+                  <div className="shrink-0 border-b border-white/10 p-4">
 
                     <div className="flex items-center justify-between">
 
                       <div>
 
-                        <p className="text-xs font-bold text-[#17324f]">
+                        <p className="text-xs font-bold text-zinc-100">
                           Question Bank
                         </p>
 
-                        <p className="mt-1 text-[10px] text-slate-400">
+                        <p className="mt-1 text-[10px] text-zinc-500">
                           Select questions for this interview.
                         </p>
 
                       </div>
 
-                      <span className="text-[10px] font-medium text-slate-400">
+                      <span className="text-[10px] font-medium text-zinc-500">
                         {filteredQuestions.length}{' '}
                         available
                       </span>
@@ -754,7 +754,7 @@ function CreateJobModal({ onClose }) {
 
                     {/* Search */}
 
-                    <div className="mt-4 flex items-center border border-slate-200 bg-slate-50 px-3">
+                    <div className="mt-4 flex items-center border border-white/10 bg-[#151515] px-3">
 
                       <SearchIcon />
 
@@ -771,7 +771,7 @@ function CreateJobModal({ onClose }) {
                           )
                         }
                         placeholder="Search questions..."
-                        className="ml-2 w-full bg-transparent py-2.5 text-xs text-slate-600 outline-none placeholder:text-slate-400"
+                        className="ml-2 w-full bg-transparent py-2.5 text-xs text-zinc-300 outline-none placeholder:text-zinc-500"
                       />
 
                     </div>
@@ -792,7 +792,7 @@ function CreateJobModal({ onClose }) {
                             event.target.value
                           )
                         }
-                        className="flex-1 border border-slate-200 bg-white px-2 py-2 text-[10px] text-slate-500 outline-none"
+                        className="flex-1 border border-white/10 bg-[#111111] px-2 py-2 text-[10px] text-zinc-400 outline-none"
                       >
 
                         <option>
@@ -825,7 +825,7 @@ function CreateJobModal({ onClose }) {
                             event.target.value
                           )
                         }
-                        className="flex-1 border border-slate-200 bg-white px-2 py-2 text-[10px] text-slate-500 outline-none"
+                        className="flex-1 border border-white/10 bg-[#111111] px-2 py-2 text-[10px] text-zinc-400 outline-none"
                       >
 
                         <option>
@@ -914,7 +914,7 @@ function CreateJobModal({ onClose }) {
                       0 && (
                       <div className="flex min-h-[250px] items-center justify-center px-6 text-center">
 
-                        <p className="text-xs text-slate-400">
+                        <p className="text-xs text-zinc-500">
                           No questions match
                           your filters.
                         </p>
@@ -931,17 +931,17 @@ function CreateJobModal({ onClose }) {
                     SELECTED QUESTIONS
                 ================================================== */}
 
-                <div className="flex min-h-0 flex-col border border-slate-200">
+                <div className="flex min-h-0 flex-col border border-white/10">
 
-                  <div className="flex shrink-0 items-center justify-between border-b border-slate-200 px-4 py-4">
+                  <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-4 py-4">
 
                     <div>
 
-                      <p className="text-xs font-bold text-[#17324f]">
+                      <p className="text-xs font-bold text-zinc-100">
                         Interview Questions
                       </p>
 
-                      <p className="mt-1 text-[10px] text-slate-400">
+                      <p className="mt-1 text-[10px] text-zinc-500">
 
                         {selectedQuestions.length}{' '}
                         question
@@ -956,7 +956,7 @@ function CreateJobModal({ onClose }) {
                     </div>
 
 
-                    <span className="bg-[#edf5fc] px-2.5 py-1 text-[9px] font-semibold text-[#3972a7]">
+                    <span className="bg-[#122033] px-2.5 py-1 text-[9px] font-semibold text-[#3972a7]">
                       {formatDuration(
                         totalTime
                       )}
@@ -971,7 +971,7 @@ function CreateJobModal({ onClose }) {
                     0 ? (
                       <EmptyQuestions />
                     ) : (
-                      <div className="divide-y divide-slate-100">
+                      <div className="divide-y divide-white/[0.06]">
 
                         {selectedQuestions.map(
                           (
@@ -1032,13 +1032,13 @@ function CreateJobModal({ onClose }) {
               FOOTER
           ====================================================== */}
 
-          <div className="flex shrink-0 items-center justify-between border-t border-slate-200 bg-slate-50 px-6 py-4">
+          <div className="flex shrink-0 items-center justify-between border-t border-white/10 bg-[#151515] px-6 py-4">
 
             <div>
 
               {selectedQuestions.length >
                 0 && (
-                <p className="text-[10px] text-slate-400">
+                <p className="text-[10px] text-zinc-500">
 
                   {selectedQuestions.length}{' '}
                   questions ·{' '}
@@ -1070,7 +1070,7 @@ function CreateJobModal({ onClose }) {
               <button
                 type="button"
                 onClick={onClose}
-                className="border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-500 transition hover:bg-slate-50"
+                className="border border-white/10 bg-[#111111] px-4 py-2.5 text-xs font-semibold text-zinc-400 transition hover:bg-[#151515]"
               >
                 Cancel
               </button>
@@ -1109,7 +1109,7 @@ function QuestionBankItem({
   onAdd,
 }) {
   return (
-    <div className="border-b border-slate-100 px-4 py-4 transition hover:bg-slate-50">
+    <div className="border-b border-white/[0.06] px-4 py-4 transition hover:bg-[#151515]">
 
       <div className="flex items-start justify-between gap-3">
 
@@ -1117,7 +1117,7 @@ function QuestionBankItem({
 
           <div className="flex flex-wrap items-center gap-2">
 
-            <p className="text-xs font-semibold text-slate-700">
+            <p className="text-xs font-semibold text-zinc-200">
               {question.title}
             </p>
 
@@ -1130,18 +1130,18 @@ function QuestionBankItem({
           </div>
 
 
-          <p className="mt-2 text-[10px] leading-5 text-slate-400">
+          <p className="mt-2 text-[10px] leading-5 text-zinc-500">
             {question.description}
           </p>
 
 
           <div className="mt-3 flex flex-wrap items-center gap-4">
 
-            <span className="text-[9px] text-slate-400">
+            <span className="text-[9px] text-zinc-500">
               {question.topic}
             </span>
 
-            <span className="text-[9px] text-slate-400">
+            <span className="text-[9px] text-zinc-500">
               {question.type}
             </span>
 
@@ -1161,8 +1161,8 @@ function QuestionBankItem({
           disabled={isSelected}
           className={`shrink-0 px-3 py-2 text-[9px] font-semibold transition ${
             isSelected
-              ? 'cursor-not-allowed bg-slate-100 text-slate-400'
-              : 'bg-[#edf5fc] text-[#3972a7] hover:bg-[#dcecf9]'
+              ? 'cursor-not-allowed bg-white/[0.06] text-zinc-500'
+              : 'bg-[#122033] text-[#3972a7] hover:bg-[#1a3048]'
           }`}
         >
           {isSelected
@@ -1219,7 +1219,7 @@ function SelectedQuestion({
 
             <div>
 
-              <p className="text-xs font-semibold text-slate-700">
+              <p className="text-xs font-semibold text-zinc-200">
                 {question.title}
               </p>
 
@@ -1231,7 +1231,7 @@ function SelectedQuestion({
                   }
                 />
 
-                <span className="text-[9px] text-slate-400">
+                <span className="text-[9px] text-zinc-500">
                   {question.topic}
                 </span>
 
@@ -1243,7 +1243,7 @@ function SelectedQuestion({
             <button
               type="button"
               onClick={onRemove}
-              className="text-[9px] font-medium text-slate-400 transition hover:text-red-500"
+              className="text-[9px] font-medium text-zinc-500 transition hover:text-red-500"
             >
               Remove
             </button>
@@ -1257,11 +1257,11 @@ function SelectedQuestion({
 
             <div className="w-28">
 
-              <label className="text-[9px] font-semibold uppercase tracking-wider text-slate-400">
+              <label className="text-[9px] font-semibold uppercase tracking-wider text-zinc-500">
                 Time
               </label>
 
-              <div className="mt-1 flex items-center border border-slate-200">
+              <div className="mt-1 flex items-center border border-white/10">
 
                 <input
                   type="number"
@@ -1276,10 +1276,10 @@ function SelectedQuestion({
                       event.target.value
                     )
                   }
-                  className="w-full px-2.5 py-2 text-xs font-semibold text-slate-700 outline-none"
+                  className="w-full px-2.5 py-2 text-xs font-semibold text-zinc-200 outline-none"
                 />
 
-                <span className="pr-2 text-[9px] text-slate-400">
+                <span className="pr-2 text-[9px] text-zinc-500">
                   min
                 </span>
 
@@ -1290,7 +1290,7 @@ function SelectedQuestion({
 
             <div className="pb-2">
 
-              <p className="text-[9px] text-slate-400">
+              <p className="text-[9px] text-zinc-500">
                 Recommended
               </p>
 
@@ -1328,9 +1328,9 @@ function SelectedQuestion({
           {/* Too Long */}
 
           {isTooLong && (
-            <div className="mt-3 border border-slate-200 bg-slate-50 px-3 py-2">
+            <div className="mt-3 border border-white/10 bg-[#151515] px-3 py-2">
 
-              <p className="text-[9px] text-slate-500">
+              <p className="text-[9px] text-zinc-400">
                 You have allocated more time
                 than normally required for
                 this question.
@@ -1344,7 +1344,7 @@ function SelectedQuestion({
 
           <div className="mt-3 flex items-center gap-2">
 
-            <span className="mr-1 text-[9px] text-slate-400">
+            <span className="mr-1 text-[9px] text-zinc-500">
               Order
             </span>
 
@@ -1354,7 +1354,7 @@ function SelectedQuestion({
               onClick={() =>
                 onMove(-1)
               }
-              className="flex h-6 w-6 items-center justify-center border border-slate-200 text-slate-400 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-30"
+              className="flex h-6 w-6 items-center justify-center border border-white/10 text-zinc-500 hover:bg-[#151515] disabled:cursor-not-allowed disabled:opacity-30"
             >
               ↑
             </button>
@@ -1368,7 +1368,7 @@ function SelectedQuestion({
               onClick={() =>
                 onMove(1)
               }
-              className="flex h-6 w-6 items-center justify-center border border-slate-200 text-slate-400 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-30"
+              className="flex h-6 w-6 items-center justify-center border border-white/10 text-zinc-500 hover:bg-[#151515] disabled:cursor-not-allowed disabled:opacity-30"
             >
               ↓
             </button>
@@ -1392,15 +1392,15 @@ function EmptyQuestions() {
   return (
     <div className="flex h-full min-h-[300px] flex-col items-center justify-center px-8 text-center">
 
-      <div className="flex h-12 w-12 items-center justify-center bg-[#edf5fc] text-[#3972a7]">
+      <div className="flex h-12 w-12 items-center justify-center bg-[#122033] text-[#3972a7]">
         <QuestionIcon />
       </div>
 
-      <p className="mt-4 text-xs font-semibold text-slate-600">
+      <p className="mt-4 text-xs font-semibold text-zinc-300">
         No questions selected
       </p>
 
-      <p className="mt-2 max-w-xs text-[10px] leading-5 text-slate-400">
+      <p className="mt-2 max-w-xs text-[10px] leading-5 text-zinc-500">
         Select questions from the
         question bank to build your
         interview.
@@ -1420,7 +1420,7 @@ function DifficultyBadge({
 }) {
   const classes =
     difficulty === 'Easy'
-      ? 'bg-[#edf7f1] text-[#3d8a60]'
+      ? 'bg-[#13251b] text-[#3d8a60]'
       : difficulty === 'Medium'
         ? 'bg-[#fff7e8] text-[#a06b19]'
         : 'bg-[#fceeee] text-[#a44d4d]'
@@ -1450,7 +1450,7 @@ function Field({
   return (
     <div>
 
-      <label className="text-[10px] font-semibold text-slate-500">
+      <label className="text-[10px] font-semibold text-zinc-400">
         {label}
       </label>
 
@@ -1460,7 +1460,7 @@ function Field({
         onChange={onChange}
         placeholder={placeholder}
         required={required}
-        className="mt-2 w-full border border-slate-200 px-3 py-2.5 text-xs text-slate-600 outline-none placeholder:text-slate-400 focus:border-[#8eb9df]"
+        className="mt-2 w-full border border-white/10 px-3 py-2.5 text-xs text-zinc-300 outline-none placeholder:text-zinc-500 focus:border-[#8eb9df]"
       />
 
     </div>
@@ -1482,7 +1482,7 @@ function SelectField({
   return (
     <div>
 
-      <label className="text-[10px] font-semibold text-slate-500">
+      <label className="text-[10px] font-semibold text-zinc-400">
         {label}
       </label>
 
@@ -1490,7 +1490,7 @@ function SelectField({
         name={name}
         value={value}
         onChange={onChange}
-        className="mt-2 w-full border border-slate-200 bg-white px-3 py-2.5 text-xs text-slate-600 outline-none focus:border-[#8eb9df]"
+        className="mt-2 w-full border border-white/10 bg-[#111111] px-3 py-2.5 text-xs text-zinc-300 outline-none focus:border-[#8eb9df]"
       >
 
         {options.map(
@@ -1622,7 +1622,7 @@ function getScopeDescription(
 function SearchIcon() {
   return (
     <svg
-      className="h-4 w-4 shrink-0 text-slate-400"
+      className="h-4 w-4 shrink-0 text-zinc-500"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"

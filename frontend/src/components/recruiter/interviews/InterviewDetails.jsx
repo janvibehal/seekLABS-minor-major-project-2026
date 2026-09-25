@@ -387,7 +387,7 @@ function InterviewDetails({ interviewId, onClose }) {
 
             <div className="mt-4 flex items-center gap-3">
 
-              <span className="h-2 w-2 bg-white" />
+              <span className="h-2 w-2 bg-[#111111]" />
 
               <span className="text-sm font-medium text-zinc-200">
                 {displayStatus}
@@ -561,7 +561,7 @@ function InterviewDetails({ interviewId, onClose }) {
                 {score !== null && (
 
                   <div
-                    className="h-full bg-white"
+                    className="h-full bg-[#111111]"
                     style={{
                       width: `${score}%`,
                     }}
@@ -630,7 +630,7 @@ function InterviewDetails({ interviewId, onClose }) {
 
             <button
               type="button"
-              className="flex-1 bg-white px-4 py-3 text-xs font-semibold text-black transition hover:bg-zinc-200"
+              className="flex-1 bg-[#111111] px-4 py-3 text-xs font-semibold text-black transition hover:bg-zinc-200"
             >
               View Evaluation
             </button>
@@ -650,7 +650,7 @@ function InterviewDetails({ interviewId, onClose }) {
 
               <button
                 type="button"
-                className="flex-1 bg-white px-4 py-3 text-xs font-semibold text-black transition hover:bg-zinc-200"
+                className="flex-1 bg-[#111111] px-4 py-3 text-xs font-semibold text-black transition hover:bg-zinc-200"
               >
                 Send Reminder
               </button>
@@ -663,7 +663,7 @@ function InterviewDetails({ interviewId, onClose }) {
 
             <button
               type="button"
-              className="flex-1 bg-white px-4 py-3 text-xs font-semibold text-black transition hover:bg-zinc-200"
+              className="flex-1 bg-[#111111] px-4 py-3 text-xs font-semibold text-black transition hover:bg-zinc-200"
             >
               Open Interview
             </button>

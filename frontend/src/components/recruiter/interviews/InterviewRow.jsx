@@ -9,12 +9,12 @@ function InterviewRow({ interview, onClick }) {
     interview.status === 'COMPLETED'
       ? 'border border-emerald-500/20 bg-emerald-500/10 text-emerald-400'
       : interview.status === 'IN_PROGRESS'
-        ? 'border border-white/15 bg-white/[0.06] text-white'
+        ? 'border border-white/15 bg-[#111111]/[0.06] text-white'
         : interview.status === 'CANCELLED'
           ? 'border border-red-500/20 bg-red-500/10 text-red-400'
           : interview.status === 'EXPIRED'
-            ? 'border border-white/10 bg-white/[0.03] text-zinc-500'
-            : 'border border-white/15 bg-white/[0.05] text-zinc-300'
+            ? 'border border-white/10 bg-[#111111]/[0.03] text-zinc-500'
+            : 'border border-white/15 bg-[#111111]/[0.05] text-zinc-300'
 
   // ============================================================
   // DATE FORMATTING

@@ -9,7 +9,7 @@ function RecruiterJobs() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
 
   return (
-    <div className="min-h-screen bg-[#f4f8fc]">
+    <div className="min-h-screen bg-[#0a0a0a]">
 
       <RecruiterSidebar />
 
@@ -29,11 +29,11 @@ function RecruiterJobs() {
                 Recruitment
               </p>
 
-              <h1 className="mt-1 text-2xl font-bold tracking-tight text-[#17324f]">
+              <h1 className="mt-1 text-2xl font-bold tracking-tight text-zinc-100">
                 Jobs
               </h1>
 
-              <p className="mt-2 text-xs text-slate-400">
+              <p className="mt-2 text-xs text-zinc-500">
                 Create and manage your interview openings.
               </p>
 

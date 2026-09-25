@@ -7,7 +7,7 @@ import HiringFunnel from '../../components/recruiter/analytics/HiringFunnel'
 
 function RecruiterAnalytics() {
   return (
-    <div className="min-h-screen bg-[#f4f8fc]">
+    <div className="min-h-screen bg-[#0a0a0a]">
 
       <RecruiterSidebar />
 
@@ -27,11 +27,11 @@ function RecruiterAnalytics() {
                 Insights
               </p>
 
-              <h1 className="mt-1 text-2xl font-bold tracking-tight text-[#17324f]">
+              <h1 className="mt-1 text-2xl font-bold tracking-tight text-zinc-100">
                 Analytics
               </h1>
 
-              <p className="mt-2 text-xs text-slate-400">
+              <p className="mt-2 text-xs text-zinc-500">
                 Understand candidate performance across your AI interviews.
               </p>
 
@@ -42,7 +42,7 @@ function RecruiterAnalytics() {
 
             <select
               defaultValue="30"
-              className="w-fit border border-slate-200 bg-white px-3 py-2.5 text-xs text-slate-600 outline-none"
+              className="w-fit border border-white/10 bg-[#111111] px-3 py-2.5 text-xs text-zinc-300 outline-none"
             >
               <option value="7">
                 Last 7 days
