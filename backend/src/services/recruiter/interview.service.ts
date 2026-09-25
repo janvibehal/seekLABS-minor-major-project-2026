@@ -23,9 +23,8 @@ export const createRecruiterInterview = async (
     company?: string
     focusAreas: string[]
     scheduledAt: Date
-    duration?: number
     candidateId: string
-    questionIds: string[]
+    questions: { questionId: string; timeAllottedSeconds: number }[]
   },
 ) => {
   return createInterview({
@@ -48,9 +47,8 @@ export const createRecruiterInterviews = async (
     company?: string
     focusAreas: string[]
     scheduledAt: Date
-    duration?: number
     candidateIds: string[]
-    questionIds: string[]
+    questions: { questionId: string; timeAllottedSeconds: number }[]
   },
 ) => {
   return Promise.all(
@@ -61,10 +59,9 @@ export const createRecruiterInterviews = async (
         scheduledAt: data.scheduledAt,
         candidateId,
         recruiterId,
-        questionIds: data.questionIds,
+        questions: data.questions,
         ...(data.type !== undefined ? { type: data.type } : {}),
         ...(data.company !== undefined ? { company: data.company } : {}),
-        ...(data.duration !== undefined ? { duration: data.duration } : {}),
       }),
     ),
   )

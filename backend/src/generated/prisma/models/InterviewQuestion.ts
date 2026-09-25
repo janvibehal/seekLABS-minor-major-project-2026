@@ -28,10 +28,12 @@ export type AggregateInterviewQuestion = {
 
 export type InterviewQuestionAvgAggregateOutputType = {
   order: number | null
+  timeAllottedSeconds: number | null
 }
 
 export type InterviewQuestionSumAggregateOutputType = {
   order: number | null
+  timeAllottedSeconds: number | null
 }
 
 export type InterviewQuestionMinAggregateOutputType = {
@@ -40,6 +42,7 @@ export type InterviewQuestionMinAggregateOutputType = {
   questionId: string | null
   order: number | null
   status: $Enums.QuestionStatus | null
+  timeAllottedSeconds: number | null
   createdAt: Date | null
 }
 
@@ -49,6 +52,7 @@ export type InterviewQuestionMaxAggregateOutputType = {
   questionId: string | null
   order: number | null
   status: $Enums.QuestionStatus | null
+  timeAllottedSeconds: number | null
   createdAt: Date | null
 }
 
@@ -58,6 +62,7 @@ export type InterviewQuestionCountAggregateOutputType = {
   questionId: number
   order: number
   status: number
+  timeAllottedSeconds: number
   createdAt: number
   _all: number
 }
@@ -65,10 +70,12 @@ export type InterviewQuestionCountAggregateOutputType = {
 
 export type InterviewQuestionAvgAggregateInputType = {
   order?: true
+  timeAllottedSeconds?: true
 }
 
 export type InterviewQuestionSumAggregateInputType = {
   order?: true
+  timeAllottedSeconds?: true
 }
 
 export type InterviewQuestionMinAggregateInputType = {
@@ -77,6 +84,7 @@ export type InterviewQuestionMinAggregateInputType = {
   questionId?: true
   order?: true
   status?: true
+  timeAllottedSeconds?: true
   createdAt?: true
 }
 
@@ -86,6 +94,7 @@ export type InterviewQuestionMaxAggregateInputType = {
   questionId?: true
   order?: true
   status?: true
+  timeAllottedSeconds?: true
   createdAt?: true
 }
 
@@ -95,6 +104,7 @@ export type InterviewQuestionCountAggregateInputType = {
   questionId?: true
   order?: true
   status?: true
+  timeAllottedSeconds?: true
   createdAt?: true
   _all?: true
 }
@@ -191,6 +201,7 @@ export type InterviewQuestionGroupByOutputType = {
   questionId: string
   order: number
   status: $Enums.QuestionStatus
+  timeAllottedSeconds: number
   createdAt: Date
   _count: InterviewQuestionCountAggregateOutputType | null
   _avg: InterviewQuestionAvgAggregateOutputType | null
@@ -223,6 +234,7 @@ export type InterviewQuestionWhereInput = {
   questionId?: Prisma.StringFilter<"InterviewQuestion"> | string
   order?: Prisma.IntFilter<"InterviewQuestion"> | number
   status?: Prisma.EnumQuestionStatusFilter<"InterviewQuestion"> | $Enums.QuestionStatus
+  timeAllottedSeconds?: Prisma.IntFilter<"InterviewQuestion"> | number
   createdAt?: Prisma.DateTimeFilter<"InterviewQuestion"> | Date | string
   interview?: Prisma.XOR<Prisma.InterviewScalarRelationFilter, Prisma.InterviewWhereInput>
   question?: Prisma.XOR<Prisma.QuestionScalarRelationFilter, Prisma.QuestionWhereInput>
@@ -234,6 +246,7 @@ export type InterviewQuestionOrderByWithRelationInput = {
   questionId?: Prisma.SortOrder
   order?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  timeAllottedSeconds?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   interview?: Prisma.InterviewOrderByWithRelationInput
   question?: Prisma.QuestionOrderByWithRelationInput
@@ -249,6 +262,7 @@ export type InterviewQuestionWhereUniqueInput = Prisma.AtLeast<{
   questionId?: Prisma.StringFilter<"InterviewQuestion"> | string
   order?: Prisma.IntFilter<"InterviewQuestion"> | number
   status?: Prisma.EnumQuestionStatusFilter<"InterviewQuestion"> | $Enums.QuestionStatus
+  timeAllottedSeconds?: Prisma.IntFilter<"InterviewQuestion"> | number
   createdAt?: Prisma.DateTimeFilter<"InterviewQuestion"> | Date | string
   interview?: Prisma.XOR<Prisma.InterviewScalarRelationFilter, Prisma.InterviewWhereInput>
   question?: Prisma.XOR<Prisma.QuestionScalarRelationFilter, Prisma.QuestionWhereInput>
@@ -260,6 +274,7 @@ export type InterviewQuestionOrderByWithAggregationInput = {
   questionId?: Prisma.SortOrder
   order?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  timeAllottedSeconds?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   _count?: Prisma.InterviewQuestionCountOrderByAggregateInput
   _avg?: Prisma.InterviewQuestionAvgOrderByAggregateInput
@@ -277,6 +292,7 @@ export type InterviewQuestionScalarWhereWithAggregatesInput = {
   questionId?: Prisma.StringWithAggregatesFilter<"InterviewQuestion"> | string
   order?: Prisma.IntWithAggregatesFilter<"InterviewQuestion"> | number
   status?: Prisma.EnumQuestionStatusWithAggregatesFilter<"InterviewQuestion"> | $Enums.QuestionStatus
+  timeAllottedSeconds?: Prisma.IntWithAggregatesFilter<"InterviewQuestion"> | number
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"InterviewQuestion"> | Date | string
 }
 
@@ -284,6 +300,7 @@ export type InterviewQuestionCreateInput = {
   id?: string
   order?: number
   status?: $Enums.QuestionStatus
+  timeAllottedSeconds?: number
   createdAt?: Date | string
   interview: Prisma.InterviewCreateNestedOneWithoutQuestionsInput
   question: Prisma.QuestionCreateNestedOneWithoutInterviewQuestionsInput
@@ -295,6 +312,7 @@ export type InterviewQuestionUncheckedCreateInput = {
   questionId: string
   order?: number
   status?: $Enums.QuestionStatus
+  timeAllottedSeconds?: number
   createdAt?: Date | string
 }
 
@@ -302,6 +320,7 @@ export type InterviewQuestionUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   order?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumQuestionStatusFieldUpdateOperationsInput | $Enums.QuestionStatus
+  timeAllottedSeconds?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   interview?: Prisma.InterviewUpdateOneRequiredWithoutQuestionsNestedInput
   question?: Prisma.QuestionUpdateOneRequiredWithoutInterviewQuestionsNestedInput
@@ -313,6 +332,7 @@ export type InterviewQuestionUncheckedUpdateInput = {
   questionId?: Prisma.StringFieldUpdateOperationsInput | string
   order?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumQuestionStatusFieldUpdateOperationsInput | $Enums.QuestionStatus
+  timeAllottedSeconds?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -322,6 +342,7 @@ export type InterviewQuestionCreateManyInput = {
   questionId: string
   order?: number
   status?: $Enums.QuestionStatus
+  timeAllottedSeconds?: number
   createdAt?: Date | string
 }
 
@@ -329,6 +350,7 @@ export type InterviewQuestionUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   order?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumQuestionStatusFieldUpdateOperationsInput | $Enums.QuestionStatus
+  timeAllottedSeconds?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -338,6 +360,7 @@ export type InterviewQuestionUncheckedUpdateManyInput = {
   questionId?: Prisma.StringFieldUpdateOperationsInput | string
   order?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumQuestionStatusFieldUpdateOperationsInput | $Enums.QuestionStatus
+  timeAllottedSeconds?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -362,11 +385,13 @@ export type InterviewQuestionCountOrderByAggregateInput = {
   questionId?: Prisma.SortOrder
   order?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  timeAllottedSeconds?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
 export type InterviewQuestionAvgOrderByAggregateInput = {
   order?: Prisma.SortOrder
+  timeAllottedSeconds?: Prisma.SortOrder
 }
 
 export type InterviewQuestionMaxOrderByAggregateInput = {
@@ -375,6 +400,7 @@ export type InterviewQuestionMaxOrderByAggregateInput = {
   questionId?: Prisma.SortOrder
   order?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  timeAllottedSeconds?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
@@ -384,11 +410,13 @@ export type InterviewQuestionMinOrderByAggregateInput = {
   questionId?: Prisma.SortOrder
   order?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  timeAllottedSeconds?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
 export type InterviewQuestionSumOrderByAggregateInput = {
   order?: Prisma.SortOrder
+  timeAllottedSeconds?: Prisma.SortOrder
 }
 
 export type InterviewQuestionCreateNestedManyWithoutQuestionInput = {
@@ -483,6 +511,7 @@ export type InterviewQuestionCreateWithoutQuestionInput = {
   id?: string
   order?: number
   status?: $Enums.QuestionStatus
+  timeAllottedSeconds?: number
   createdAt?: Date | string
   interview: Prisma.InterviewCreateNestedOneWithoutQuestionsInput
 }
@@ -492,6 +521,7 @@ export type InterviewQuestionUncheckedCreateWithoutQuestionInput = {
   interviewId: string
   order?: number
   status?: $Enums.QuestionStatus
+  timeAllottedSeconds?: number
   createdAt?: Date | string
 }
 
@@ -530,6 +560,7 @@ export type InterviewQuestionScalarWhereInput = {
   questionId?: Prisma.StringFilter<"InterviewQuestion"> | string
   order?: Prisma.IntFilter<"InterviewQuestion"> | number
   status?: Prisma.EnumQuestionStatusFilter<"InterviewQuestion"> | $Enums.QuestionStatus
+  timeAllottedSeconds?: Prisma.IntFilter<"InterviewQuestion"> | number
   createdAt?: Prisma.DateTimeFilter<"InterviewQuestion"> | Date | string
 }
 
@@ -537,6 +568,7 @@ export type InterviewQuestionCreateWithoutInterviewInput = {
   id?: string
   order?: number
   status?: $Enums.QuestionStatus
+  timeAllottedSeconds?: number
   createdAt?: Date | string
   question: Prisma.QuestionCreateNestedOneWithoutInterviewQuestionsInput
 }
@@ -546,6 +578,7 @@ export type InterviewQuestionUncheckedCreateWithoutInterviewInput = {
   questionId: string
   order?: number
   status?: $Enums.QuestionStatus
+  timeAllottedSeconds?: number
   createdAt?: Date | string
 }
 
@@ -580,6 +613,7 @@ export type InterviewQuestionCreateManyQuestionInput = {
   interviewId: string
   order?: number
   status?: $Enums.QuestionStatus
+  timeAllottedSeconds?: number
   createdAt?: Date | string
 }
 
@@ -587,6 +621,7 @@ export type InterviewQuestionUpdateWithoutQuestionInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   order?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumQuestionStatusFieldUpdateOperationsInput | $Enums.QuestionStatus
+  timeAllottedSeconds?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   interview?: Prisma.InterviewUpdateOneRequiredWithoutQuestionsNestedInput
 }
@@ -596,6 +631,7 @@ export type InterviewQuestionUncheckedUpdateWithoutQuestionInput = {
   interviewId?: Prisma.StringFieldUpdateOperationsInput | string
   order?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumQuestionStatusFieldUpdateOperationsInput | $Enums.QuestionStatus
+  timeAllottedSeconds?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -604,6 +640,7 @@ export type InterviewQuestionUncheckedUpdateManyWithoutQuestionInput = {
   interviewId?: Prisma.StringFieldUpdateOperationsInput | string
   order?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumQuestionStatusFieldUpdateOperationsInput | $Enums.QuestionStatus
+  timeAllottedSeconds?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -612,6 +649,7 @@ export type InterviewQuestionCreateManyInterviewInput = {
   questionId: string
   order?: number
   status?: $Enums.QuestionStatus
+  timeAllottedSeconds?: number
   createdAt?: Date | string
 }
 
@@ -619,6 +657,7 @@ export type InterviewQuestionUpdateWithoutInterviewInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   order?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumQuestionStatusFieldUpdateOperationsInput | $Enums.QuestionStatus
+  timeAllottedSeconds?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   question?: Prisma.QuestionUpdateOneRequiredWithoutInterviewQuestionsNestedInput
 }
@@ -628,6 +667,7 @@ export type InterviewQuestionUncheckedUpdateWithoutInterviewInput = {
   questionId?: Prisma.StringFieldUpdateOperationsInput | string
   order?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumQuestionStatusFieldUpdateOperationsInput | $Enums.QuestionStatus
+  timeAllottedSeconds?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -636,6 +676,7 @@ export type InterviewQuestionUncheckedUpdateManyWithoutInterviewInput = {
   questionId?: Prisma.StringFieldUpdateOperationsInput | string
   order?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumQuestionStatusFieldUpdateOperationsInput | $Enums.QuestionStatus
+  timeAllottedSeconds?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -647,6 +688,7 @@ export type InterviewQuestionSelect<ExtArgs extends runtime.Types.Extensions.Int
   questionId?: boolean
   order?: boolean
   status?: boolean
+  timeAllottedSeconds?: boolean
   createdAt?: boolean
   interview?: boolean | Prisma.InterviewDefaultArgs<ExtArgs>
   question?: boolean | Prisma.QuestionDefaultArgs<ExtArgs>
@@ -658,6 +700,7 @@ export type InterviewQuestionSelectCreateManyAndReturn<ExtArgs extends runtime.T
   questionId?: boolean
   order?: boolean
   status?: boolean
+  timeAllottedSeconds?: boolean
   createdAt?: boolean
   interview?: boolean | Prisma.InterviewDefaultArgs<ExtArgs>
   question?: boolean | Prisma.QuestionDefaultArgs<ExtArgs>
@@ -669,6 +712,7 @@ export type InterviewQuestionSelectUpdateManyAndReturn<ExtArgs extends runtime.T
   questionId?: boolean
   order?: boolean
   status?: boolean
+  timeAllottedSeconds?: boolean
   createdAt?: boolean
   interview?: boolean | Prisma.InterviewDefaultArgs<ExtArgs>
   question?: boolean | Prisma.QuestionDefaultArgs<ExtArgs>
@@ -680,10 +724,11 @@ export type InterviewQuestionSelectScalar = {
   questionId?: boolean
   order?: boolean
   status?: boolean
+  timeAllottedSeconds?: boolean
   createdAt?: boolean
 }
 
-export type InterviewQuestionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "interviewId" | "questionId" | "order" | "status" | "createdAt", ExtArgs["result"]["interviewQuestion"]>
+export type InterviewQuestionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "interviewId" | "questionId" | "order" | "status" | "timeAllottedSeconds" | "createdAt", ExtArgs["result"]["interviewQuestion"]>
 export type InterviewQuestionInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   interview?: boolean | Prisma.InterviewDefaultArgs<ExtArgs>
   question?: boolean | Prisma.QuestionDefaultArgs<ExtArgs>
@@ -709,6 +754,7 @@ export type $InterviewQuestionPayload<ExtArgs extends runtime.Types.Extensions.I
     questionId: string
     order: number
     status: $Enums.QuestionStatus
+    timeAllottedSeconds: number
     createdAt: Date
   }, ExtArgs["result"]["interviewQuestion"]>
   composites: {}
@@ -1140,6 +1186,7 @@ export interface InterviewQuestionFieldRefs {
   readonly questionId: Prisma.FieldRef<"InterviewQuestion", 'String'>
   readonly order: Prisma.FieldRef<"InterviewQuestion", 'Int'>
   readonly status: Prisma.FieldRef<"InterviewQuestion", 'QuestionStatus'>
+  readonly timeAllottedSeconds: Prisma.FieldRef<"InterviewQuestion", 'Int'>
   readonly createdAt: Prisma.FieldRef<"InterviewQuestion", 'DateTime'>
 }
     

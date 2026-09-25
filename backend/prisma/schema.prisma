@@ -287,6 +287,11 @@ model InterviewQuestion {
 
   status QuestionStatus @default(PENDING)
 
+  // Recruiter-set per-question timer (seconds). Populated from the
+  // `time` (minutes) value already captured in CreateInterviewModal's
+  // selectedQuestions, previously discarded on submit.
+  timeAllottedSeconds Int @default(600)
+
   createdAt DateTime @default(now())
 
   @@unique([interviewId, questionId])
@@ -336,6 +341,9 @@ model Message {
   sessionId String
   session   InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
+  // Every candidate/AI turn in the new per-question chat model is
+  // tied to a question. Left nullable (unchanged) only to avoid
+  // breaking any pre-existing session-level system messages.
   questionId String?
   question   Question? @relation(fields: [questionId], references: [id])
 
@@ -367,6 +375,17 @@ model QuestionAttempt {
   candidate   User   @relation(fields: [candidateId], references: [id], onDelete: Cascade)
 
   status QuestionStatus @default(CURRENT)
+
+  // True only once a CANDIDATE message has actually been sent
+  // (persisted to Message) for this question — not on open/view,
+  // not on an unsent draft.
+  attempted Boolean @default(false)
+
+  // Autosave target: every keystroke/change in the answer box for
+  // this question overwrites this field (debounced on the client,
+  // not gated on "send").
+  draftAnswer String?  @db.Text
+  lastSavedAt DateTime?
 
   startedAt   DateTime  @default(now())
   completedAt DateTime?

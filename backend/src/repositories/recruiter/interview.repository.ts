@@ -12,10 +12,9 @@ export const createInterview = async (data: {
   company?: string;
   focusAreas: string[];
   scheduledAt: Date;
-  duration?: number;
   candidateId: string;
   recruiterId: string;
-  questionIds: string[];
+  questions: { questionId: string; timeAllottedSeconds: number }[];
 }) => {
   const {
     title,
@@ -23,11 +22,12 @@ export const createInterview = async (data: {
     company,
     focusAreas,
     scheduledAt,
-    duration,
     candidateId,
     recruiterId,
-    questionIds,
+    questions,
   } = data;
+
+  const questionIds = questions.map((q) => q.questionId);
 
   const existingQuestions = questionIds.length
     ? await prisma.question.findMany({
@@ -38,6 +38,21 @@ export const createInterview = async (data: {
 
   const existingQuestionIds = new Set(
     existingQuestions.map((question) => question.id),
+  );
+
+  const validQuestions = questions.filter((q) =>
+    existingQuestionIds.has(q.questionId),
+  );
+
+  // Interview.duration is derived, not client-supplied: it's the sum
+  // of every question's recruiter-set timer, so the two can never
+  // drift apart. Stored in whole minutes to match the existing field.
+  const durationMinutes = Math.max(
+    1,
+    Math.round(
+      validQuestions.reduce((total, q) => total + q.timeAllottedSeconds, 0) /
+        60,
+    ),
   );
 
   return prisma.interview.create({
@@ -52,19 +67,18 @@ export const createInterview = async (data: {
 
       scheduledAt,
 
-      duration: duration ?? 45,
+      duration: durationMinutes,
 
       candidateId,
 
       recruiterId,
 
       questions: {
-        create: questionIds
-          .map((questionId, index) => ({
-            questionId,
-            order: index + 1,
-          }))
-          .filter(({ questionId }) => existingQuestionIds.has(questionId)),
+        create: validQuestions.map((q, index) => ({
+          questionId: q.questionId,
+          order: index + 1,
+          timeAllottedSeconds: q.timeAllottedSeconds,
+        })),
       },
     },
 
