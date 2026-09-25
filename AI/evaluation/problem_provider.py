@@ -63,17 +63,13 @@ DEFAULT_HEADERS = {
 
 QUESTION_LIST_QUERY = """
 query problemsetQuestionListV2(
-    $filters: QuestionFilterInput,
     $limit: Int,
-    $searchKeyword: String,
     $skip: Int,
     $sortBy: QuestionSortByInput,
     $categorySlug: String
 ) {
     problemsetQuestionListV2(
-        filters: $filters
         limit: $limit
-        searchKeyword: $searchKeyword
         skip: $skip
         sortBy: $sortBy
         categorySlug: $categorySlug
@@ -417,87 +413,6 @@ class ProblemProvider:
         return text.strip()
 
     # ========================================================
-    # EXTRACT CLEAN PROBLEM DESCRIPTION
-    # ========================================================
-
-    @staticmethod
-    def _extract_problem_description(
-        content: Optional[str],
-    ) -> str:
-        """
-        Extract only the actual problem statement.
-
-        The LeetCode `content` field contains multiple sections
-        together. The frontend renders examples and constraints
-        separately, so they must not remain inside description.
-
-        Removed from description:
-            - Examples
-            - Constraints
-            - Follow-up
-            - Related Topics
-            - Companies
-            - Similar Questions
-        """
-
-        if not content:
-            return ""
-
-        plain_text = (
-            ProblemProvider._html_to_text(
-                content
-            )
-        )
-
-        if not plain_text:
-            return ""
-
-        # Find the first section that should be rendered
-        # separately from the main problem statement.
-        #
-        # We intentionally allow the heading to occur after
-        # whitespace/newlines OR immediately after text because
-        # LeetCode HTML does not always produce perfectly
-        # separated lines after HTML-to-text conversion.
-        pattern = (
-            r"(?is)"
-            r"^(.*?)"
-            r"(?="
-            r"(?:"
-            r"\s+Example\s+\d+\s*:?"
-            r"|\s+Examples\s*:?"
-            r"|\s+Constraints\s*:?"
-            r"|\s+Follow[- ]?up\s*:?"
-            r"|\s+Related Topics\s*:?"
-            r"|\s+Companies\s*:?"
-            r"|\s+Similar Questions\s*:?"
-            r")"
-            r")"
-        )
-
-        match = re.search(
-            pattern,
-            plain_text,
-        )
-
-        if match:
-            description = (
-                match.group(1)
-                .strip()
-            )
-        else:
-            description = plain_text.strip()
-
-        # Remove accidental trailing whitespace.
-        description = re.sub(
-            r"\n\s*\n\s*\n+",
-            "\n\n",
-            description,
-        )
-
-        return description.strip()
-
-    # ========================================================
     # EXTRACT CONSTRAINTS
     # ========================================================
 
@@ -561,9 +476,7 @@ class ProblemProvider:
         if not content:
             return []
 
-        plain_text = ProblemProvider._html_to_text(
-            content
-        )
+        plain_text = ProblemProvider._html_to_text(content)
 
         matches = list(
             re.finditer(
@@ -772,12 +685,10 @@ class ProblemProvider:
                         if category_slug
                         else "all-code-essentials"
                     ),
-                    "searchKeyword": search_value,
                     "sortBy": {
                         "sortField": "CUSTOM",
                         "sortOrder": "ASCENDING",
                     },
-                    "filters": None,
                 },
             )
 
@@ -882,6 +793,49 @@ class ProblemProvider:
                         normalized_current_difficulty
                         != requested_difficulty
                     ):
+                        continue
+
+                # ============================================
+                # LOCAL SEARCH FILTER
+                # ============================================
+                # Do not send searchKeyword/searchKeywords to
+                # LeetCode GraphQL. Its unauthenticated search
+                # path can return VALUE_NULL parsing errors.
+                # Search the public catalog locally instead.
+                # ============================================
+
+                if search_value:
+
+                    normalized_search = re.sub(
+                        r"\s+",
+                        " ",
+                        search_value.lower(),
+                    ).strip()
+
+                    searchable_text = " ".join(
+                        [
+                            str(
+                                question.get(
+                                    "questionFrontendId",
+                                    "",
+                                )
+                            ),
+                            str(
+                                question.get(
+                                    "title",
+                                    "",
+                                )
+                            ),
+                            str(
+                                question.get(
+                                    "titleSlug",
+                                    "",
+                                )
+                            ),
+                        ]
+                    ).lower()
+
+                    if normalized_search not in searchable_text:
                         continue
 
                 # ============================================
@@ -1225,14 +1179,9 @@ class ProblemProvider:
                 f"Problem {problem_id} is missing problem content."
             )
 
-        # Convert ONLY the actual problem statement
-        # to plain text.
-        #
-        # Examples and constraints are extracted separately
-        # below and therefore are no longer duplicated inside
-        # the description shown to the candidate.
+        # Convert HTML statement to plain text.
         description = (
-            self._extract_problem_description(
+            self._html_to_text(
                 content
             )
         )
