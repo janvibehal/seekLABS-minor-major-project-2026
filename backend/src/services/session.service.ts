@@ -238,7 +238,11 @@ export const sendCandidateMessage = async (
     problem: {
       id: input.questionId,
       title: currentQuestion.title,
+      difficulty: currentQuestion.difficulty,
+      topics: currentQuestion.topics,
       description: currentQuestion.description,
+      examples: currentQuestion.examples,
+      constraints: currentQuestion.constraints,
     },
     candidateAnswer,
     history: (await findMessagesBySession(sessionId)).map((message) => ({
@@ -371,7 +375,16 @@ export const endInterviewSession = async (
       title:
         session.interview.questions[0]?.question.title ||
         session.interview.title,
-      description: session.interview.questions[0]?.question.description || "",
+      difficulty:
+        session.interview.questions[0]?.question.difficulty || null,
+      topics:
+        session.interview.questions[0]?.question.topics || [],
+      description:
+        session.interview.questions[0]?.question.description || "",
+      examples:
+        session.interview.questions[0]?.question.examples || [],
+      constraints:
+        session.interview.questions[0]?.question.constraints || [],
     },
     candidateAnswer: messages
       .filter((message) => message.sender === "CANDIDATE")

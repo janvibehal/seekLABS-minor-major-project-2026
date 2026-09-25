@@ -4,6 +4,8 @@ export const questionDifficultySchema = z.enum(["EASY", "MEDIUM", "HARD"]);
 
 export const questionFilterSchema = z.object({
   difficulty: questionDifficultySchema.optional(),
+  query: z.string().trim().max(120).optional(),
+  source: z.enum(["local", "leetcode"]).optional(),
 });
 
 export const createQuestionSchema = z.object({

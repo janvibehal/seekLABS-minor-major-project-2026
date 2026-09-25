@@ -62,26 +62,37 @@ DEFAULT_HEADERS = {
 # ============================================================
 
 QUESTION_LIST_QUERY = """
-query questionListV2(
+query problemsetQuestionListV2(
+    $filters: QuestionFilterInput,
     $limit: Int,
-    $skip: Int
+    $searchKeyword: String,
+    $skip: Int,
+    $sortBy: QuestionSortByInput,
+    $categorySlug: String
 ) {
     problemsetQuestionListV2(
+        filters: $filters
         limit: $limit
+        searchKeyword: $searchKeyword
         skip: $skip
+        sortBy: $sortBy
+        categorySlug: $categorySlug
     ) {
         questions {
             id
-            questionFrontendId
-            title
             titleSlug
-            difficulty
+            title
+            questionFrontendId
             paidOnly
+            difficulty
             topicTags {
                 name
                 slug
             }
         }
+        totalLength
+        finishedLength
+        hasMore
     }
 }
 """
@@ -457,6 +468,115 @@ class ProblemProvider:
         return ""
 
     # ========================================================
+    # EXTRACT EXAMPLES
+    # ========================================================
+
+    @staticmethod
+    def _extract_examples(
+        content: Optional[str],
+    ) -> list[dict[str, str]]:
+        """Extract LeetCode example blocks into UI-friendly objects."""
+
+        if not content:
+            return []
+
+        plain_text = ProblemProvider._html_to_text(content)
+
+        matches = list(
+            re.finditer(
+                r"(?im)^\s*Example\s+(\d+)\s*:",
+                plain_text,
+            )
+        )
+
+        examples: list[dict[str, str]] = []
+
+        for index, match in enumerate(matches):
+
+            start = match.end()
+
+            end = (
+                matches[index + 1].start()
+                if index + 1 < len(matches)
+                else len(plain_text)
+            )
+
+            block = plain_text[
+                start:end
+            ].strip()
+
+            def capture(
+                label: str,
+                next_labels: list[str],
+            ) -> str:
+
+                labels = "|".join(
+                    re.escape(item)
+                    for item in next_labels
+                )
+
+                if labels:
+                    pattern = (
+                        rf"(?is)\b"
+                        rf"{re.escape(label)}"
+                        rf"\s*:\s*(.*?)"
+                        rf"(?=\b(?:{labels})\s*:|$)"
+                    )
+                else:
+                    pattern = (
+                        rf"(?is)\b"
+                        rf"{re.escape(label)}"
+                        rf"\s*:\s*(.*?)"
+                        rf"$"
+                    )
+
+                found = re.search(
+                    pattern,
+                    block,
+                )
+
+                return (
+                    found.group(1).strip()
+                    if found
+                    else ""
+                )
+
+            input_value = capture(
+                "Input",
+                [
+                    "Output",
+                    "Explanation",
+                ],
+            )
+
+            output_value = capture(
+                "Output",
+                [
+                    "Explanation",
+                ],
+            )
+
+            explanation_value = capture(
+                "Explanation",
+                [],
+            )
+
+            if (
+                input_value
+                or output_value
+                or explanation_value
+            ):
+                examples.append(
+                    {
+                        "input": input_value,
+                        "output": output_value,
+                        "explanation": explanation_value,
+                    }
+                )
+
+        return examples
+
+    # ========================================================
     # LIST PROBLEMS
     # ========================================================
 
@@ -467,12 +587,35 @@ class ProblemProvider:
         skip: int = 0,
         difficulty: Optional[str] = None,
         paid_only: Optional[bool] = False,
+        search_keyword: Optional[str] = None,
+        category_slug: str = "all-code-essentials",
     ) -> list[dict[str, Any]]:
         """
-        Fetch a list of LeetCode problems.
+        Fetch a paginated list of LeetCode problems.
 
-        Filtering is performed locally to avoid dependence
-        on LeetCode's changing GraphQL filter-input schema.
+        Difficulty, paid/free, and search filtering are applied
+        locally before the requested skip/limit pagination.
+
+        Search is intentionally performed locally rather than
+        through LeetCode's GraphQL `searchKeyword` parameter,
+        because that parameter can trigger LeetCode's
+        authentication requirement.
+
+        Example:
+
+            difficulty="EASY"
+            limit=5
+            skip=0
+
+        returns the first five Easy problems.
+
+        And:
+
+            difficulty="EASY"
+            limit=5
+            skip=5
+
+        returns the next five Easy problems.
         """
 
         if limit <= 0:
@@ -484,6 +627,10 @@ class ProblemProvider:
             raise ValueError(
                 "skip cannot be negative."
             )
+
+        # ----------------------------------------------------
+        # Normalize difficulty
+        # ----------------------------------------------------
 
         requested_difficulty: Optional[str] = None
 
@@ -505,157 +652,312 @@ class ProblemProvider:
                     "EASY, MEDIUM, HARD."
                 )
 
-        data = self._graphql_request(
-            QUESTION_LIST_QUERY,
-            {
-                "limit": limit,
-                "skip": skip,
-            },
+        # ----------------------------------------------------
+        # Normalize search
+        # ----------------------------------------------------
+
+        search_value = (
+            str(search_keyword).strip()
+            if search_keyword
+            else ""
         )
 
-        problemset = data.get(
-            "problemsetQuestionListV2"
+        normalized_search = (
+            search_value.casefold()
         )
 
-        if not isinstance(
-            problemset,
-            dict,
-        ):
-            raise LeetCodeAPIError(
-                "LeetCode response does not contain "
-                "'problemsetQuestionListV2'."
+        # ----------------------------------------------------
+        # Fetch raw LeetCode batches.
+        #
+        # IMPORTANT:
+        #
+        # Do NOT send search_value through the GraphQL
+        # `searchKeyword` parameter.
+        #
+        # LeetCode can require authentication when that
+        # parameter is used.
+        #
+        # Instead:
+        #
+        #     fetch public catalog
+        #             ↓
+        #     filter locally
+        #             ↓
+        #     paginate locally
+        #
+        # This also guarantees that search + difficulty
+        # filtering happen before pagination.
+        # ----------------------------------------------------
+
+        raw_batch_size = max(
+            100,
+            limit,
+        )
+
+        raw_skip = 0
+
+        matching_problems: list[
+            dict[str, Any]
+        ] = []
+
+        max_batches = 100
+
+        for _ in range(max_batches):
+
+            data = self._graphql_request(
+                QUESTION_LIST_QUERY,
+                {
+                    "limit": raw_batch_size,
+                    "skip": raw_skip,
+                    "categorySlug": (
+                        category_slug
+                        if category_slug
+                        else "all-code-essentials"
+                    ),
+
+                    # IMPORTANT:
+                    # Never pass search_value here.
+                    "searchKeyword": None,
+
+                    "sortBy": {
+                        "sortField": "CUSTOM",
+                        "sortOrder": "ASCENDING",
+                    },
+
+                    "filters": None,
+                },
             )
 
-        questions = problemset.get(
-            "questions"
-        )
+            # ------------------------------------------------
+            # V2 response
+            # ------------------------------------------------
 
-        if not isinstance(
-            questions,
-            list,
-        ):
-            raise LeetCodeAPIError(
-                "LeetCode response does not contain "
-                "a valid questions list."
+            problemset = data.get(
+                "problemsetQuestionListV2"
             )
-
-        problems: list[dict[str, Any]] = []
-
-        for question in questions:
 
             if not isinstance(
-                question,
+                problemset,
                 dict,
             ):
-                continue
+                raise LeetCodeAPIError(
+                    "LeetCode response does not contain "
+                    "'problemsetQuestionListV2'."
+                )
 
-            # --------------------------------------------
-            # Paid filtering
-            # --------------------------------------------
+            questions = problemset.get(
+                "questions"
+            )
 
-            is_paid = bool(
-                question.get(
-                    "paidOnly",
+            if not isinstance(
+                questions,
+                list,
+            ):
+                raise LeetCodeAPIError(
+                    "LeetCode response does not contain "
+                    "a valid questions list."
+                )
+
+            has_more = bool(
+                problemset.get(
+                    "hasMore",
                     False,
                 )
             )
 
-            if (
-                paid_only is False
-                and is_paid
-            ):
-                continue
+            # No more raw questions.
+            if not questions:
+                break
 
-            if (
-                paid_only is True
-                and not is_paid
-            ):
-                continue
+            # ------------------------------------------------
+            # Filter raw questions
+            # ------------------------------------------------
 
-            # --------------------------------------------
-            # Difficulty filtering
-            # --------------------------------------------
+            for question in questions:
 
-            current_difficulty = (
-                question.get(
+                if not isinstance(
+                    question,
+                    dict,
+                ):
+                    continue
+
+                # ============================================
+                # PAID / FREE FILTER
+                # ============================================
+
+                is_paid = bool(
+                    question.get(
+                        "paidOnly",
+                        question.get(
+                            "isPaidOnly",
+                            False,
+                        ),
+                    )
+                )
+
+                if (
+                    paid_only is False
+                    and is_paid
+                ):
+                    continue
+
+                if (
+                    paid_only is True
+                    and not is_paid
+                ):
+                    continue
+
+                # ============================================
+                # DIFFICULTY FILTER
+                # ============================================
+
+                current_difficulty = question.get(
                     "difficulty"
                 )
-            )
 
-            if (
-                requested_difficulty is not None
-                and str(
-                    current_difficulty or ""
-                ).upper()
-                != requested_difficulty
-            ):
-                continue
+                if requested_difficulty is not None:
 
-            # --------------------------------------------
-            # Required fields
-            # --------------------------------------------
+                    normalized_current_difficulty = (
+                        str(
+                            current_difficulty or ""
+                        )
+                        .strip()
+                        .upper()
+                    )
 
-            question_frontend_id = (
-                question.get(
+                    if (
+                        normalized_current_difficulty
+                        != requested_difficulty
+                    ):
+                        continue
+
+                # ============================================
+                # SEARCH FILTER
+                # ============================================
+
+                if normalized_search:
+
+                    title = str(
+                        question.get(
+                            "title"
+                        )
+                        or ""
+                    ).casefold()
+
+                    title_slug = str(
+                        question.get(
+                            "titleSlug"
+                        )
+                        or ""
+                    ).casefold()
+
+                    question_frontend_id = str(
+                        question.get(
+                            "questionFrontendId"
+                        )
+                        or ""
+                    ).casefold()
+
+                    # Search across the fields that identify
+                    # the LeetCode question.
+                    if not (
+                        normalized_search in title
+                        or normalized_search in title_slug
+                        or normalized_search
+                        in question_frontend_id
+                    ):
+                        continue
+
+                # ============================================
+                # REQUIRED FIELDS
+                # ============================================
+
+                question_frontend_id = question.get(
                     "questionFrontendId"
                 )
-            )
 
-            title_slug = question.get(
-                "titleSlug"
-            )
-
-            if (
-                not question_frontend_id
-                or not title_slug
-            ):
-                continue
-
-            problem_id = (
-                self._canonical_problem_id(
-                    question_frontend_id
+                title_slug = question.get(
+                    "titleSlug"
                 )
-            )
 
-            problems.append(
-                {
-                    "problem_id": problem_id,
+                if (
+                    not question_frontend_id
+                    or not title_slug
+                ):
+                    continue
 
-                    "question_id": (
-                        str(
-                            question.get(
-                                "id"
-                            )
-                        )
-                        if question.get("id")
-                        is not None
-                        else ""
-                    ),
+                # ============================================
+                # CANONICAL PROJECT ID
+                # ============================================
 
-                    "leetcode_id": str(
+                problem_id = (
+                    self._canonical_problem_id(
                         question_frontend_id
-                    ),
+                    )
+                )
 
-                    "title": question.get(
-                        "title"
-                    ),
+                # ============================================
+                # NORMALIZED PROBLEM
+                # ============================================
 
-                    "title_slug": title_slug,
+                matching_problems.append(
+                    {
+                        "problem_id": problem_id,
+                        "question_id": "",
+                        "leetcode_id": str(
+                            question_frontend_id
+                        ),
+                        "title": question.get(
+                            "title"
+                        ),
+                        "title_slug": title_slug,
+                        "difficulty": current_difficulty,
+                        "is_paid_only": is_paid,
+                        "topic_tags": (
+                            question.get(
+                                "topicTags"
+                            )
+                            or []
+                        ),
+                    }
+                )
 
-                    "difficulty": current_difficulty,
+            # ------------------------------------------------
+            # We have enough FILTERED questions.
+            #
+            # Example:
+            #
+            # skip=0, limit=5
+            # -> need 5 matching questions
+            #
+            # skip=5, limit=5
+            # -> need 10 matching questions
+            # ------------------------------------------------
 
-                    "is_paid_only": is_paid,
+            if len(matching_problems) >= (
+                skip + limit
+            ):
+                break
 
-                    "topic_tags": (
-                        question.get(
-                            "topicTags"
-                        )
-                        or []
-                    ),
-                }
-            )
+            # ------------------------------------------------
+            # V2 tells us whether another raw page exists.
+            # ------------------------------------------------
 
-        return problems
+            if not has_more:
+                break
+
+            # Advance by the number actually returned rather
+            # than assuming LeetCode always honors the batch
+            # size exactly.
+            raw_skip += len(questions)
+
+        # ----------------------------------------------------
+        # Apply pagination ONLY after filtering.
+        # ----------------------------------------------------
+
+        return matching_problems[
+            skip : skip + limit
+        ]
 
     # ========================================================
     # GET COMPLETE PROBLEM
@@ -711,24 +1013,49 @@ class ProblemProvider:
     # RANDOM PROBLEM
     # ========================================================
 
-    def _get_supported_problem_ids(self) -> set[str]:
+    def _get_supported_problem_ids(
+        self,
+    ) -> set[str]:
         """Return Problem IDs that have reference solutions in Excel."""
-        reference_dataset = load_reference_dataset()
-        if not isinstance(reference_dataset, dict):
+
+        reference_dataset = (
+            load_reference_dataset()
+        )
+
+        if not isinstance(
+            reference_dataset,
+            dict,
+        ):
             raise ProblemProviderError(
-                "Reference dataset must be a dictionary keyed by Problem ID."
+                "Reference dataset must be a dictionary "
+                "keyed by Problem ID."
             )
+
         supported_ids = {
-            str(problem_id).strip().upper()
-            for problem_id in reference_dataset.keys()
+            str(problem_id)
+            .strip()
+            .upper()
+            for problem_id
+            in reference_dataset.keys()
             if problem_id is not None
         }
+
         supported_ids.discard("")
+
         if not supported_ids:
             raise ProblemProviderError(
-                "No supported problem IDs were found in the reference repository."
+                "No supported problem IDs were found "
+                "in the reference repository."
             )
+
         return supported_ids
+
+    def get_reference_supported_problem_ids(
+        self,
+    ) -> set[str]:
+        """Return canonical Problem IDs available in the reference dataset."""
+
+        return self._get_supported_problem_ids()
 
     def _find_supported_problems(
         self,
@@ -736,29 +1063,50 @@ class ProblemProvider:
         difficulty: Optional[str] = None,
     ) -> list[dict[str, Any]]:
         """Find live LeetCode problems supported by the reference repository."""
-        supported_ids = self._get_supported_problem_ids()
-        matched: dict[str, dict[str, Any]] = {}
+
+        supported_ids = (
+            self._get_supported_problem_ids()
+        )
+
+        matched: dict[
+            str,
+            dict[str, Any],
+        ] = {}
+
         skip = 0
         page_size = 100
 
         while supported_ids - matched.keys():
+
             page = self.list_problems(
                 limit=page_size,
                 skip=skip,
                 difficulty=difficulty,
                 paid_only=False,
             )
+
             if not page:
                 break
 
             for problem in page:
-                problem_id = str(problem.get("problem_id", "")).strip().upper()
+
+                problem_id = str(
+                    problem.get(
+                        "problem_id",
+                        "",
+                    )
+                ).strip().upper()
+
                 if problem_id in supported_ids:
-                    matched[problem_id] = problem
+                    matched[
+                        problem_id
+                    ] = problem
 
             skip += page_size
 
-        return list(matched.values())
+        return list(
+            matched.values()
+        )
 
     def get_random_problem(
         self,
@@ -766,25 +1114,44 @@ class ProblemProvider:
         difficulty: Optional[str] = None,
     ) -> dict[str, Any]:
         """Select a random supported free LeetCode problem and fetch its details."""
-        problems = self._find_supported_problems(difficulty=difficulty)
+
+        problems = (
+            self._find_supported_problems(
+                difficulty=difficulty
+            )
+        )
 
         if not problems:
-            suffix = f" for difficulty '{difficulty}'" if difficulty else ""
-            raise ProblemProviderError(
-                "No LeetCode problems with matching project reference "
-                f"solutions were found{suffix}."
+
+            suffix = (
+                f" for difficulty '{difficulty}'"
+                if difficulty
+                else ""
             )
 
-        selected_problem = random.choice(problems)
-        title_slug = selected_problem.get("title_slug")
+            raise ProblemProviderError(
+                "No LeetCode problems with matching "
+                "project reference solutions were found"
+                f"{suffix}."
+            )
+
+        selected_problem = random.choice(
+            problems
+        )
+
+        title_slug = selected_problem.get(
+            "title_slug"
+        )
 
         if not title_slug:
             raise ProblemProviderError(
-                "Selected LeetCode problem has no title slug."
+                "Selected LeetCode problem has no "
+                "title slug."
             )
 
-        return self.get_problem(title_slug)
-
+        return self.get_problem(
+            title_slug
+        )
 
     # ========================================================
     # NORMALIZE COMPLETE PROBLEM
@@ -916,6 +1283,10 @@ class ProblemProvider:
                 or ""
             ),
 
+            "examples": self._extract_examples(
+                content
+            ),
+
             # ================================================
             # Constraints
             # ================================================
@@ -994,19 +1365,33 @@ class ProblemProvider:
         page_size = 100
 
         while True:
+
             problems = self.list_problems(
                 limit=page_size,
                 skip=skip,
                 paid_only=False,
             )
+
             if not problems:
                 break
 
             for problem in problems:
-                if problem.get("leetcode_id") == requested_leetcode_id:
-                    title_slug = problem.get("title_slug")
+
+                if (
+                    problem.get(
+                        "leetcode_id"
+                    )
+                    == requested_leetcode_id
+                ):
+
+                    title_slug = problem.get(
+                        "title_slug"
+                    )
+
                     if title_slug:
-                        return self.get_problem(title_slug)
+                        return self.get_problem(
+                            title_slug
+                        )
 
             skip += page_size
 
