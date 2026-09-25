@@ -736,7 +736,7 @@ function CandidateInterview() {
   // INTERVIEW UI
   // ------------------------------------------------------------
   return (
-    <>
+    <div className="candidate-no-radius min-h-screen">
       {error && (
         <div className="fixed left-1/2 top-4 z-50 -translate-x-1/2 border border-red-200 bg-red-50 px-4 py-2 text-xs text-red-600 shadow-sm">
           {error}
@@ -880,7 +880,7 @@ function CandidateInterview() {
             )}
           </div>
         )}
-    </>
+    </div>
   )
 }
 

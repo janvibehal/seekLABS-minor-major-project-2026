@@ -226,18 +226,6 @@ function CandidateResults() {
 
         </div>
 
-        <button
-          type="button"
-          onClick={() => navigate('/candidate/preparation')}
-          className="group flex w-fit items-center gap-3 rounded-xl bg-violet-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-violet-400 hover:shadow-lg hover:shadow-violet-500/20"
-        >
-          Improve Your Skills
-
-          <span className="transition-transform group-hover:translate-x-1">
-            →
-          </span>
-        </button>
-
       </div>
 
 
@@ -628,14 +616,6 @@ function CandidateResults() {
               <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-300">
                 {latestDetail.feedback}
               </p>
-
-              <button
-                type="button"
-                onClick={() => navigate('/candidate/preparation')}
-                className="mt-5 text-sm font-semibold text-violet-400 transition hover:text-violet-300"
-              >
-                Practice this area →
-              </button>
 
             </div>
 

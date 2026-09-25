@@ -3,7 +3,7 @@ import CandidateHeader from './CandidateHeader'
 
 function CandidateLayout({ children }) {
   return (
-    <div className="relative h-screen overflow-hidden bg-[#07090d] text-white">
+    <div className="candidate-no-radius relative h-screen overflow-hidden bg-[#07090d] text-white">
 
       {/* =====================================================
           SUBTLE BACKGROUND EFFECTS

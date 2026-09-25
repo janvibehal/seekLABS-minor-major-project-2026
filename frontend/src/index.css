@@ -30,3 +30,14 @@
   scrollbar-width: thin;
   scrollbar-color: #3f3f46 #0a0a0a;
 }
+
+/* =====================================================
+   CANDIDATE UI — FLAT COMPONENTS
+   Remove rounded corners from candidate-side boxes,
+   buttons, cards, panels, inputs, and other components.
+   Circular indicators/icons using rounded-full remain circular.
+===================================================== */
+
+.candidate-no-radius *:not([class*="rounded-full"]) {
+  border-radius: 0 !important;
+}

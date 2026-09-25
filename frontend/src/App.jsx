@@ -20,7 +20,6 @@ import CandidateDashboard from './pages/candidate/CandidateDashboard'
 import CandidateInterviews from './pages/candidate/CandidateInterviews'
 import CandidateResults from './pages/candidate/CandidateResults'
 import CandidateResultDetail from './pages/candidate/CandidateResultDetail'
-import CandidatePreparation from './pages/candidate/CandidatePreparation'
 import CandidateInterview from './pages/candidate/CandidateInterview'
 
 function App() {
@@ -108,14 +107,6 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={['CANDIDATE']}>
                 <CandidateResultDetail />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/candidate/preparation"
-            element={
-              <ProtectedRoute allowedRoles={['CANDIDATE']}>
-                <CandidatePreparation />
               </ProtectedRoute>
             }
           />

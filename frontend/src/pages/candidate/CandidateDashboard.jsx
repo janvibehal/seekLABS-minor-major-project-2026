@@ -11,7 +11,6 @@ function CandidateDashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [dashboard, setDashboard] = useState(null)
-  const [preparation, setPreparation] = useState(null)
   const [latestResult, setLatestResult] = useState(null)
 
   useEffect(() => {
@@ -22,16 +21,11 @@ function CandidateDashboard() {
       setError('')
 
       try {
-        const [dashboardData, preparationData] = await Promise.all([
-          candidateApi.getDashboard(),
-          candidateApi.getPreparation(),
-        ])
+        const dashboardData = await candidateApi.getDashboard()
 
         if (cancelled) return
 
         setDashboard(dashboardData)
-        setPreparation(preparationData)
-
         const latestCompleted = dashboardData.recentInterviews?.[0]
 
         if (latestCompleted) {
@@ -109,9 +103,6 @@ function CandidateDashboard() {
     ? Object.entries(latestResult.dimensions || {})
     : []
 
-  const topRecommendation = preparation?.topicScores?.length
-    ? [...preparation.topicScores].sort((a, b) => a.score - b.score)[0]
-    : null
 
   return (
     <CandidateLayout>
@@ -180,7 +171,7 @@ function CandidateDashboard() {
             STATISTICS
         ====================================================== */}
 
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
 
           <StatCard
             label="Upcoming Interviews"
@@ -206,13 +197,6 @@ function CandidateDashboard() {
             accent="sky"
           />
 
-          <StatCard
-            label="Preparation"
-            value={`${preparation?.overallProgress ?? 0}%`}
-            description="Overall readiness"
-            icon={<BookIcon />}
-            accent="indigo"
-          />
 
         </div>
 
@@ -224,7 +208,7 @@ function CandidateDashboard() {
 
           {/* ================= UPCOMING ================= */}
 
-          <div className="xl:col-span-2">
+          <div className="xl:col-span-3">
 
             <SectionHeader
               title="Upcoming Interview"
@@ -315,94 +299,6 @@ function CandidateDashboard() {
 
           </div>
 
-          {/* ================= PREPARATION ================= */}
-
-          <div>
-
-            <SectionHeader
-              title="Preparation"
-              subtitle="Your current progress"
-              action="Practice"
-              onAction={() => navigate('/candidate/preparation')}
-            />
-
-            <div className="rounded-2xl border border-white/[0.07] bg-[#0b0d12] p-6 transition hover:border-blue-400/20">
-
-              <div className="flex items-center gap-6">
-
-                {/* Progress Circle */}
-
-                <div className="relative flex h-28 w-28 shrink-0 items-center justify-center">
-
-                  <svg
-                    className="absolute h-28 w-28 -rotate-90"
-                    viewBox="0 0 100 100"
-                  >
-                    <circle
-                      cx="50"
-                      cy="50"
-                      r="42"
-                      fill="none"
-                      stroke="#27272a"
-                      strokeWidth="7"
-                    />
-
-                    <circle
-                      cx="50"
-                      cy="50"
-                      r="42"
-                      fill="none"
-                      stroke="#60a5fa"
-                      strokeWidth="7"
-                      strokeDasharray="264"
-                      strokeDashoffset={
-                        264 -
-                        ((preparation?.overallProgress ?? 0) / 100) * 264
-                      }
-                      strokeLinecap="round"
-                      className="transition-all duration-700"
-                    />
-                  </svg>
-
-                  <div className="text-center">
-
-                    <span className="block text-xl font-semibold text-white">
-                      {preparation?.overallProgress ?? 0}%
-                    </span>
-
-                    <span className="text-[10px] uppercase tracking-wider text-zinc-600">
-                      Progress
-                    </span>
-
-                  </div>
-                </div>
-
-                {/* Topics */}
-
-                <div className="min-w-0 flex-1 space-y-4">
-
-                  {(preparation?.topicScores ?? [])
-                    .slice(0, 3)
-                    .map((topic) => (
-                      <ProgressItem
-                        key={topic.topic}
-                        label={topic.topic}
-                        value={`${topic.score}%`}
-                        progress={topic.score}
-                      />
-                    ))}
-
-                  {(!preparation ||
-                    preparation.topicScores?.length === 0) && (
-                    <p className="text-xs leading-5 text-zinc-600">
-                      Complete an interview to unlock your preparation insights.
-                    </p>
-                  )}
-
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
 
         {/* =====================================================
@@ -457,7 +353,7 @@ function CandidateDashboard() {
             BOTTOM SECTION
         ====================================================== */}
 
-        <div className="mt-10 grid gap-6 xl:grid-cols-2">
+        <div className="mt-10">
 
           {/* ================= FEEDBACK ================= */}
 
@@ -511,87 +407,6 @@ function CandidateDashboard() {
 
           </div>
 
-          {/* ================= RECOMMENDATION ================= */}
-
-          <div>
-
-            <SectionHeader
-              title="Recommended for You"
-              subtitle="Your highest priority improvement area"
-              action="View preparation"
-              onAction={() => navigate('/candidate/preparation')}
-            />
-
-            {topRecommendation ? (
-              <div className="relative overflow-hidden rounded-2xl border border-blue-400/15 bg-gradient-to-br from-blue-400/[0.09] via-[#0b0d12] to-[#0b0d12] p-6">
-
-                <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-blue-400/10 blur-[70px]" />
-
-                <div className="relative">
-
-                  <div className="flex items-start justify-between gap-6">
-
-                    <div>
-
-                      <div className="inline-flex rounded-full bg-blue-400/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.15em] text-blue-300">
-                        Focus Area
-                      </div>
-
-                      <h3 className="mt-4 text-xl font-semibold text-white">
-                        {topRecommendation.topic}
-                      </h3>
-
-                      <p className="mt-2 text-sm text-zinc-500">
-                        This is the area where focused practice can make
-                        the biggest difference.
-                      </p>
-
-                    </div>
-
-                    <div className="text-right">
-
-                      <p className="text-3xl font-semibold text-white">
-                        {topRecommendation.score}%
-                      </p>
-
-                      <p className="mt-1 text-xs text-zinc-600">
-                        Current score
-                      </p>
-
-                    </div>
-
-                  </div>
-
-                  <div className="mt-7 h-2 overflow-hidden rounded-full bg-white/[0.06]">
-
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-blue-500 via-blue-400 to-cyan-400 transition-all duration-700"
-                      style={{
-                        width: `${topRecommendation.score}%`,
-                      }}
-                    />
-
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      navigate('/candidate/preparation')
-                    }
-                    className="mt-6 rounded-xl bg-blue-400 px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-blue-300"
-                  >
-                    Start Practice →
-                  </button>
-
-                </div>
-              </div>
-            ) : (
-              <EmptyState
-                message="Complete an interview to receive a personalized recommendation."
-              />
-            )}
-
-          </div>
         </div>
       </div>
     </CandidateLayout>

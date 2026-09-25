@@ -26,11 +26,6 @@ function CandidateSidebar() {
       path: '/candidate/results',
       icon: ResultsIcon,
     },
-    {
-      name: 'Preparation',
-      path: '/candidate/preparation',
-      icon: PreparationIcon,
-    },
   ]
 
   return (
@@ -164,33 +159,6 @@ function CandidateSidebar() {
 
         </div>
 
-
-        {/* =====================================================
-            QUICK TIP CARD
-        ====================================================== */}
-
-        <div className="relative mt-10 overflow-hidden rounded-2xl border border-blue-400/[0.12] bg-gradient-to-br from-blue-400/[0.08] to-transparent p-4">
-
-          <div className="absolute -right-8 -top-8 h-20 w-20 rounded-full bg-blue-400/10 blur-2xl" />
-
-          <div className="relative">
-
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-400/10 text-blue-400">
-              <SparkIcon />
-            </div>
-
-            <p className="mt-4 text-xs font-semibold text-zinc-200">
-              Keep improving
-            </p>
-
-            <p className="mt-1.5 text-[11px] leading-5 text-zinc-600">
-              Practice regularly to improve your interview performance.
-            </p>
-
-          </div>
-
-        </div>
-
       </nav>
 
 
@@ -314,40 +282,6 @@ function ResultsIcon() {
 }
 
 
-function PreparationIcon() {
-  return (
-    <svg
-      className="h-[18px] w-[18px]"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-    >
-      <path d="M4 5a3 3 0 0 1 3-3h13v18H7a3 3 0 0 0-3 3V5Z" />
-
-      <path d="M7 20h13" />
-
-      <path d="M8 7h8M8 11h8M8 15h5" />
-    </svg>
-  )
-}
-
-
-function SparkIcon() {
-  return (
-    <svg
-      className="h-4 w-4"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-    >
-      <path d="m12 3-1.7 5.3L5 10l5.3 1.7L12 17l1.7-5.3L19 10l-5.3-1.7L12 3Z" />
-
-      <path d="m19 16-.8 2.2L16 19l2.2.8L19 22l.8-2.2L22 19l-2.2-.8L19 16Z" />
-    </svg>
-  )
-}
 
 
 function ArrowIcon() {

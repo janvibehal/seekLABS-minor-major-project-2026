@@ -172,23 +172,6 @@ function CandidateInterviews() {
 
             </div>
 
-
-            {/* CTA */}
-
-            <button
-              type="button"
-              onClick={() => navigate('/candidate/preparation')}
-              className="group flex w-fit items-center gap-2 rounded-xl bg-blue-400 px-5 py-3 text-sm font-semibold text-[#071018] transition-all duration-300 hover:bg-blue-300 hover:shadow-[0_0_30px_rgba(96,165,250,0.25)]"
-            >
-
-              Prepare Now
-
-              <span className="transition-transform duration-300 group-hover:translate-x-1">
-                →
-              </span>
-
-            </button>
-
           </div>
 
         </div>
