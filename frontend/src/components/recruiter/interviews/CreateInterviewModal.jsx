@@ -16,8 +16,7 @@ function CreateInterviewModal({ onClose, onSuccess }) {
   const [title, setTitle] = useState('')
   const [type, setType] = useState('Technical Interview')
   const [company, setCompany] = useState('')
-  const [selectedCandidateIds, setSelectedCandidateIds] =
-    useState([])
+  const [selectedCandidateIds, setSelectedCandidateIds] = useState([])
   const [scheduledAt, setScheduledAt] = useState('')
   const [focusAreas, setFocusAreas] = useState([])
 
@@ -67,6 +66,9 @@ function CreateInterviewModal({ onClose, onSuccess }) {
 
   const [currentPage, setCurrentPage] =
     useState(1)
+
+  const [hasNextPage, setHasNextPage] =
+    useState(true)
 
   const QUESTIONS_PER_PAGE = 5
 
@@ -157,6 +159,7 @@ function CreateInterviewModal({ onClose, onSuccess }) {
               ? undefined
               : difficulty,
             questionSearch,
+            currentPage,
           )
 
         if (cancelled) {
@@ -178,10 +181,18 @@ function CreateInterviewModal({ onClose, onSuccess }) {
                     ? response.data.data
                     : []
 
-        // Always replace the visible library with the latest result.
-        setQuestions(nextQuestions)
-        setCurrentPage(1)
+        const apiHasNextPage =
+          typeof response?.pagination?.hasNextPage ===
+          'boolean'
+            ? response.pagination.hasNextPage
+            : typeof response?.data?.pagination?.hasNextPage ===
+                'boolean'
+              ? response.data.pagination.hasNextPage
+              : nextQuestions.length ===
+                QUESTIONS_PER_PAGE
 
+        setQuestions(nextQuestions)
+        setHasNextPage(apiHasNextPage)
       } catch (err) {
         console.error(
           'Question fetch error:',
@@ -195,13 +206,12 @@ function CreateInterviewModal({ onClose, onSuccess }) {
             'Failed to load LeetCode questions.',
           )
         }
-
       } finally {
         if (!cancelled) {
           setLoadingQuestions(false)
         }
       }
-    }, 300)
+    }, 0)
 
     return () => {
       cancelled = true
@@ -210,6 +220,7 @@ function CreateInterviewModal({ onClose, onSuccess }) {
   }, [
     difficulty,
     questionSearch,
+    currentPage,
   ])
 
 
@@ -262,21 +273,9 @@ function CreateInterviewModal({ onClose, onSuccess }) {
   // PAGINATION
   // ============================================================
 
-  const totalPages = Math.max(
-    1,
-    Math.ceil(
-      normalizedQuestions.length /
-        QUESTIONS_PER_PAGE,
-    ),
-  )
-
-  const paginatedQuestions =
-    normalizedQuestions.slice(
-      (currentPage - 1) *
-        QUESTIONS_PER_PAGE,
-      currentPage *
-        QUESTIONS_PER_PAGE,
-    )
+  // The API already returns exactly one page of questions.
+  // Do not slice the response again on the client.
+  const paginatedQuestions = normalizedQuestions
 
 
   // ============================================================
@@ -285,15 +284,13 @@ function CreateInterviewModal({ onClose, onSuccess }) {
 
   const toggleQuestion = async (question) => {
     const existing = selectedQuestions.find(
-      (item) =>
-        item.remoteId === question.remoteId,
+      (item) => item.remoteId === question.remoteId,
     )
 
     if (existing) {
       setSelectedQuestions((previous) =>
         previous.filter(
-          (item) =>
-            item.remoteId !== question.remoteId,
+          (item) => item.remoteId !== question.remoteId,
         ),
       )
       return
@@ -315,9 +312,7 @@ function CreateInterviewModal({ onClose, onSuccess }) {
 
     try {
       setQuestionError(null)
-      setImportingQuestionSlug(
-        question.slug,
-      )
+      setImportingQuestionSlug(question.slug)
 
       const imported =
         await importRecruiterLeetCodeQuestion(
@@ -327,8 +322,7 @@ function CreateInterviewModal({ onClose, onSuccess }) {
       setSelectedQuestions((previous) => {
         if (
           previous.some(
-            (item) =>
-              item.id === imported.id,
+            (item) => item.id === imported.id,
           )
         ) {
           return previous
@@ -338,27 +332,20 @@ function CreateInterviewModal({ onClose, onSuccess }) {
           ...previous,
           {
             ...question,
-
             id: imported.id,
-
             title:
               imported.title ||
               question.title,
-
             difficulty:
               imported.difficulty ||
               question.difficulty,
-
             topics:
               imported.topics ||
               question.topics,
-
-            // Every newly selected question starts at 10 minutes.
             time: 10,
           },
         ]
       })
-
     } catch (err) {
       console.error(
         'LeetCode import error:',
@@ -370,7 +357,6 @@ function CreateInterviewModal({ onClose, onSuccess }) {
         err?.message ||
         'Failed to add this LeetCode question.',
       )
-
     } finally {
       setImportingQuestionSlug(null)
     }
@@ -385,29 +371,7 @@ function CreateInterviewModal({ onClose, onSuccess }) {
     questionId,
     value,
   ) => {
-    // Allow the input to temporarily be empty while typing.
-    if (value === '') {
-      setSelectedQuestions((previous) =>
-        previous.map((question) =>
-          question.id === questionId
-            ? {
-                ...question,
-                time: '',
-              }
-            : question,
-        ),
-      )
-
-      return
-    }
-
     const time = Number(value)
-
-    if (
-      !Number.isFinite(time)
-    ) {
-      return
-    }
 
     setSelectedQuestions((previous) =>
       previous.map((question) =>
@@ -415,75 +379,13 @@ function CreateInterviewModal({ onClose, onSuccess }) {
           ? {
               ...question,
               time:
+                Number.isNaN(time) ||
                 time < 1
                   ? 1
                   : time,
             }
           : question,
       ),
-    )
-  }
-
-
-  // ============================================================
-  // NORMALIZE TIME AFTER TYPING
-  // ============================================================
-
-  const normalizeQuestionTime = (
-    questionId,
-    value,
-  ) => {
-    const time = Number(value)
-
-    setSelectedQuestions((previous) =>
-      previous.map((question) =>
-        question.id === questionId
-          ? {
-              ...question,
-              time:
-                !Number.isFinite(time) ||
-                time < 1
-                  ? 10
-                  : Math.floor(time),
-            }
-          : question,
-      ),
-    )
-  }
-
-
-  // ============================================================
-  // INCREASE QUESTION TIME
-  // ============================================================
-
-  const increaseQuestionTime = (
-    questionId,
-    currentTime,
-  ) => {
-    const time =
-      Number(currentTime) || 10
-
-    updateQuestionTime(
-      questionId,
-      time + 5,
-    )
-  }
-
-
-  // ============================================================
-  // DECREASE QUESTION TIME
-  // ============================================================
-
-  const decreaseQuestionTime = (
-    questionId,
-    currentTime,
-  ) => {
-    const time =
-      Number(currentTime) || 10
-
-    updateQuestionTime(
-      questionId,
-      Math.max(10, time - 5),
     )
   }
 
@@ -496,7 +398,7 @@ function CreateInterviewModal({ onClose, onSuccess }) {
     selectedQuestions.reduce(
       (total, question) =>
         total +
-        (Number(question.time) || 0),
+        Number(question.time || 0),
       0,
     )
 
@@ -545,10 +447,7 @@ function CreateInterviewModal({ onClose, onSuccess }) {
       return
     }
 
-    if (
-      selectedCandidateIds.length ===
-      0
-    ) {
+    if (selectedCandidateIds.length === 0) {
       setError(
         'Please select at least one candidate.',
       )
@@ -562,10 +461,7 @@ function CreateInterviewModal({ onClose, onSuccess }) {
       return
     }
 
-    if (
-      selectedQuestions.length ===
-      0
-    ) {
+    if (selectedQuestions.length === 0) {
       setError(
         'Please select at least one question.',
       )
@@ -581,8 +477,7 @@ function CreateInterviewModal({ onClose, onSuccess }) {
         type,
 
         company:
-          company.trim() ||
-          undefined,
+          company.trim() || undefined,
 
         candidateIds:
           selectedCandidateIds,
@@ -598,8 +493,7 @@ function CreateInterviewModal({ onClose, onSuccess }) {
 
         questionIds:
           selectedQuestions.map(
-            (question) =>
-              question.id,
+            (question) => question.id,
           ),
       }
 
@@ -689,7 +583,6 @@ function CreateInterviewModal({ onClose, onSuccess }) {
                   label="Interview Title"
                   required
                 >
-
                   <input
                     value={title}
                     onChange={(event) =>
@@ -700,7 +593,6 @@ function CreateInterviewModal({ onClose, onSuccess }) {
                     placeholder="e.g. Full Stack Developer Interview"
                     className="w-full border border-zinc-700 bg-[#181818] px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-500 transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20"
                   />
-
                 </Field>
 
 
@@ -765,8 +657,7 @@ function CreateInterviewModal({ onClose, onSuccess }) {
                           <input
                             type="checkbox"
                             checked={
-                              candidates.length >
-                                0 &&
+                              candidates.length > 0 &&
                               selectedCandidateIds.length ===
                                 candidates.length
                             }
@@ -794,8 +685,7 @@ function CreateInterviewModal({ onClose, onSuccess }) {
                             }}
                             disabled={
                               loadingCandidates ||
-                              candidates.length ===
-                                0
+                              candidates.length === 0
                             }
                             className="peer absolute inset-0 h-4 w-4 cursor-pointer opacity-0 disabled:cursor-not-allowed"
                           />
@@ -804,8 +694,7 @@ function CreateInterviewModal({ onClose, onSuccess }) {
 
                             {selectedCandidateIds.length ===
                               candidates.length &&
-                              candidates.length >
-                                0 && (
+                              candidates.length > 0 && (
 
                               <svg
                                 viewBox="0 0 16 16"
@@ -834,8 +723,7 @@ function CreateInterviewModal({ onClose, onSuccess }) {
 
                           {selectedCandidateIds.length ===
                             candidates.length &&
-                          candidates.length >
-                            0
+                          candidates.length > 0
                             ? 'Deselect All'
                             : 'Select All'}
 
@@ -845,13 +733,8 @@ function CreateInterviewModal({ onClose, onSuccess }) {
 
 
                       <span className="text-[10px] font-medium uppercase tracking-wider text-zinc-500">
-
-                        {
-                          selectedCandidateIds.length
-                        }{' '}
-
+                        {selectedCandidateIds.length}{' '}
                         selected
-
                       </span>
 
                     </div>
@@ -865,8 +748,7 @@ function CreateInterviewModal({ onClose, onSuccess }) {
                           Loading candidates...
                         </p>
 
-                      ) : candidates.length ===
-                        0 ? (
+                      ) : candidates.length === 0 ? (
 
                         <p className="px-4 py-4 text-xs text-zinc-500">
                           No candidates available.
@@ -875,18 +757,12 @@ function CreateInterviewModal({ onClose, onSuccess }) {
                       ) : (
 
                         candidates.map(
-                          (
-                            candidate,
-                          ) => {
+                          (candidate) => {
 
                             const name =
                               candidate.name ||
-                              `${
-                                candidate.firstName ||
-                                ''
-                              } ${
-                                candidate.lastName ||
-                                ''
+                              `${candidate.firstName || ''} ${
+                                candidate.lastName || ''
                               }`.trim()
 
                             const selected =
@@ -897,9 +773,7 @@ function CreateInterviewModal({ onClose, onSuccess }) {
                             return (
 
                               <label
-                                key={
-                                  candidate.id
-                                }
+                                key={candidate.id}
                                 className="flex cursor-pointer items-center gap-3 border-b border-zinc-800/70 px-4 py-3 last:border-b-0 hover:bg-zinc-800/40"
                               >
 
@@ -907,22 +781,16 @@ function CreateInterviewModal({ onClose, onSuccess }) {
 
                                   <input
                                     type="checkbox"
-                                    checked={
-                                      selected
-                                    }
+                                    checked={selected}
                                     onChange={() => {
 
                                       setSelectedCandidateIds(
-                                        (
-                                          previous,
-                                        ) =>
+                                        (previous) =>
                                           previous.includes(
                                             candidate.id,
                                           )
                                             ? previous.filter(
-                                                (
-                                                  id,
-                                                ) =>
+                                                (id) =>
                                                   id !==
                                                   candidate.id,
                                               )
@@ -967,19 +835,12 @@ function CreateInterviewModal({ onClose, onSuccess }) {
                                 <div className="min-w-0">
 
                                   <p className="truncate text-sm text-white">
-
                                     {name ||
                                       'Unnamed Candidate'}
-
                                   </p>
 
-
                                   <p className="truncate text-[10px] text-zinc-500">
-
-                                    {
-                                      candidate.email
-                                    }
-
+                                    {candidate.email}
                                   </p>
 
                                 </div>
@@ -1022,7 +883,7 @@ function CreateInterviewModal({ onClose, onSuccess }) {
                         event.target.value,
                       )
                     }
-                    className="w-full border border-zinc-700 bg-[#181818] px-4 py-3 text-sm text-white outline-none transition focus:border-blue-500 [color-scheme:dark]"
+                    className="w-full border border-zinc-700 bg-[#181818] px-4 py-3 text-sm text-white outline-none transition focus:border-blue-500"
                   />
 
                 </Field>
@@ -1030,6 +891,7 @@ function CreateInterviewModal({ onClose, onSuccess }) {
               </div>
 
             </section>
+
 
 
             {/* SELECTED QUESTIONS */}
@@ -1056,10 +918,7 @@ function CreateInterviewModal({ onClose, onSuccess }) {
                 ) : (
 
                   selectedQuestions.map(
-                    (
-                      question,
-                      index,
-                    ) => (
+                    (question, index) => (
 
                       <div
                         key={question.id}
@@ -1076,118 +935,50 @@ function CreateInterviewModal({ onClose, onSuccess }) {
                           <div className="flex items-center gap-3">
 
                             <span className="text-[10px] font-semibold text-blue-400">
-
                               #
-
-                              {
-                                question.leetcodeId ||
-                                '—'
-                              }
-
+                              {question.leetcodeId ||
+                                '—'}
                             </span>
 
-
                             <p className="truncate text-xs font-medium text-zinc-200">
-
-                              {
-                                question.title
-                              }
-
+                              {question.title}
                             </p>
 
                           </div>
 
 
                           <p className="mt-1 text-[9px] text-zinc-600">
-
-                            {
-                              question.difficulty
-                            }
-
+                            {question.difficulty}
                           </p>
 
                         </div>
 
 
-                        {/* TIME COUNTER */}
-
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
 
                           <label className="text-[9px] uppercase tracking-wider text-zinc-600">
                             Minutes
                           </label>
 
-
-                          <div className="flex items-center border border-zinc-700 bg-[#181818]">
-
-                            {/* DECREASE BY 5 */}
-
-                            <button
-                              type="button"
-                              onClick={() =>
-                                decreaseQuestionTime(
-                                  question.id,
-                                  question.time,
-                                )
-                              }
-                              disabled={
-                                Number(
-                                  question.time ||
-                                    10,
-                                ) <= 1
-                              }
-                              className="flex h-9 w-9 items-center justify-center border-r border-zinc-700 text-lg leading-none text-zinc-400 transition hover:bg-zinc-800 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
-                              aria-label="Decrease interview time by 5 minutes"
-                            >
-                              −
-                            </button>
-
-
-                            {/* TYPE TIME */}
-
-                            <input
-                              type="number"
-                              min="10"
-                              step="5"
-                              value={question.time}
-                              onChange={(event) =>
-                                updateQuestionTime(
-                                  question.id,
-                                  event.target.value,
-                                )
-                              }
-                              onBlur={(event) =>
-                                normalizeQuestionTime(
-                                  question.id,
-                                  event.target.value,
-                                )
-                              }
-                              className="h-9 w-16 appearance-none border-0 bg-transparent px-1 text-center text-sm font-medium text-white outline-none focus:ring-1 focus:ring-inset focus:ring-blue-500 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                            />
-
-
-                            {/* INCREASE BY 5 */}
-
-                            <button
-                              type="button"
-                              onClick={() =>
-                                increaseQuestionTime(
-                                  question.id,
-                                  question.time,
-                                )
-                              }
-                              className="flex h-9 w-9 items-center justify-center border-l border-zinc-700 text-lg leading-none text-zinc-400 transition hover:bg-zinc-800 hover:text-white"
-                              aria-label="Increase interview time by 5 minutes"
-                            >
-                              +
-                            </button>
-
-                          </div>
+                          <input
+                            type="number"
+                            min="10"
+                            step="5"
+                            value={
+                              question.time
+                            }
+                            onChange={(event) =>
+                              updateQuestionTime(
+                                question.id,
+                                event.target
+                                  .value,
+                              )
+                            }
+                            className="w-16 border border-zinc-700 bg-[#181818] px-2 py-2 text-center text-xs text-white outline-none focus:border-blue-500"
+                          />
 
                         </div>
 
-
-                        {/* REMOVE */}
 
                         <button
                           type="button"
@@ -1225,7 +1016,6 @@ function CreateInterviewModal({ onClose, onSuccess }) {
                     Question Library
                   </SectionTitle>
 
-
                   <p className="mt-2 text-xs text-zinc-500">
                     Search the full free LeetCode problem library by ID or name.
                   </p>
@@ -1234,13 +1024,8 @@ function CreateInterviewModal({ onClose, onSuccess }) {
 
 
                 <div className="text-[10px] text-zinc-600">
-
-                  {
-                    normalizedQuestions.length
-                  }{' '}
-
+                  {normalizedQuestions.length}{' '}
                   visible
-
                 </div>
 
               </div>
@@ -1256,18 +1041,13 @@ function CreateInterviewModal({ onClose, onSuccess }) {
 
                     <input
                       value={questionSearch}
-                      onChange={(
-                        event,
-                      ) => {
+                      onChange={(event) => {
 
                         setQuestionSearch(
-                          event.target
-                            .value,
+                          event.target.value,
                         )
 
-                        setCurrentPage(
-                          1,
-                        )
+                        setCurrentPage(1)
 
                       }}
                       placeholder="Search by LeetCode ID or problem name..."
@@ -1283,9 +1063,7 @@ function CreateInterviewModal({ onClose, onSuccess }) {
                       type="button"
                       onClick={() =>
                         setShowDifficultyMenu(
-                          (
-                            previous,
-                          ) =>
+                          (previous) =>
                             !previous,
                         )
                       }
@@ -1293,24 +1071,17 @@ function CreateInterviewModal({ onClose, onSuccess }) {
                     >
 
                       <span>
-
                         {
                           {
-                            ALL:
-                              'All Difficulties',
-                            EASY:
-                              'Easy',
-                            MEDIUM:
-                              'Medium',
-                            HARD:
-                              'Hard',
+                            ALL: 'All Difficulties',
+                            EASY: 'Easy',
+                            MEDIUM: 'Medium',
+                            HARD: 'Hard',
                           }[
                             difficulty
                           ]
                         }
-
                       </span>
-
 
                       <SortIcon />
 
@@ -1324,8 +1095,7 @@ function CreateInterviewModal({ onClose, onSuccess }) {
                         {[
                           {
                             value: 'ALL',
-                            label:
-                              'All Difficulties',
+                            label: 'All Difficulties',
                           },
                           {
                             value: 'EASY',
@@ -1333,17 +1103,14 @@ function CreateInterviewModal({ onClose, onSuccess }) {
                           },
                           {
                             value: 'MEDIUM',
-                            label:
-                              'Medium',
+                            label: 'Medium',
                           },
                           {
                             value: 'HARD',
                             label: 'Hard',
                           },
                         ].map(
-                          (
-                            option,
-                          ) => (
+                          (option) => (
 
                             <button
                               key={
@@ -1372,11 +1139,9 @@ function CreateInterviewModal({ onClose, onSuccess }) {
                                   : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
                               }`}
                             >
-
                               {
                                 option.label
                               }
-
                             </button>
 
                           ),
@@ -1408,191 +1173,12 @@ function CreateInterviewModal({ onClose, onSuccess }) {
 
                 {/* QUESTIONS */}
 
-                <div className="relative min-h-[430px]">
+                <div className="relative h-[430px] overflow-y-auto">
 
-                  {/* Keep existing questions visible while
-                      search/filter results are loading. */}
+                  {loadingQuestions &&
+                    questions.length === 0 && (
 
-                  {paginatedQuestions.length >
-                    0 && (
-
-                    <div
-                      className={
-                        loadingQuestions
-                          ? 'pointer-events-none opacity-50 transition-opacity'
-                          : 'transition-opacity'
-                      }
-                    >
-
-                      {paginatedQuestions.map(
-                        (
-                          question,
-                        ) => {
-
-                          const selected =
-                            selectedQuestions.some(
-                              (
-                                item,
-                              ) =>
-                                item.remoteId ===
-                                question.remoteId,
-                            )
-
-                          return (
-
-                            <div
-                              key={
-                                question.remoteId
-                              }
-                              className={`flex items-center justify-between gap-4 border-b border-zinc-800 px-5 py-4 transition ${
-                                selected
-                                  ? 'bg-blue-500/5'
-                                  : 'hover:bg-zinc-900'
-                              }`}
-                            >
-
-                              <div className="min-w-0 flex-1">
-
-                                <div className="flex items-center gap-3">
-
-                                  <span className="shrink-0 text-[10px] font-semibold text-blue-400">
-
-                                    #
-
-                                    {
-                                      question.leetcodeId ||
-                                      '—'
-                                    }
-
-                                  </span>
-
-
-                                  <p className="truncate text-sm font-medium text-zinc-200">
-
-                                    {
-                                      question.title
-                                    }
-
-                                  </p>
-
-                                </div>
-
-
-                                <div className="mt-3 flex flex-wrap gap-2">
-
-                                  <span
-                                    className={`px-2 py-1 text-[9px] font-semibold ${getDifficultyClass(
-                                      question.difficulty,
-                                    )}`}
-                                  >
-
-                                    {
-                                      question.difficulty
-                                    }
-
-                                  </span>
-
-
-                                  {question.topics
-                                    ?.slice(
-                                      0,
-                                      3,
-                                    )
-                                    .map(
-                                      (
-                                        topic,
-                                        index,
-                                      ) => {
-
-                                        const topicName =
-                                          typeof topic ===
-                                          'string'
-                                            ? topic
-                                            : topic?.name ||
-                                              topic?.slug ||
-                                              `Topic ${
-                                                index +
-                                                1
-                                              }`
-
-                                        return (
-
-                                          <span
-                                            key={`${topicName}-${index}`}
-                                            className="border border-zinc-800 bg-zinc-900 px-2 py-1 text-[9px] text-zinc-500"
-                                          >
-
-                                            {
-                                              topicName
-                                            }
-
-                                          </span>
-
-                                        )
-
-                                      },
-                                    )}
-
-                                </div>
-
-                              </div>
-
-
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  toggleQuestion(
-                                    question,
-                                  )
-                                }
-                                disabled={
-                                  !question.referenceSupported ||
-                                  importingQuestionSlug ===
-                                    question.slug
-                                }
-                                className={`min-w-[80px] px-4 py-2 text-[10px] font-semibold transition ${
-                                  !question.referenceSupported
-                                    ? 'cursor-not-allowed border border-zinc-800 bg-zinc-900 text-zinc-600'
-                                    : selected
-                                      ? 'border border-red-500/20 bg-red-500/10 text-red-400 hover:bg-red-500/20'
-                                      : 'border border-blue-500/20 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20'
-                                } disabled:cursor-wait disabled:opacity-70`}
-                              >
-
-                                {
-                                  importingQuestionSlug ===
-                                  question.slug
-                                    ? 'Adding...'
-                                    : !question.referenceSupported
-                                      ? 'Unavailable'
-                                      : selected
-                                        ? 'Remove'
-                                        : 'Add'
-                                }
-
-                              </button>
-
-                            </div>
-
-                          )
-
-                        },
-                      )}
-
-                    </div>
-
-                  )}
-
-
-                  {/* INITIAL LOADING */}
-
-                  {paginatedQuestions.length ===
-                    0 &&
-                    loadingQuestions && (
-
-                    <div className="flex min-h-[430px] items-center justify-center">
-
-                      <div className="text-center">
+                      <div className="px-5 py-14 text-center">
 
                         <span className="mx-auto block h-6 w-6 animate-spin rounded-full border-2 border-zinc-700 border-t-blue-400" />
 
@@ -1602,20 +1188,160 @@ function CreateInterviewModal({ onClose, onSuccess }) {
 
                       </div>
 
-                    </div>
-
-                  )}
+                    )}
 
 
-                  {/* NO RESULTS */}
+                  {paginatedQuestions.length >
+                      0 && (
+
+                      <div>
+
+                        {paginatedQuestions.map(
+                          (question) => {
+
+                            const selected =
+                              selectedQuestions.some(
+                                (item) =>
+                                  item.remoteId ===
+                                  question.remoteId,
+                              )
+
+                            return (
+
+                              <div
+                                key={
+                                  question.remoteId
+                                }
+                                className={`flex items-center justify-between gap-4 border-b border-zinc-800 px-5 py-4 transition ${
+                                  selected
+                                    ? 'bg-blue-500/5'
+                                    : 'hover:bg-zinc-900'
+                                }`}
+                              >
+
+                                <div className="min-w-0 flex-1">
+
+                                  <div className="flex items-center gap-3">
+
+                                    <span className="shrink-0 text-[10px] font-semibold text-blue-400">
+                                      #
+                                      {question.leetcodeId ||
+                                        '—'}
+                                    </span>
+
+                                    <p className="truncate text-sm font-medium text-zinc-200">
+                                      {
+                                        question.title
+                                      }
+                                    </p>
+
+                                  </div>
+
+
+                                  <div className="mt-3 flex flex-wrap gap-2">
+
+                                    <span
+                                      className={`px-2 py-1 text-[9px] font-semibold ${getDifficultyClass(
+                                        question.difficulty,
+                                      )}`}
+                                    >
+                                      {
+                                        question.difficulty
+                                      }
+                                    </span>
+
+                                    {question.topics
+                                      ?.slice(
+                                        0,
+                                        3,
+                                      )
+                                      .map(
+                                        (
+                                          topic,
+                                          index,
+                                        ) => {
+
+                                          const topicName =
+                                            typeof topic ===
+                                            'string'
+                                              ? topic
+                                              : topic?.name ||
+                                                topic?.slug ||
+                                                `Topic ${
+                                                  index +
+                                                  1
+                                                }`
+
+                                          return (
+
+                                            <span
+                                              key={`${topicName}-${index}`}
+                                              className="border border-zinc-800 bg-zinc-900 px-2 py-1 text-[9px] text-zinc-500"
+                                            >
+                                              {
+                                                topicName
+                                              }
+                                            </span>
+
+                                          )
+
+                                        },
+                                      )}
+
+                                  </div>
+
+                                </div>
+
+
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    toggleQuestion(
+                                      question,
+                                    )
+                                  }
+                                  disabled={
+                                    !question.referenceSupported ||
+                                    importingQuestionSlug ===
+                                      question.slug
+                                  }
+                                  className={`min-w-[80px] px-4 py-2 text-[10px] font-semibold transition ${
+                                    !question.referenceSupported
+                                      ? 'cursor-not-allowed border border-zinc-800 bg-zinc-900 text-zinc-600'
+                                      : selected
+                                        ? 'border border-red-500/20 bg-red-500/10 text-red-400 hover:bg-red-500/20'
+                                        : 'border border-blue-500/20 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20'
+                                  } disabled:cursor-wait disabled:opacity-70`}
+                                >
+
+                                  {importingQuestionSlug ===
+                                  question.slug
+                                    ? 'Adding...'
+                                    : !question.referenceSupported
+                                      ? 'Unavailable'
+                                      : selected
+                                        ? 'Remove'
+                                        : 'Add'}
+
+                                </button>
+
+                              </div>
+
+                            )
+
+                          },
+                        )}
+
+                      </div>
+
+                    )}
+
 
                   {!loadingQuestions &&
                     paginatedQuestions.length ===
                       0 && (
 
-                    <div className="flex min-h-[430px] items-center justify-center px-5 text-center">
-
-                      <div>
+                      <div className="px-5 py-14 text-center">
 
                         <p className="text-xs text-zinc-500">
                           No questions found.
@@ -1627,95 +1353,69 @@ function CreateInterviewModal({ onClose, onSuccess }) {
 
                       </div>
 
-                    </div>
+                    )}
 
-                  )}
-
-
-                  {/* UPDATING INDICATOR */}
-
-                  {loadingQuestions &&
-                    paginatedQuestions.length >
-                      0 && (
-
-                    <div className="absolute right-4 top-4 z-10 flex items-center gap-2 border border-zinc-700 bg-[#181818] px-3 py-2 text-[10px] text-zinc-500">
-
-                      <span className="h-2.5 w-2.5 animate-spin rounded-full border border-zinc-600 border-t-blue-400" />
-
-                      Updating...
-
-                    </div>
-
-                  )}
 
                 </div>
 
 
                 {/* PAGINATION */}
 
-                {!loadingQuestions &&
-                  normalizedQuestions.length >
-                    0 && (
+                {normalizedQuestions.length >
+                  0 && (
 
-                  <div className="flex items-center justify-between border-t border-zinc-800 bg-[#111111] px-5 py-4">
+                    <div className="flex h-[60px] shrink-0 items-center justify-between border-t border-zinc-800 bg-[#111111] px-5 py-4">
 
-                    <p className="text-[10px] text-zinc-500">
-
-                      Page {currentPage} of{' '}
-
-                      {totalPages}
-
-                    </p>
+                      <p className="text-[10px] text-zinc-500">
+                        Page {currentPage}
+                      </p>
 
 
-                    <div className="flex gap-2">
+                      <div className="flex gap-2">
 
-                      <button
-                        type="button"
-                        disabled={
-                          currentPage ===
-                          1
-                        }
-                        onClick={() =>
-                          setCurrentPage(
-                            (
-                              previous,
-                            ) =>
-                              previous -
-                              1,
-                          )
-                        }
-                        className="border border-zinc-700 px-4 py-2 text-[10px] text-zinc-400 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
-                      >
-                        Previous
-                      </button>
+                        <button
+                          type="button"
+                          disabled={
+                            currentPage === 1 ||
+                            loadingQuestions
+                          }
+                          onClick={() =>
+                            setCurrentPage(
+                              (previous) =>
+                                Math.max(
+                                  1,
+                                  previous - 1,
+                                ),
+                            )
+                          }
+                          className="border border-zinc-700 px-4 py-2 text-[10px] text-zinc-400 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          Previous
+                        </button>
 
 
-                      <button
-                        type="button"
-                        disabled={
-                          currentPage ===
-                          totalPages
-                        }
-                        onClick={() =>
-                          setCurrentPage(
-                            (
-                              previous,
-                            ) =>
-                              previous +
-                              1,
-                          )
-                        }
-                        className="border border-zinc-700 px-4 py-2 text-[10px] text-zinc-400 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
-                      >
-                        Next
-                      </button>
+                        <button
+                          type="button"
+                          disabled={
+                            !hasNextPage ||
+                            loadingQuestions
+                          }
+                          onClick={() =>
+                            setCurrentPage(
+                              (previous) =>
+                                previous + 1,
+                            )
+                          }
+                          className="border border-zinc-700 px-4 py-2 text-[10px] text-zinc-400 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          Next
+                        </button>
+
+                      </div>
 
                     </div>
 
-                  </div>
-
-                )}
+                  )}
 
               </div>
 
@@ -1745,18 +1445,12 @@ function CreateInterviewModal({ onClose, onSuccess }) {
 
             <div className="text-[10px] text-zinc-500">
 
-              {
-                selectedQuestions.length
-              }{' '}
-
+              {selectedQuestions.length}{' '}
               question
-              {
-                selectedQuestions.length !==
-                1
-                  ? 's'
-                  : ''
-              }{' '}
-
+              {selectedQuestions.length !==
+              1
+                ? 's'
+                : ''}{' '}
               selected
 
             </div>
@@ -1779,20 +1473,16 @@ function CreateInterviewModal({ onClose, onSuccess }) {
                 disabled={
                   creating ||
                   loadingCandidates ||
-                  selectedCandidateIds.length ===
-                    0 ||
-                  selectedQuestions.length ===
-                    0 ||
+                  selectedCandidateIds.length === 0 ||
+                  selectedQuestions.length === 0 ||
                   !scheduledAt ||
                   !title.trim()
                 }
                 className="bg-blue-600 px-6 py-2.5 text-xs font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
               >
-
                 {creating
                   ? 'Creating Interview...'
                   : `Create Interview (${totalTime} min)`}
-
               </button>
 
             </div>
@@ -1836,15 +1526,12 @@ function Field({
         {label}
 
         {required && (
-
           <span className="ml-1 text-red-400">
             *
           </span>
-
         )}
 
       </label>
-
 
       {children}
 
@@ -1866,9 +1553,7 @@ function CloseIcon() {
       stroke="currentColor"
       strokeWidth="1.8"
     >
-
       <path d="m6 6 12 12M18 6 6 18" />
-
     </svg>
   )
 }
@@ -1883,15 +1568,10 @@ function SortIcon() {
       stroke="currentColor"
       strokeWidth="1.8"
     >
-
       <path d="M4 7h10" />
-
       <path d="M4 12h16" />
-
       <path d="M4 17h7" />
-
       <path d="m16 5 3 2-3 2" />
-
     </svg>
   )
 }

@@ -63,17 +63,13 @@ DEFAULT_HEADERS = {
 
 QUESTION_LIST_QUERY = """
 query problemsetQuestionListV2(
-    $filters: QuestionFilterInput,
     $limit: Int,
-    $searchKeyword: String,
     $skip: Int,
     $sortBy: QuestionSortByInput,
     $categorySlug: String
 ) {
     problemsetQuestionListV2(
-        filters: $filters
         limit: $limit
-        searchKeyword: $searchKeyword
         skip: $skip
         sortBy: $sortBy
         categorySlug: $categorySlug
@@ -515,20 +511,12 @@ class ProblemProvider:
                     for item in next_labels
                 )
 
-                if labels:
-                    pattern = (
-                        rf"(?is)\b"
-                        rf"{re.escape(label)}"
-                        rf"\s*:\s*(.*?)"
-                        rf"(?=\b(?:{labels})\s*:|$)"
-                    )
-                else:
-                    pattern = (
-                        rf"(?is)\b"
-                        rf"{re.escape(label)}"
-                        rf"\s*:\s*(.*?)"
-                        rf"$"
-                    )
+                pattern = (
+                    rf"(?is)\b"
+                    rf"{re.escape(label)}"
+                    rf"\s*:\s*(.*?)"
+                    rf"(?=\b(?:{labels})\s*:|$)"
+                )
 
                 found = re.search(
                     pattern,
@@ -593,13 +581,11 @@ class ProblemProvider:
         """
         Fetch a paginated list of LeetCode problems.
 
-        Difficulty, paid/free, and search filtering are applied
-        locally before the requested skip/limit pagination.
+        IMPORTANT:
 
-        Search is intentionally performed locally rather than
-        through LeetCode's GraphQL `searchKeyword` parameter,
-        because that parameter can trigger LeetCode's
-        authentication requirement.
+        LeetCode's V2 endpoint paginates the raw catalog.
+        Difficulty and paid/free filtering are therefore
+        applied locally BEFORE the requested skip/limit.
 
         Example:
 
@@ -662,31 +648,16 @@ class ProblemProvider:
             else ""
         )
 
-        normalized_search = (
-            search_value.casefold()
-        )
-
         # ----------------------------------------------------
         # Fetch raw LeetCode batches.
         #
-        # IMPORTANT:
+        # We deliberately do NOT put difficulty filtering
+        # into the GraphQL filters. This keeps the behavior
+        # deterministic and lets the provider guarantee:
         #
-        # Do NOT send search_value through the GraphQL
-        # `searchKeyword` parameter.
+        #     filter first -> paginate second
         #
-        # LeetCode can require authentication when that
-        # parameter is used.
-        #
-        # Instead:
-        #
-        #     fetch public catalog
-        #             ↓
-        #     filter locally
-        #             ↓
-        #     paginate locally
-        #
-        # This also guarantees that search + difficulty
-        # filtering happen before pagination.
+        # which is what the recruiter question library needs.
         # ----------------------------------------------------
 
         raw_batch_size = max(
@@ -714,17 +685,10 @@ class ProblemProvider:
                         if category_slug
                         else "all-code-essentials"
                     ),
-
-                    # IMPORTANT:
-                    # Never pass search_value here.
-                    "searchKeyword": None,
-
                     "sortBy": {
                         "sortField": "CUSTOM",
                         "sortOrder": "ASCENDING",
                     },
-
-                    "filters": None,
                 },
             )
 
@@ -832,40 +796,46 @@ class ProblemProvider:
                         continue
 
                 # ============================================
-                # SEARCH FILTER
+                # LOCAL SEARCH FILTER
+                # ============================================
+                # Do not send searchKeyword/searchKeywords to
+                # LeetCode GraphQL. Its unauthenticated search
+                # path can return VALUE_NULL parsing errors.
+                # Search the public catalog locally instead.
                 # ============================================
 
-                if normalized_search:
+                if search_value:
 
-                    title = str(
-                        question.get(
-                            "title"
-                        )
-                        or ""
-                    ).casefold()
+                    normalized_search = re.sub(
+                        r"\s+",
+                        " ",
+                        search_value.lower(),
+                    ).strip()
 
-                    title_slug = str(
-                        question.get(
-                            "titleSlug"
-                        )
-                        or ""
-                    ).casefold()
+                    searchable_text = " ".join(
+                        [
+                            str(
+                                question.get(
+                                    "questionFrontendId",
+                                    "",
+                                )
+                            ),
+                            str(
+                                question.get(
+                                    "title",
+                                    "",
+                                )
+                            ),
+                            str(
+                                question.get(
+                                    "titleSlug",
+                                    "",
+                                )
+                            ),
+                        ]
+                    ).lower()
 
-                    question_frontend_id = str(
-                        question.get(
-                            "questionFrontendId"
-                        )
-                        or ""
-                    ).casefold()
-
-                    # Search across the fields that identify
-                    # the LeetCode question.
-                    if not (
-                        normalized_search in title
-                        or normalized_search in title_slug
-                        or normalized_search
-                        in question_frontend_id
-                    ):
+                    if normalized_search not in searchable_text:
                         continue
 
                 # ============================================
