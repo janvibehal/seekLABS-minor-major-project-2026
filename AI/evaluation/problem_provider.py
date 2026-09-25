@@ -417,6 +417,87 @@ class ProblemProvider:
         return text.strip()
 
     # ========================================================
+    # EXTRACT CLEAN PROBLEM DESCRIPTION
+    # ========================================================
+
+    @staticmethod
+    def _extract_problem_description(
+        content: Optional[str],
+    ) -> str:
+        """
+        Extract only the actual problem statement.
+
+        The LeetCode `content` field contains multiple sections
+        together. The frontend renders examples and constraints
+        separately, so they must not remain inside description.
+
+        Removed from description:
+            - Examples
+            - Constraints
+            - Follow-up
+            - Related Topics
+            - Companies
+            - Similar Questions
+        """
+
+        if not content:
+            return ""
+
+        plain_text = (
+            ProblemProvider._html_to_text(
+                content
+            )
+        )
+
+        if not plain_text:
+            return ""
+
+        # Find the first section that should be rendered
+        # separately from the main problem statement.
+        #
+        # We intentionally allow the heading to occur after
+        # whitespace/newlines OR immediately after text because
+        # LeetCode HTML does not always produce perfectly
+        # separated lines after HTML-to-text conversion.
+        pattern = (
+            r"(?is)"
+            r"^(.*?)"
+            r"(?="
+            r"(?:"
+            r"\s+Example\s+\d+\s*:?"
+            r"|\s+Examples\s*:?"
+            r"|\s+Constraints\s*:?"
+            r"|\s+Follow[- ]?up\s*:?"
+            r"|\s+Related Topics\s*:?"
+            r"|\s+Companies\s*:?"
+            r"|\s+Similar Questions\s*:?"
+            r")"
+            r")"
+        )
+
+        match = re.search(
+            pattern,
+            plain_text,
+        )
+
+        if match:
+            description = (
+                match.group(1)
+                .strip()
+            )
+        else:
+            description = plain_text.strip()
+
+        # Remove accidental trailing whitespace.
+        description = re.sub(
+            r"\n\s*\n\s*\n+",
+            "\n\n",
+            description,
+        )
+
+        return description.strip()
+
+    # ========================================================
     # EXTRACT CONSTRAINTS
     # ========================================================
 
@@ -480,7 +561,9 @@ class ProblemProvider:
         if not content:
             return []
 
-        plain_text = ProblemProvider._html_to_text(content)
+        plain_text = ProblemProvider._html_to_text(
+            content
+        )
 
         matches = list(
             re.finditer(
@@ -515,20 +598,12 @@ class ProblemProvider:
                     for item in next_labels
                 )
 
-                if labels:
-                    pattern = (
-                        rf"(?is)\b"
-                        rf"{re.escape(label)}"
-                        rf"\s*:\s*(.*?)"
-                        rf"(?=\b(?:{labels})\s*:|$)"
-                    )
-                else:
-                    pattern = (
-                        rf"(?is)\b"
-                        rf"{re.escape(label)}"
-                        rf"\s*:\s*(.*?)"
-                        rf"$"
-                    )
+                pattern = (
+                    rf"(?is)\b"
+                    rf"{re.escape(label)}"
+                    rf"\s*:\s*(.*?)"
+                    rf"(?=\b(?:{labels})\s*:|$)"
+                )
 
                 found = re.search(
                     pattern,
@@ -593,13 +668,11 @@ class ProblemProvider:
         """
         Fetch a paginated list of LeetCode problems.
 
-        Difficulty, paid/free, and search filtering are applied
-        locally before the requested skip/limit pagination.
+        IMPORTANT:
 
-        Search is intentionally performed locally rather than
-        through LeetCode's GraphQL `searchKeyword` parameter,
-        because that parameter can trigger LeetCode's
-        authentication requirement.
+        LeetCode's V2 endpoint paginates the raw catalog.
+        Difficulty and paid/free filtering are therefore
+        applied locally BEFORE the requested skip/limit.
 
         Example:
 
@@ -662,31 +735,16 @@ class ProblemProvider:
             else ""
         )
 
-        normalized_search = (
-            search_value.casefold()
-        )
-
         # ----------------------------------------------------
         # Fetch raw LeetCode batches.
         #
-        # IMPORTANT:
+        # We deliberately do NOT put difficulty filtering
+        # into the GraphQL filters. This keeps the behavior
+        # deterministic and lets the provider guarantee:
         #
-        # Do NOT send search_value through the GraphQL
-        # `searchKeyword` parameter.
+        #     filter first -> paginate second
         #
-        # LeetCode can require authentication when that
-        # parameter is used.
-        #
-        # Instead:
-        #
-        #     fetch public catalog
-        #             ↓
-        #     filter locally
-        #             ↓
-        #     paginate locally
-        #
-        # This also guarantees that search + difficulty
-        # filtering happen before pagination.
+        # which is what the recruiter question library needs.
         # ----------------------------------------------------
 
         raw_batch_size = max(
@@ -714,16 +772,11 @@ class ProblemProvider:
                         if category_slug
                         else "all-code-essentials"
                     ),
-
-                    # IMPORTANT:
-                    # Never pass search_value here.
-                    "searchKeyword": None,
-
+                    "searchKeyword": search_value,
                     "sortBy": {
                         "sortField": "CUSTOM",
                         "sortOrder": "ASCENDING",
                     },
-
                     "filters": None,
                 },
             )
@@ -828,43 +881,6 @@ class ProblemProvider:
                     if (
                         normalized_current_difficulty
                         != requested_difficulty
-                    ):
-                        continue
-
-                # ============================================
-                # SEARCH FILTER
-                # ============================================
-
-                if normalized_search:
-
-                    title = str(
-                        question.get(
-                            "title"
-                        )
-                        or ""
-                    ).casefold()
-
-                    title_slug = str(
-                        question.get(
-                            "titleSlug"
-                        )
-                        or ""
-                    ).casefold()
-
-                    question_frontend_id = str(
-                        question.get(
-                            "questionFrontendId"
-                        )
-                        or ""
-                    ).casefold()
-
-                    # Search across the fields that identify
-                    # the LeetCode question.
-                    if not (
-                        normalized_search in title
-                        or normalized_search in title_slug
-                        or normalized_search
-                        in question_frontend_id
                     ):
                         continue
 
@@ -1209,9 +1225,14 @@ class ProblemProvider:
                 f"Problem {problem_id} is missing problem content."
             )
 
-        # Convert HTML statement to plain text.
+        # Convert ONLY the actual problem statement
+        # to plain text.
+        #
+        # Examples and constraints are extracted separately
+        # below and therefore are no longer duplicated inside
+        # the description shown to the candidate.
         description = (
-            self._html_to_text(
+            self._extract_problem_description(
                 content
             )
         )
