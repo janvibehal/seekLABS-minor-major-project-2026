@@ -116,7 +116,7 @@ function RecruiterInterviews() {
 
             {/* PAGE TITLE */}
 
-            <div>
+            {/* <div>
 
               <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-zinc-500">
                 Recruitment
@@ -132,7 +132,7 @@ function RecruiterInterviews() {
                 Schedule, manage, and monitor candidate interviews.
               </p>
 
-            </div>
+            </div> */}
 
 
             {/* =================================================

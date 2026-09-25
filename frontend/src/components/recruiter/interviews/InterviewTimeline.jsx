@@ -90,10 +90,11 @@ function InterviewTable({ onInterviewSelect, onCreateInterview }) {
             bg-[#111111]
             px-4 py-2.5
             text-xs font-semibold
-            text-black
+            text-white
             transition
-            hover:bg-zinc-200
-            active:bg-zinc-300
+            hover:bg-zinc-200 
+            hover:text-black
+            active:bg-zinc-400
           "
         >
           <PlusIcon />
