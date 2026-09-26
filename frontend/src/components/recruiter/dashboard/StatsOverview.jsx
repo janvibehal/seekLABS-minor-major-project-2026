@@ -30,19 +30,13 @@ function StatsOverview({
     {
       label: 'Interviews',
       value: formatNumber(stats.totalInterviews),
-      description: 'Interview activity',
+      description: 'Total Interviews Conducted',
       icon: InterviewIcon,
-    },
-    {
-      label: 'Average Score',
-      value: formatScore(stats.averageScore),
-      description: 'AI evaluation average',
-      icon: ScoreIcon,
     },
   ]
 
   return (
-    <div className="grid grid-cols-1 border border-[#27272a] sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid grid-cols-1 border border-[#27272a] sm:grid-cols-2 xl:grid-cols-3">
 
       {statItems.map((stat, index) => {
         const Icon = stat.icon

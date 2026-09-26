@@ -13,6 +13,36 @@ import {
 } from '../../api/recruiterCandidate.api.js'
 
 
+// ============================================================
+// STATUS LABELS
+//
+// The schema only tracks each interview's real execution
+// status (InterviewStatus), not a separate hiring decision
+// like "Shortlisted"/"Rejected" — there's no field for that
+// yet. So the table's Status column reflects the interview's
+// actual status, just presented as a friendly label.
+// ============================================================
+
+const STATUS_LABELS = {
+  SCHEDULED: 'Scheduled',
+  IN_PROGRESS: 'In Progress',
+  COMPLETED: 'Completed',
+  EXPIRED: 'Expired',
+  CANCELLED: 'Cancelled',
+}
+
+
+const getInitials = (name = '') => {
+  return name
+    .split(' ')
+    .filter(Boolean)
+    .map((word) => word[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase()
+}
+
+
 function RecruiterCandidates() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -24,7 +54,9 @@ function RecruiterCandidates() {
 
   const [filters, setFilters] = useState({
     search: '',
+    job: '',
     status: '',
+    score: '',
   })
 
 
@@ -74,6 +106,74 @@ function RecruiterCandidates() {
 
 
   // ============================================================
+  // NORMALIZE CANDIDATES FOR THE TABLE
+  //
+  // getRecruiterCandidates() returns { name, email, latestScore,
+  // averageScore, latestInterview: { title, status, scheduledAt } }.
+  // CandidateRow expects a flatter { score, job, date, interview,
+  // status, initials } shape — this is the single place that
+  // bridges the two, so the table always shows real data.
+  // ============================================================
+
+  const normalizedCandidates = useMemo(() => {
+    return candidates.map((candidate) => {
+
+      const latestInterview =
+        candidate.latestInterview || null
+
+      const statusLabel =
+        STATUS_LABELS[latestInterview?.status] ||
+        'Not started'
+
+      const score =
+        candidate.latestScore ??
+        null
+
+      return {
+        ...candidate,
+
+        name: candidate.name || 'Unknown Candidate',
+
+        initials: getInitials(
+          candidate.name || candidate.email || '',
+        ),
+
+        job: latestInterview?.title || 'No interview yet',
+
+        date: latestInterview?.scheduledAt
+          ? new Date(
+              latestInterview.scheduledAt,
+            ).toLocaleDateString()
+          : '—',
+
+        score,
+
+        interview: statusLabel,
+
+        status: statusLabel,
+      }
+    })
+  }, [candidates])
+
+
+  // ============================================================
+  // FILTER OPTIONS (derived from real data)
+  // ============================================================
+
+  const jobOptions = useMemo(() => {
+    const titles = new Set(
+      normalizedCandidates
+        .map((candidate) => candidate.job)
+        .filter(
+          (job) => job && job !== 'No interview yet',
+        ),
+    )
+
+    return Array.from(titles).sort()
+  }, [normalizedCandidates])
+
+
+  // ============================================================
   // FILTER CANDIDATES
   // ============================================================
 
@@ -82,23 +182,14 @@ function RecruiterCandidates() {
       .trim()
       .toLowerCase()
 
-    return candidates.filter((candidate) => {
-
-      const firstName =
-        candidate.firstName ||
-        ''
-
-      const lastName =
-        candidate.lastName ||
-        ''
-
-      const fullName =
-        `${firstName} ${lastName}`
-          .trim()
-          .toLowerCase()
+    return normalizedCandidates.filter((candidate) => {
 
       const email =
         candidate.email?.toLowerCase() ||
+        ''
+
+      const name =
+        candidate.name?.toLowerCase() ||
         ''
 
 
@@ -106,33 +197,65 @@ function RecruiterCandidates() {
 
       const matchesSearch =
         !searchTerm ||
-        fullName.includes(searchTerm) ||
+        name.includes(searchTerm) ||
         email.includes(searchTerm)
 
 
-      // Status filtering
-      // Supports backend enum values safely
+      // Job
 
-      const candidateStatus =
-        candidate.status?.toLowerCase() ||
-        ''
+      const matchesJob =
+        !filters.job ||
+        candidate.job === filters.job
 
-      const selectedStatus =
-        filters.status?.toLowerCase() ||
-        ''
+
+      // Status
 
       const matchesStatus =
-        !selectedStatus ||
-        candidateStatus === selectedStatus
+        !filters.status ||
+        candidate.status === filters.status
+
+
+      // Score bucket
+
+      const matchesScore = (() => {
+        if (!filters.score) return true
+
+        if (
+          candidate.score === null ||
+          candidate.score === undefined
+        ) {
+          return false
+        }
+
+        if (filters.score === '90+') {
+          return candidate.score >= 90
+        }
+
+        if (filters.score === '80+') {
+          return candidate.score >= 80
+        }
+
+        if (filters.score === '70+') {
+          return candidate.score >= 70
+        }
+
+        if (filters.score === 'below70') {
+          return candidate.score < 70
+        }
+
+        return true
+      })()
 
 
       return (
         matchesSearch &&
-        matchesStatus
+        matchesJob &&
+        matchesStatus &&
+        matchesScore
       )
     })
 
-  }, [candidates, filters])
+  }, [normalizedCandidates, filters])
 
 
   // ============================================================
@@ -335,6 +458,7 @@ function RecruiterCandidates() {
               <CandidateFilters
                 filters={filters}
                 onFilterChange={setFilters}
+                jobOptions={jobOptions}
               />
 
             </div>

@@ -25,35 +25,6 @@ function RecruiterHeader() {
 
       <div className="flex items-center gap-5">
 
-        {/* SEARCH */}
-
-        <div className="hidden items-center border border-white/10 bg-transparent px-3 py-2 md:flex">
-
-          <SearchIcon />
-
-          <input
-            type="text"
-            placeholder="Search candidates..."
-            className="ml-3 w-52 bg-transparent text-xs text-neutral-300 outline-none placeholder:text-neutral-600"
-          />
-
-        </div>
-
-
-        {/* NOTIFICATIONS */}
-
-        <button
-          type="button"
-          aria-label="Notifications"
-          className="relative flex h-9 w-9 items-center justify-center border border-transparent text-neutral-500 transition hover:border-white/10 hover:bg-[#111111]/[0.03] hover:text-neutral-200"
-        >
-
-          <BellIcon />
-
-          <span className="absolute right-2.5 top-2.5 h-1 w-1 bg-[#111111]" />
-
-        </button>
-
 
         {/* DIVIDER */}
 
