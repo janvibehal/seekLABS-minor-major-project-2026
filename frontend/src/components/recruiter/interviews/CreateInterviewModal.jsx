@@ -489,18 +489,15 @@ function CreateInterviewModal({ onClose, onSuccess }) {
             scheduledAt,
           ).toISOString(),
 
-        duration: totalTime,
-
-        questionIds:
+        questions:
           selectedQuestions.map(
-            (question) => question.id,
+            (question) => ({
+              questionId: question.id,
+              timeAllottedSeconds:
+                Number(question.time || 0) * 60,
+            }),
           ),
       }
-
-      console.log(
-        'CREATE INTERVIEW PAYLOAD:',
-        payload,
-      )
 
       await createInterview(payload)
 

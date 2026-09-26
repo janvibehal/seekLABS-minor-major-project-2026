@@ -18,7 +18,6 @@ import {
 } from "../../controllers/recruiters/candidate.controller.js";
 
 import {
-  createQuestionController,
   getQuestionsController,
   importLeetCodeQuestionController,
 } from "../../controllers/recruiters/question.controller.js";
@@ -114,14 +113,6 @@ router.post(
   authenticate,
   requireRole("RECRUITER"),
   importLeetCodeQuestionController,
-);
-
-
-router.post(
-  "/questions",
-  authenticate,
-  requireRole("RECRUITER"),
-  createQuestionController,
 );
 
 

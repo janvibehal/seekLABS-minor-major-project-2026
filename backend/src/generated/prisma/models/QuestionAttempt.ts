@@ -30,6 +30,9 @@ export type QuestionAttemptMinAggregateOutputType = {
   questionId: string | null
   candidateId: string | null
   status: $Enums.QuestionStatus | null
+  attempted: boolean | null
+  draftAnswer: string | null
+  lastSavedAt: Date | null
   startedAt: Date | null
   completedAt: Date | null
   createdAt: Date | null
@@ -42,6 +45,9 @@ export type QuestionAttemptMaxAggregateOutputType = {
   questionId: string | null
   candidateId: string | null
   status: $Enums.QuestionStatus | null
+  attempted: boolean | null
+  draftAnswer: string | null
+  lastSavedAt: Date | null
   startedAt: Date | null
   completedAt: Date | null
   createdAt: Date | null
@@ -54,6 +60,9 @@ export type QuestionAttemptCountAggregateOutputType = {
   questionId: number
   candidateId: number
   status: number
+  attempted: number
+  draftAnswer: number
+  lastSavedAt: number
   startedAt: number
   completedAt: number
   createdAt: number
@@ -68,6 +77,9 @@ export type QuestionAttemptMinAggregateInputType = {
   questionId?: true
   candidateId?: true
   status?: true
+  attempted?: true
+  draftAnswer?: true
+  lastSavedAt?: true
   startedAt?: true
   completedAt?: true
   createdAt?: true
@@ -80,6 +92,9 @@ export type QuestionAttemptMaxAggregateInputType = {
   questionId?: true
   candidateId?: true
   status?: true
+  attempted?: true
+  draftAnswer?: true
+  lastSavedAt?: true
   startedAt?: true
   completedAt?: true
   createdAt?: true
@@ -92,6 +107,9 @@ export type QuestionAttemptCountAggregateInputType = {
   questionId?: true
   candidateId?: true
   status?: true
+  attempted?: true
+  draftAnswer?: true
+  lastSavedAt?: true
   startedAt?: true
   completedAt?: true
   createdAt?: true
@@ -177,6 +195,9 @@ export type QuestionAttemptGroupByOutputType = {
   questionId: string
   candidateId: string
   status: $Enums.QuestionStatus
+  attempted: boolean
+  draftAnswer: string | null
+  lastSavedAt: Date | null
   startedAt: Date
   completedAt: Date | null
   createdAt: Date
@@ -210,6 +231,9 @@ export type QuestionAttemptWhereInput = {
   questionId?: Prisma.StringFilter<"QuestionAttempt"> | string
   candidateId?: Prisma.StringFilter<"QuestionAttempt"> | string
   status?: Prisma.EnumQuestionStatusFilter<"QuestionAttempt"> | $Enums.QuestionStatus
+  attempted?: Prisma.BoolFilter<"QuestionAttempt"> | boolean
+  draftAnswer?: Prisma.StringNullableFilter<"QuestionAttempt"> | string | null
+  lastSavedAt?: Prisma.DateTimeNullableFilter<"QuestionAttempt"> | Date | string | null
   startedAt?: Prisma.DateTimeFilter<"QuestionAttempt"> | Date | string
   completedAt?: Prisma.DateTimeNullableFilter<"QuestionAttempt"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"QuestionAttempt"> | Date | string
@@ -225,6 +249,9 @@ export type QuestionAttemptOrderByWithRelationInput = {
   questionId?: Prisma.SortOrder
   candidateId?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  attempted?: Prisma.SortOrder
+  draftAnswer?: Prisma.SortOrderInput | Prisma.SortOrder
+  lastSavedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   startedAt?: Prisma.SortOrder
   completedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -244,6 +271,9 @@ export type QuestionAttemptWhereUniqueInput = Prisma.AtLeast<{
   questionId?: Prisma.StringFilter<"QuestionAttempt"> | string
   candidateId?: Prisma.StringFilter<"QuestionAttempt"> | string
   status?: Prisma.EnumQuestionStatusFilter<"QuestionAttempt"> | $Enums.QuestionStatus
+  attempted?: Prisma.BoolFilter<"QuestionAttempt"> | boolean
+  draftAnswer?: Prisma.StringNullableFilter<"QuestionAttempt"> | string | null
+  lastSavedAt?: Prisma.DateTimeNullableFilter<"QuestionAttempt"> | Date | string | null
   startedAt?: Prisma.DateTimeFilter<"QuestionAttempt"> | Date | string
   completedAt?: Prisma.DateTimeNullableFilter<"QuestionAttempt"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"QuestionAttempt"> | Date | string
@@ -259,6 +289,9 @@ export type QuestionAttemptOrderByWithAggregationInput = {
   questionId?: Prisma.SortOrder
   candidateId?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  attempted?: Prisma.SortOrder
+  draftAnswer?: Prisma.SortOrderInput | Prisma.SortOrder
+  lastSavedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   startedAt?: Prisma.SortOrder
   completedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -277,6 +310,9 @@ export type QuestionAttemptScalarWhereWithAggregatesInput = {
   questionId?: Prisma.StringWithAggregatesFilter<"QuestionAttempt"> | string
   candidateId?: Prisma.StringWithAggregatesFilter<"QuestionAttempt"> | string
   status?: Prisma.EnumQuestionStatusWithAggregatesFilter<"QuestionAttempt"> | $Enums.QuestionStatus
+  attempted?: Prisma.BoolWithAggregatesFilter<"QuestionAttempt"> | boolean
+  draftAnswer?: Prisma.StringNullableWithAggregatesFilter<"QuestionAttempt"> | string | null
+  lastSavedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"QuestionAttempt"> | Date | string | null
   startedAt?: Prisma.DateTimeWithAggregatesFilter<"QuestionAttempt"> | Date | string
   completedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"QuestionAttempt"> | Date | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"QuestionAttempt"> | Date | string
@@ -286,6 +322,9 @@ export type QuestionAttemptScalarWhereWithAggregatesInput = {
 export type QuestionAttemptCreateInput = {
   id?: string
   status?: $Enums.QuestionStatus
+  attempted?: boolean
+  draftAnswer?: string | null
+  lastSavedAt?: Date | string | null
   startedAt?: Date | string
   completedAt?: Date | string | null
   createdAt?: Date | string
@@ -301,6 +340,9 @@ export type QuestionAttemptUncheckedCreateInput = {
   questionId: string
   candidateId: string
   status?: $Enums.QuestionStatus
+  attempted?: boolean
+  draftAnswer?: string | null
+  lastSavedAt?: Date | string | null
   startedAt?: Date | string
   completedAt?: Date | string | null
   createdAt?: Date | string
@@ -310,6 +352,9 @@ export type QuestionAttemptUncheckedCreateInput = {
 export type QuestionAttemptUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumQuestionStatusFieldUpdateOperationsInput | $Enums.QuestionStatus
+  attempted?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  draftAnswer?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastSavedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   startedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -325,6 +370,9 @@ export type QuestionAttemptUncheckedUpdateInput = {
   questionId?: Prisma.StringFieldUpdateOperationsInput | string
   candidateId?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumQuestionStatusFieldUpdateOperationsInput | $Enums.QuestionStatus
+  attempted?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  draftAnswer?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastSavedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   startedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -337,6 +385,9 @@ export type QuestionAttemptCreateManyInput = {
   questionId: string
   candidateId: string
   status?: $Enums.QuestionStatus
+  attempted?: boolean
+  draftAnswer?: string | null
+  lastSavedAt?: Date | string | null
   startedAt?: Date | string
   completedAt?: Date | string | null
   createdAt?: Date | string
@@ -346,6 +397,9 @@ export type QuestionAttemptCreateManyInput = {
 export type QuestionAttemptUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumQuestionStatusFieldUpdateOperationsInput | $Enums.QuestionStatus
+  attempted?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  draftAnswer?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastSavedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   startedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -358,6 +412,9 @@ export type QuestionAttemptUncheckedUpdateManyInput = {
   questionId?: Prisma.StringFieldUpdateOperationsInput | string
   candidateId?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumQuestionStatusFieldUpdateOperationsInput | $Enums.QuestionStatus
+  attempted?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  draftAnswer?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastSavedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   startedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -385,6 +442,9 @@ export type QuestionAttemptCountOrderByAggregateInput = {
   questionId?: Prisma.SortOrder
   candidateId?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  attempted?: Prisma.SortOrder
+  draftAnswer?: Prisma.SortOrder
+  lastSavedAt?: Prisma.SortOrder
   startedAt?: Prisma.SortOrder
   completedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -397,6 +457,9 @@ export type QuestionAttemptMaxOrderByAggregateInput = {
   questionId?: Prisma.SortOrder
   candidateId?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  attempted?: Prisma.SortOrder
+  draftAnswer?: Prisma.SortOrder
+  lastSavedAt?: Prisma.SortOrder
   startedAt?: Prisma.SortOrder
   completedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -409,6 +472,9 @@ export type QuestionAttemptMinOrderByAggregateInput = {
   questionId?: Prisma.SortOrder
   candidateId?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  attempted?: Prisma.SortOrder
+  draftAnswer?: Prisma.SortOrder
+  lastSavedAt?: Prisma.SortOrder
   startedAt?: Prisma.SortOrder
   completedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -544,6 +610,9 @@ export type QuestionAttemptUncheckedUpdateManyWithoutSessionNestedInput = {
 export type QuestionAttemptCreateWithoutCandidateInput = {
   id?: string
   status?: $Enums.QuestionStatus
+  attempted?: boolean
+  draftAnswer?: string | null
+  lastSavedAt?: Date | string | null
   startedAt?: Date | string
   completedAt?: Date | string | null
   createdAt?: Date | string
@@ -557,6 +626,9 @@ export type QuestionAttemptUncheckedCreateWithoutCandidateInput = {
   sessionId: string
   questionId: string
   status?: $Enums.QuestionStatus
+  attempted?: boolean
+  draftAnswer?: string | null
+  lastSavedAt?: Date | string | null
   startedAt?: Date | string
   completedAt?: Date | string | null
   createdAt?: Date | string
@@ -598,6 +670,9 @@ export type QuestionAttemptScalarWhereInput = {
   questionId?: Prisma.StringFilter<"QuestionAttempt"> | string
   candidateId?: Prisma.StringFilter<"QuestionAttempt"> | string
   status?: Prisma.EnumQuestionStatusFilter<"QuestionAttempt"> | $Enums.QuestionStatus
+  attempted?: Prisma.BoolFilter<"QuestionAttempt"> | boolean
+  draftAnswer?: Prisma.StringNullableFilter<"QuestionAttempt"> | string | null
+  lastSavedAt?: Prisma.DateTimeNullableFilter<"QuestionAttempt"> | Date | string | null
   startedAt?: Prisma.DateTimeFilter<"QuestionAttempt"> | Date | string
   completedAt?: Prisma.DateTimeNullableFilter<"QuestionAttempt"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"QuestionAttempt"> | Date | string
@@ -607,6 +682,9 @@ export type QuestionAttemptScalarWhereInput = {
 export type QuestionAttemptCreateWithoutQuestionInput = {
   id?: string
   status?: $Enums.QuestionStatus
+  attempted?: boolean
+  draftAnswer?: string | null
+  lastSavedAt?: Date | string | null
   startedAt?: Date | string
   completedAt?: Date | string | null
   createdAt?: Date | string
@@ -620,6 +698,9 @@ export type QuestionAttemptUncheckedCreateWithoutQuestionInput = {
   sessionId: string
   candidateId: string
   status?: $Enums.QuestionStatus
+  attempted?: boolean
+  draftAnswer?: string | null
+  lastSavedAt?: Date | string | null
   startedAt?: Date | string
   completedAt?: Date | string | null
   createdAt?: Date | string
@@ -655,6 +736,9 @@ export type QuestionAttemptUpdateManyWithWhereWithoutQuestionInput = {
 export type QuestionAttemptCreateWithoutSessionInput = {
   id?: string
   status?: $Enums.QuestionStatus
+  attempted?: boolean
+  draftAnswer?: string | null
+  lastSavedAt?: Date | string | null
   startedAt?: Date | string
   completedAt?: Date | string | null
   createdAt?: Date | string
@@ -668,6 +752,9 @@ export type QuestionAttemptUncheckedCreateWithoutSessionInput = {
   questionId: string
   candidateId: string
   status?: $Enums.QuestionStatus
+  attempted?: boolean
+  draftAnswer?: string | null
+  lastSavedAt?: Date | string | null
   startedAt?: Date | string
   completedAt?: Date | string | null
   createdAt?: Date | string
@@ -705,6 +792,9 @@ export type QuestionAttemptCreateManyCandidateInput = {
   sessionId: string
   questionId: string
   status?: $Enums.QuestionStatus
+  attempted?: boolean
+  draftAnswer?: string | null
+  lastSavedAt?: Date | string | null
   startedAt?: Date | string
   completedAt?: Date | string | null
   createdAt?: Date | string
@@ -714,6 +804,9 @@ export type QuestionAttemptCreateManyCandidateInput = {
 export type QuestionAttemptUpdateWithoutCandidateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumQuestionStatusFieldUpdateOperationsInput | $Enums.QuestionStatus
+  attempted?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  draftAnswer?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastSavedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   startedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -727,6 +820,9 @@ export type QuestionAttemptUncheckedUpdateWithoutCandidateInput = {
   sessionId?: Prisma.StringFieldUpdateOperationsInput | string
   questionId?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumQuestionStatusFieldUpdateOperationsInput | $Enums.QuestionStatus
+  attempted?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  draftAnswer?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastSavedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   startedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -738,6 +834,9 @@ export type QuestionAttemptUncheckedUpdateManyWithoutCandidateInput = {
   sessionId?: Prisma.StringFieldUpdateOperationsInput | string
   questionId?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumQuestionStatusFieldUpdateOperationsInput | $Enums.QuestionStatus
+  attempted?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  draftAnswer?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastSavedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   startedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -749,6 +848,9 @@ export type QuestionAttemptCreateManyQuestionInput = {
   sessionId: string
   candidateId: string
   status?: $Enums.QuestionStatus
+  attempted?: boolean
+  draftAnswer?: string | null
+  lastSavedAt?: Date | string | null
   startedAt?: Date | string
   completedAt?: Date | string | null
   createdAt?: Date | string
@@ -758,6 +860,9 @@ export type QuestionAttemptCreateManyQuestionInput = {
 export type QuestionAttemptUpdateWithoutQuestionInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumQuestionStatusFieldUpdateOperationsInput | $Enums.QuestionStatus
+  attempted?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  draftAnswer?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastSavedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   startedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -771,6 +876,9 @@ export type QuestionAttemptUncheckedUpdateWithoutQuestionInput = {
   sessionId?: Prisma.StringFieldUpdateOperationsInput | string
   candidateId?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumQuestionStatusFieldUpdateOperationsInput | $Enums.QuestionStatus
+  attempted?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  draftAnswer?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastSavedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   startedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -782,6 +890,9 @@ export type QuestionAttemptUncheckedUpdateManyWithoutQuestionInput = {
   sessionId?: Prisma.StringFieldUpdateOperationsInput | string
   candidateId?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumQuestionStatusFieldUpdateOperationsInput | $Enums.QuestionStatus
+  attempted?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  draftAnswer?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastSavedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   startedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -793,6 +904,9 @@ export type QuestionAttemptCreateManySessionInput = {
   questionId: string
   candidateId: string
   status?: $Enums.QuestionStatus
+  attempted?: boolean
+  draftAnswer?: string | null
+  lastSavedAt?: Date | string | null
   startedAt?: Date | string
   completedAt?: Date | string | null
   createdAt?: Date | string
@@ -802,6 +916,9 @@ export type QuestionAttemptCreateManySessionInput = {
 export type QuestionAttemptUpdateWithoutSessionInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumQuestionStatusFieldUpdateOperationsInput | $Enums.QuestionStatus
+  attempted?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  draftAnswer?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastSavedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   startedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -815,6 +932,9 @@ export type QuestionAttemptUncheckedUpdateWithoutSessionInput = {
   questionId?: Prisma.StringFieldUpdateOperationsInput | string
   candidateId?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumQuestionStatusFieldUpdateOperationsInput | $Enums.QuestionStatus
+  attempted?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  draftAnswer?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastSavedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   startedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -826,6 +946,9 @@ export type QuestionAttemptUncheckedUpdateManyWithoutSessionInput = {
   questionId?: Prisma.StringFieldUpdateOperationsInput | string
   candidateId?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumQuestionStatusFieldUpdateOperationsInput | $Enums.QuestionStatus
+  attempted?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  draftAnswer?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastSavedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   startedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -840,6 +963,9 @@ export type QuestionAttemptSelect<ExtArgs extends runtime.Types.Extensions.Inter
   questionId?: boolean
   candidateId?: boolean
   status?: boolean
+  attempted?: boolean
+  draftAnswer?: boolean
+  lastSavedAt?: boolean
   startedAt?: boolean
   completedAt?: boolean
   createdAt?: boolean
@@ -855,6 +981,9 @@ export type QuestionAttemptSelectCreateManyAndReturn<ExtArgs extends runtime.Typ
   questionId?: boolean
   candidateId?: boolean
   status?: boolean
+  attempted?: boolean
+  draftAnswer?: boolean
+  lastSavedAt?: boolean
   startedAt?: boolean
   completedAt?: boolean
   createdAt?: boolean
@@ -870,6 +999,9 @@ export type QuestionAttemptSelectUpdateManyAndReturn<ExtArgs extends runtime.Typ
   questionId?: boolean
   candidateId?: boolean
   status?: boolean
+  attempted?: boolean
+  draftAnswer?: boolean
+  lastSavedAt?: boolean
   startedAt?: boolean
   completedAt?: boolean
   createdAt?: boolean
@@ -885,13 +1017,16 @@ export type QuestionAttemptSelectScalar = {
   questionId?: boolean
   candidateId?: boolean
   status?: boolean
+  attempted?: boolean
+  draftAnswer?: boolean
+  lastSavedAt?: boolean
   startedAt?: boolean
   completedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type QuestionAttemptOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "sessionId" | "questionId" | "candidateId" | "status" | "startedAt" | "completedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["questionAttempt"]>
+export type QuestionAttemptOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "sessionId" | "questionId" | "candidateId" | "status" | "attempted" | "draftAnswer" | "lastSavedAt" | "startedAt" | "completedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["questionAttempt"]>
 export type QuestionAttemptInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   session?: boolean | Prisma.InterviewSessionDefaultArgs<ExtArgs>
   question?: boolean | Prisma.QuestionDefaultArgs<ExtArgs>
@@ -921,6 +1056,9 @@ export type $QuestionAttemptPayload<ExtArgs extends runtime.Types.Extensions.Int
     questionId: string
     candidateId: string
     status: $Enums.QuestionStatus
+    attempted: boolean
+    draftAnswer: string | null
+    lastSavedAt: Date | null
     startedAt: Date
     completedAt: Date | null
     createdAt: Date
@@ -1356,6 +1494,9 @@ export interface QuestionAttemptFieldRefs {
   readonly questionId: Prisma.FieldRef<"QuestionAttempt", 'String'>
   readonly candidateId: Prisma.FieldRef<"QuestionAttempt", 'String'>
   readonly status: Prisma.FieldRef<"QuestionAttempt", 'QuestionStatus'>
+  readonly attempted: Prisma.FieldRef<"QuestionAttempt", 'Boolean'>
+  readonly draftAnswer: Prisma.FieldRef<"QuestionAttempt", 'String'>
+  readonly lastSavedAt: Prisma.FieldRef<"QuestionAttempt", 'DateTime'>
   readonly startedAt: Prisma.FieldRef<"QuestionAttempt", 'DateTime'>
   readonly completedAt: Prisma.FieldRef<"QuestionAttempt", 'DateTime'>
   readonly createdAt: Prisma.FieldRef<"QuestionAttempt", 'DateTime'>

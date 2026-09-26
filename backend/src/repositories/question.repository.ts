@@ -34,6 +34,22 @@ export const findQuestionByTitle = async (title: string) => {
   });
 };
 
+export const updateQuestionContent = async (
+  questionId: string,
+  data: {
+    difficulty: Difficulty;
+    topics: string[];
+    description: string;
+    examples: InputJsonValue;
+    constraints: string[];
+  },
+) => {
+  return prisma.question.update({
+    where: { id: questionId },
+    data,
+  });
+};
+
 export const findQuestionsByIds = async (questionIds: string[]) => {
   return prisma.question.findMany({
     where: {

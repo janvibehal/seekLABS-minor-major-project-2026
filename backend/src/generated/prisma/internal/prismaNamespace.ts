@@ -1548,6 +1548,7 @@ export const InterviewQuestionScalarFieldEnum = {
   questionId: 'questionId',
   order: 'order',
   status: 'status',
+  timeAllottedSeconds: 'timeAllottedSeconds',
   createdAt: 'createdAt'
 } as const
 
@@ -1588,6 +1589,9 @@ export const QuestionAttemptScalarFieldEnum = {
   questionId: 'questionId',
   candidateId: 'candidateId',
   status: 'status',
+  attempted: 'attempted',
+  draftAnswer: 'draftAnswer',
+  lastSavedAt: 'lastSavedAt',
   startedAt: 'startedAt',
   completedAt: 'completedAt',
   createdAt: 'createdAt',

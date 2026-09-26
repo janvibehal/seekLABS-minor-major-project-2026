@@ -33,10 +33,9 @@ export const createInterviewController = async (
       company,
       focusAreas,
       scheduledAt,
-      duration,
       candidateId,
       candidateIds,
-      questionIds,
+      questions,
     } = req.body
 
     const normalizedCandidateIds = Array.isArray(candidateIds)
@@ -50,12 +49,12 @@ export const createInterviewController = async (
       !focusAreas ||
       !scheduledAt ||
       normalizedCandidateIds.length === 0 ||
-      !questionIds
+      !questions
     ) {
       res.status(400).json({
         success: false,
         message:
-          'title, focusAreas, scheduledAt, candidateIds and questionIds are required',
+          'title, focusAreas, scheduledAt, candidateIds and questions are required',
       })
 
       return
@@ -70,13 +69,42 @@ export const createInterviewController = async (
       return
     }
 
-    if (!Array.isArray(questionIds)) {
+    if (!Array.isArray(questions) || questions.length === 0) {
       res.status(400).json({
         success: false,
-        message: 'questionIds must be an array',
+        message: 'questions must be a non-empty array',
       })
 
       return
+    }
+
+    const normalizedQuestions: {
+      questionId: string
+      timeAllottedSeconds: number
+    }[] = []
+
+    for (const entry of questions) {
+      const questionId =
+        entry && typeof entry.questionId === 'string'
+          ? entry.questionId
+          : null
+
+      const timeAllottedSeconds =
+        entry && Number.isFinite(Number(entry.timeAllottedSeconds))
+          ? Math.max(1, Math.round(Number(entry.timeAllottedSeconds)))
+          : null
+
+      if (!questionId || !timeAllottedSeconds) {
+        res.status(400).json({
+          success: false,
+          message:
+            'Each question requires a questionId and a positive timeAllottedSeconds',
+        })
+
+        return
+      }
+
+      normalizedQuestions.push({ questionId, timeAllottedSeconds })
     }
 
     const interviews = await createRecruiterInterviews(
@@ -87,9 +115,8 @@ export const createInterviewController = async (
         company,
         focusAreas,
         scheduledAt: new Date(scheduledAt),
-        duration,
         candidateIds: normalizedCandidateIds,
-        questionIds,
+        questions: normalizedQuestions,
       },
     )
 

@@ -31,7 +31,7 @@ function Examples({ examples = [] }) {
                   Input
                 </span>
 
-                <pre className="mt-1 overflow-x-auto bg-slate-50 p-3 text-xs text-slate-600">
+                <pre className="mt-1 overflow-x-auto whitespace-pre-wrap break-words bg-slate-50 p-3 text-xs text-slate-600">
                   {example.input}
                 </pre>
 
@@ -44,7 +44,7 @@ function Examples({ examples = [] }) {
                   Output
                 </span>
 
-                <pre className="mt-1 bg-slate-50 p-3 text-xs text-slate-600">
+                <pre className="mt-1 overflow-x-auto whitespace-pre-wrap break-words bg-slate-50 p-3 text-xs text-slate-600">
                   {example.output}
                 </pre>
 
