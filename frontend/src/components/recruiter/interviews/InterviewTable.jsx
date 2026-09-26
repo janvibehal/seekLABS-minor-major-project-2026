@@ -1,224 +1,186 @@
 import { useEffect, useState } from 'react'
 
 import InterviewRow from './InterviewRow'
+import CreateInterviewModal from './CreateInterviewModal'
+
 import { getRecruiterInterviews } from '../../../api/interview.api.js'
 
 
-function InterviewTable({ onInterviewSelect }) {
-  const [interviews, setInterviews] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+function InterviewTable({
+  interviews: providedInterviews = null,
+  loading: providedLoading = false,
+  error: providedError = null,
+  onInterviewSelect,
+  onInterviewCreated,
+}) {
+  const [
+    localInterviews,
+    setLocalInterviews,
+  ] = useState([])
+
+  const [
+    localLoading,
+    setLocalLoading,
+  ] = useState(
+    providedInterviews === null,
+  )
+
+  const [
+    localError,
+    setLocalError,
+  ] = useState(null)
+
+  const [
+    isCreateModalOpen,
+    setIsCreateModalOpen,
+  ] = useState(false)
+
+  const [
+    refreshKey,
+    setRefreshKey,
+  ] = useState(0)
 
 
   // ============================================================
-  // FETCH INTERVIEWS
+  // USE PARENT DATA WHEN PROVIDED
+  //
+  // RecruiterInterviews owns filtering.
+  // InterviewTable only displays the filtered records.
+  // ============================================================
+
+  const interviews =
+    providedInterviews !== null
+      ? providedInterviews
+      : localInterviews
+
+  const loading =
+    providedInterviews !== null
+      ? providedLoading
+      : localLoading
+
+  const error =
+    providedInterviews !== null
+      ? providedError
+      : localError
+
+
+  // ============================================================
+  // OPEN CREATE INTERVIEW MODAL
+  // ============================================================
+
+  const handleCreateInterview = () => {
+    setIsCreateModalOpen(true)
+  }
+
+
+  // ============================================================
+  // FETCH FALLBACK DATA
+  //
+  // This keeps InterviewTable backwards-compatible if another
+  // page uses it without passing an interviews prop.
   // ============================================================
 
   useEffect(() => {
+    if (providedInterviews !== null) {
+      return
+    }
+
+    let cancelled = false
+
     const fetchInterviews = async () => {
       try {
-        setLoading(true)
-        setError(null)
+        setLocalLoading(true)
+        setLocalError(null)
 
-        const response =
+        const data =
           await getRecruiterInterviews()
 
-        // Supports either:
-        // response = []
-        // OR response = { interviews: [] }
+        if (cancelled) {
+          return
+        }
 
-        const interviewList =
-          Array.isArray(response)
-            ? response
-            : response?.interviews || []
-
-
-        const formattedInterviews =
-          interviewList.map((interview) => {
-            const candidate = interview.candidate
-
-
-            // ==================================================
-            // CANDIDATE NAME
-            // ==================================================
-
-            const candidateName =
-              candidate?.name ||
-              (
-                candidate
-                  ? `${candidate.firstName || ''} ${
-                      candidate.lastName || ''
-                    }`.trim()
-                  : 'Candidate'
-              )
-
-
-            // ==================================================
-            // INITIALS
-            // ==================================================
-
-            const initials =
-              candidate
-                ? candidate.initials ||
-                  `${candidate.firstName?.[0] || ''}${
-                    candidate.lastName?.[0] || ''
-                  }`.toUpperCase()
-                : 'C'
-
-
-            // ==================================================
-            // RETURN NORMALIZED DATA
-            // ==================================================
-
-            return {
-              ...interview,
-
-              candidate: {
-                ...candidate,
-
-                name:
-                  candidateName || 'Unknown Candidate',
-
-                initials,
-
-                email:
-                  candidate?.email ||
-                  'No email available',
-              },
-
-              score:
-                interview.score ??
-                interview.evaluation?.overallScore ??
-                null,
-            }
-          })
-
-
-        setInterviews(formattedInterviews)
-
+        setLocalInterviews(
+          Array.isArray(data)
+            ? data
+            : [],
+        )
       } catch (error) {
         console.error(
           'Fetch interviews error:',
           error,
         )
 
-        setError(
-          error.message ||
-          'Failed to load interviews',
-        )
-
+        if (!cancelled) {
+          setLocalError(
+            error?.message ||
+              'Failed to load interviews',
+          )
+        }
       } finally {
-        setLoading(false)
+        if (!cancelled) {
+          setLocalLoading(false)
+        }
       }
     }
 
-
     fetchInterviews()
-  }, [])
+
+    return () => {
+      cancelled = true
+    }
+  }, [
+    providedInterviews,
+    refreshKey,
+  ])
 
 
   // ============================================================
-  // LOADING
+  // CREATE INTERVIEW SUCCESS
   // ============================================================
 
-  if (loading) {
-    return (
-      <div className="border border-white/[0.08] bg-[#0d0d0d]">
+  const handleCreateSuccess = () => {
+    /*
+     * Parent owns the actual interview list when this table
+     * is rendered from RecruiterInterviews.
+     *
+     * Tell the parent to fetch fresh data.
+     */
+    if (
+      providedInterviews !== null
+    ) {
+      onInterviewCreated?.()
+    } else {
+      /*
+       * Fallback mode:
+       * refresh this component's own data.
+       */
+      setRefreshKey(
+        (key) => key + 1,
+      )
+    }
 
-        <div className="flex min-h-[320px] flex-col items-center justify-center">
-
-          <div className="h-8 w-8 animate-spin border-2 border-white/10 border-t-zinc-300" />
-
-          <p className="mt-5 text-xs text-zinc-500">
-            Loading interviews...
-          </p>
-
-        </div>
-
-      </div>
-    )
+    setIsCreateModalOpen(false)
   }
 
 
   // ============================================================
-  // ERROR
-  // ============================================================
-
-  if (error) {
-    return (
-      <div className="border border-white/[0.08] bg-[#0d0d0d]">
-
-        <div className="flex min-h-[320px] flex-col items-center justify-center px-6 text-center">
-
-
-          {/* Error Icon */}
-
-          <div className="flex h-12 w-12 items-center justify-center border border-red-500/20 bg-red-500/[0.06] text-red-400">
-
-            <ErrorIcon />
-
-          </div>
-
-
-          <p className="mt-5 text-sm font-semibold text-zinc-200">
-            Failed to load interviews
-          </p>
-
-
-          <p className="mt-2 max-w-sm text-xs leading-relaxed text-zinc-500">
-            {error}
-          </p>
-
-
-          <button
-            type="button"
-            onClick={() => window.location.reload()}
-            className="
-              mt-6
-              border
-              border-white/10
-              bg-[#111111]/[0.03]
-              px-4
-              py-2
-              text-[10px]
-              font-semibold
-              text-zinc-300
-              transition
-              hover:bg-[#111111]/[0.07]
-              hover:text-white
-            "
-          >
-            Try Again
-          </button>
-
-        </div>
-
-      </div>
-    )
-  }
-
-
-  // ============================================================
-  // UI
+  // RENDER
   // ============================================================
 
   return (
-    <div className="overflow-hidden border border-white/[0.08] bg-[#0d0d0d]">
+    <div className="w-full">
 
-
-      {/* ======================================================
+      {/* =====================================================
           TABLE HEADER
-      ====================================================== */}
+      ===================================================== */}
 
       <div
         className="
           hidden
-          grid-cols-[1.5fr_1.2fr_1.2fr_1fr_0.7fr_0.9fr_40px]
-          border-b
-          border-white/[0.08]
-          bg-[#121212]
-          px-5
-          py-3.5
+          grid-cols-[1.6fr_1.4fr_1fr_0.9fr_0.7fr_40px]
+          border-b border-white/10
+          bg-[#171717]
+          px-5 py-3.5
           lg:grid
         "
       >
@@ -229,10 +191,6 @@ function InterviewTable({ onInterviewSelect }) {
 
         <Heading>
           Interview
-        </Heading>
-
-        <Heading>
-          Details
         </Heading>
 
         <Heading>
@@ -252,31 +210,185 @@ function InterviewTable({ onInterviewSelect }) {
       </div>
 
 
-      {/* ======================================================
-          TABLE ROWS
-      ====================================================== */}
+      {/* =====================================================
+          LOADING
+      ===================================================== */}
 
-      {interviews.length > 0 ? (
+      {loading && (
 
-        <div>
+        <div className="flex h-[384px] items-center justify-center">
 
-          {interviews.map((interview) => (
+          <div className="text-center">
 
-            <InterviewRow
-              key={interview.id}
-              interview={interview}
-              onClick={() =>
-                onInterviewSelect?.(interview.id)
-              }
+            <div
+              className="
+                mx-auto
+                h-8 w-8
+                animate-spin
+                border-2 border-zinc-700
+                border-t-white
+              "
             />
 
-          ))}
+            <p className="mt-4 text-xs text-zinc-500">
+              Loading interviews...
+            </p>
+
+          </div>
 
         </div>
 
-      ) : (
+      )}
 
-        <EmptyState />
+
+      {/* =====================================================
+          ERROR
+      ===================================================== */}
+
+      {!loading && error && (
+
+        <div className="flex h-[384px] items-center justify-center px-6">
+
+          <div className="max-w-sm text-center">
+
+            <div
+              className="
+                mx-auto
+                flex h-12 w-12
+                items-center justify-center
+                border border-red-500/30
+                text-red-400
+              "
+            >
+              <ErrorIcon />
+            </div>
+
+
+            <p className="mt-5 text-sm font-semibold text-zinc-200">
+              Failed to load interviews
+            </p>
+
+
+            <p className="mt-2 text-xs leading-relaxed text-zinc-500">
+              {error}
+            </p>
+
+          </div>
+
+        </div>
+
+      )}
+
+
+      {/* =====================================================
+          EMPTY STATE
+      ===================================================== */}
+
+      {!loading &&
+        !error &&
+        interviews.length === 0 && (
+
+          <div className="flex h-[384px] flex-col items-center justify-center px-6 text-center">
+
+            <div
+              className="
+                flex h-14 w-14
+                items-center justify-center
+                border border-white/10
+                bg-[#171717]
+                text-zinc-500
+              "
+            >
+              <EmptyIcon />
+            </div>
+
+
+            <p className="mt-5 text-sm font-semibold text-zinc-200">
+              No interviews found
+            </p>
+
+
+            <p className="mt-2 max-w-sm text-xs leading-relaxed text-zinc-500">
+              There are no candidate interview records
+              matching the selected filters.
+            </p>
+
+          </div>
+
+        )}
+
+
+      {/* =====================================================
+          INTERVIEW ROWS
+
+          FIXED 4-ROW VIEWPORT
+
+          4 rows × 96px = 384px.
+
+          The viewport itself does not grow when more
+          candidates exist. Additional rows scroll inside it.
+      ===================================================== */}
+
+      {!loading &&
+        !error &&
+        interviews.length > 0 && (
+
+          <div
+            className="
+              h-[384px]
+              overflow-y-auto
+              overscroll-contain
+              divide-y divide-white/10
+              [scrollbar-width:thin]
+              [scrollbar-color:#3f3f46_transparent]
+            "
+          >
+
+            {interviews.map(
+              (interview) => (
+
+                <div
+                  key={interview.id}
+                  className="h-24 min-h-24 overflow-hidden"
+                >
+
+                  <InterviewRow
+                    interview={
+                      interview
+                    }
+                    onClick={() =>
+                      onInterviewSelect?.(
+                        interview.id,
+                      )
+                    }
+                  />
+
+                </div>
+
+              ),
+            )}
+
+          </div>
+
+        )}
+
+
+      {/* =====================================================
+          CREATE INTERVIEW MODAL
+      ===================================================== */}
+
+      {isCreateModalOpen && (
+
+        <CreateInterviewModal
+          onClose={() =>
+            setIsCreateModalOpen(
+              false,
+            )
+          }
+          onSuccess={
+            handleCreateSuccess
+          }
+        />
 
       )}
 
@@ -285,11 +397,13 @@ function InterviewTable({ onInterviewSelect }) {
 }
 
 
-/* ============================================================
-   TABLE HEADING
-============================================================ */
+// ============================================================
+// TABLE HEADING
+// ============================================================
 
-function Heading({ children }) {
+function Heading({
+  children,
+}) {
   return (
     <span
       className="
@@ -297,7 +411,7 @@ function Heading({ children }) {
         font-semibold
         uppercase
         tracking-[0.16em]
-        text-zinc-600
+        text-zinc-500
       "
     >
       {children}
@@ -306,70 +420,27 @@ function Heading({ children }) {
 }
 
 
-/* ============================================================
-   EMPTY STATE
-============================================================ */
+// ============================================================
+// EMPTY ICON
+// ============================================================
 
-function EmptyState() {
-  return (
-    <div className="flex min-h-[340px] flex-col items-center justify-center px-6 text-center">
-
-
-      {/* Icon */}
-
-      <div
-        className="
-          flex
-          h-14
-          w-14
-          items-center
-          justify-center
-          border
-          border-white/[0.08]
-          bg-[#151515]
-          text-zinc-500
-        "
-      >
-        <InterviewIcon />
-      </div>
-
-
-      <h3 className="mt-6 text-sm font-semibold text-zinc-300">
-        No interviews found
-      </h3>
-
-
-      <p className="mt-2 max-w-sm text-xs leading-relaxed text-zinc-600">
-        You haven't created any interviews yet.
-        Create an interview to start evaluating candidates.
-      </p>
-
-    </div>
-  )
-}
-
-
-/* ============================================================
-   INTERVIEW ICON
-============================================================ */
-
-function InterviewIcon() {
+function EmptyIcon() {
   return (
     <svg
       className="h-6 w-6"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth="1.8"
+      strokeWidth="1.6"
     >
       <rect
         x="3"
-        y="4"
+        y="5"
         width="18"
-        height="17"
+        height="16"
       />
 
-      <path d="M7 2v4M17 2v4M3 10h18" />
+      <path d="M8 3v4M16 3v4M3 10h18" />
 
       <path d="M8 14h2M14 14h2M8 18h2" />
     </svg>
@@ -377,9 +448,9 @@ function InterviewIcon() {
 }
 
 
-/* ============================================================
-   ERROR ICON
-============================================================ */
+// ============================================================
+// ERROR ICON
+// ============================================================
 
 function ErrorIcon() {
   return (

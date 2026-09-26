@@ -1,4 +1,15 @@
-function CandidateFilters() {
+function CandidateFilters({
+  filters,
+  onFilterChange,
+  jobOptions = [],
+}) {
+  const updateFilter = (key, value) => {
+    onFilterChange({
+      ...filters,
+      [key]: value,
+    })
+  }
+
   return (
     <div className="flex flex-col gap-3 border border-white/10 bg-[#111111] p-4 lg:flex-row">
 
@@ -10,6 +21,10 @@ function CandidateFilters() {
 
         <input
           type="text"
+          value={filters.search}
+          onChange={(e) =>
+            updateFilter('search', e.target.value)
+          }
           placeholder="Search candidates..."
           className="ml-2 w-full bg-transparent py-2 text-xs text-zinc-300 outline-none placeholder:text-zinc-500"
         />
@@ -20,145 +35,87 @@ function CandidateFilters() {
       {/* Job */}
 
       <select
-        defaultValue="all"
+        value={filters.job}
+        onChange={(e) =>
+          updateFilter('job', e.target.value)
+        }
         className="border border-white/10 bg-[#111111] px-3 py-2 text-xs text-zinc-300 outline-none"
       >
-        <option value="all">
+        <option value="">
           All Jobs
         </option>
 
-        <option>
-          Senior Backend Engineer
-        </option>
-
-        <option>
-          Frontend Developer
-        </option>
-
-        <option>
-          Data Scientist
-        </option>
-
-      </select>
-
-
-      {/* College */}
-
-      <select
-        defaultValue="all"
-        className="border border-white/10 bg-[#111111] px-3 py-2 text-xs text-zinc-300 outline-none"
-      >
-        <option value="all">
-          All Colleges
-        </option>
-
-        <option>
-          IIT Delhi
-        </option>
-
-        <option>
-          IIT Bombay
-        </option>
-
-        <option>
-          IIT Madras
-        </option>
-
-        <option>
-          NIT Trichy
-        </option>
-
-        <option>
-          BITS Pilani
-        </option>
-
-        <option>
-          VIT
-        </option>
-
-        <option>
-          SRM University
-        </option>
-
-      </select>
-
-
-      {/* Hiring Mode */}
-
-      <select
-        defaultValue="all"
-        className="border border-white/10 bg-[#111111] px-3 py-2 text-xs text-zinc-300 outline-none"
-      >
-        <option value="all">
-          All Hiring Modes
-        </option>
-
-        <option value="on-campus">
-          On-Campus
-        </option>
-
-        <option value="off-campus">
-          Off-Campus
-        </option>
-
+        {jobOptions.map((job) => (
+          <option key={job} value={job}>
+            {job}
+          </option>
+        ))}
       </select>
 
 
       {/* Status */}
 
       <select
-        defaultValue="all"
+        value={filters.status}
+        onChange={(e) =>
+          updateFilter('status', e.target.value)
+        }
         className="border border-white/10 bg-[#111111] px-3 py-2 text-xs text-zinc-300 outline-none"
       >
-        <option value="all">
+        <option value="">
           All Status
         </option>
 
-        <option>
-          Interviewed
+        <option value="Scheduled">
+          Scheduled
         </option>
 
-        <option>
-          Shortlisted
-        </option>
-
-        <option>
+        <option value="In Progress">
           In Progress
         </option>
 
-        <option>
-          Rejected
+        <option value="Completed">
+          Completed
         </option>
 
+        <option value="Expired">
+          Expired
+        </option>
+
+        <option value="Cancelled">
+          Cancelled
+        </option>
       </select>
 
 
       {/* Score */}
 
       <select
-        defaultValue="all"
+        value={filters.score}
+        onChange={(e) =>
+          updateFilter('score', e.target.value)
+        }
         className="border border-white/10 bg-[#111111] px-3 py-2 text-xs text-zinc-300 outline-none"
       >
-        <option value="all">
+        <option value="">
           Any Score
         </option>
 
-        <option>
+        <option value="90+">
           90+
         </option>
 
-        <option>
+        <option value="80+">
           80+
         </option>
 
-        <option>
+        <option value="70+">
           70+
         </option>
 
-        <option>
+        <option value="below70">
           Below 70
         </option>
-
       </select>
 
     </div>
