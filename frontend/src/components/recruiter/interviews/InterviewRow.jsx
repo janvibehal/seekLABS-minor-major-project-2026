@@ -457,4 +457,4 @@ function InterviewRow({
 }
 
 
-export default InterviewRowd
+export default InterviewRow
