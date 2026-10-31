@@ -1,28 +1,53 @@
 import json
+import logging
 import time
 
 from openai import OpenAI
 
 from AI.evaluation.configs.ai_config import (
     GROQ_API_KEY,
+    GROQ_MAX_RETRIES,
     GROQ_MODEL,
+    GROQ_TIMEOUT_SECONDS,
 )
+
+logger = logging.getLogger(__name__)
+
+# Reasoning models spend part of the completion budget on hidden
+# reasoning, so smaller requested budgets are raised to this floor.
+MIN_COMPLETION_TOKENS = 1600
 
 
 # ============================================================
 # Groq Client
 # ============================================================
 
-if not GROQ_API_KEY:
-    raise RuntimeError(
-        "GROQ_API_KEY is not configured."
-    )
+_client = None
 
 
-client = OpenAI(
-    api_key=GROQ_API_KEY,
-    base_url="https://api.groq.com/openai/v1",
-)
+def _get_client() -> OpenAI:
+    """
+    Create the Groq client lazily so importing this module never
+    fails when GROQ_API_KEY is not configured (e.g. test collection).
+    The key is validated on first use instead.
+    """
+    global _client
+
+    if _client is None:
+
+        if not GROQ_API_KEY:
+            raise RuntimeError(
+                "GROQ_API_KEY is not configured."
+            )
+
+        _client = OpenAI(
+            api_key=GROQ_API_KEY,
+            base_url="https://api.groq.com/openai/v1",
+            timeout=GROQ_TIMEOUT_SECONDS,
+            max_retries=GROQ_MAX_RETRIES,
+        )
+
+    return _client
 
 
 # ============================================================
@@ -251,10 +276,10 @@ def generate_structured_json(
         )
 
     # --------------------------------------------------------
-    # Always use configured Groq model
+    # Use the caller-selected model, falling back to the default
     # --------------------------------------------------------
 
-    selected_model = GROQ_MODEL
+    selected_model = model or GROQ_MODEL
 
     # --------------------------------------------------------
     # Request
@@ -275,7 +300,7 @@ def generate_structured_json(
             "temperature": 0,
             "max_tokens": max(
                 num_predict,
-                1600,
+                MIN_COMPLETION_TOKENS,
             ),
         }
 
@@ -311,7 +336,7 @@ def generate_structured_json(
             }
 
         response = (
-            client.chat.completions.create(
+            _get_client().chat.completions.create(
                 **request_kwargs
             )
         )
@@ -372,31 +397,14 @@ def generate_structured_json(
     # Debug output
     # --------------------------------------------------------
 
-    print()
-    print("=" * 60)
-    print("          GROQ STRUCTURED JSON")
-    print("=" * 60)
-    print(
-        f"Model        : {selected_model}"
+    logger.info(
+        "Groq structured JSON: model=%s time=%.2fs "
+        "prompt_chars=%d schema=%s",
+        selected_model,
+        elapsed_time,
+        len(prompt),
+        "enabled" if schema is not None else "json_mode",
     )
-    print(
-        f"Time Taken   : {elapsed_time:.2f} seconds"
-    )
-    print(
-        f"Prompt chars : {len(prompt)}"
-    )
-
-    if schema is not None:
-        print(
-            "Schema       : ENABLED"
-        )
-    else:
-        print(
-            "Schema       : JSON MODE"
-        )
-
-    print("=" * 60)
-    print()
 
     # --------------------------------------------------------
     # Parse JSON
@@ -449,6 +457,7 @@ def generate_groq_response(
     prompt: str,
     temperature: float = 0,
     max_tokens: int = 500,
+    model: str = None,
 ) -> str:
     """
     Generate a plain-text response using Groq.
@@ -485,8 +494,8 @@ def generate_groq_response(
 
     try:
 
-        response = client.chat.completions.create(
-            model=GROQ_MODEL,
+        response = _get_client().chat.completions.create(
+            model=model or GROQ_MODEL,
             messages=[
                 {
                     "role": "user",
@@ -507,9 +516,9 @@ def generate_groq_response(
         time.time() - start_time
     )
 
-    print(
-        f"Groq response generated in "
-        f"{elapsed_time:.2f}s"
+    logger.info(
+        "Groq response generated in %.2fs",
+        elapsed_time,
     )
 
     # --------------------------------------------------------

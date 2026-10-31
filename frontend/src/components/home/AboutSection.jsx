@@ -38,7 +38,7 @@ function AboutSection() {
                     <span className="h-px w-8 bg-white/40" />
 
                     <p className="text-[10px] uppercase tracking-[0.25em] text-white/40">
-                        About SeekLABS
+                        About Qore
                     </p>
                 </motion.div>
 
@@ -92,7 +92,7 @@ function AboutSection() {
                         whether a candidate reaches the correct answer.
 
                         <span className="text-white">
-                            {" "}SeekLABS focuse on the reasoning,
+                            {" "}Qore focuse on the reasoning,
                             decisions, and understanding behind it.
                         </span>
 

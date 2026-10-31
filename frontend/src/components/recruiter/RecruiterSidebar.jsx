@@ -60,9 +60,8 @@ function RecruiterSidebar() {
   const firstName = user?.firstName || 'Recruiter'
   const lastName = user?.lastName || ''
 
-  const initials = `${firstName?.[0] || ''}${
-    lastName?.[0] || ''
-  }`.toUpperCase()
+  const initials = `${firstName?.[0] || ''}${lastName?.[0] || ''
+    }`.toUpperCase()
 
   const fullName = `${firstName} ${lastName}`.trim()
 
@@ -79,13 +78,13 @@ function RecruiterSidebar() {
 
           <img
             src="/images/logo-Photoroom.png"
-            alt="SeekLABS"
+            alt="Qore"
             className="h-8 w-8 object-contain"
           />
 
           <div>
             <p className="text-base font-semibold tracking-tight text-white">
-              SeekLABS
+              Qore
             </p>
 
             <p className="mt-1 text-[10px] font-medium uppercase tracking-[0.2em] text-neutral-500">
@@ -120,10 +119,9 @@ function RecruiterSidebar() {
                 key={item.path}
                 to={item.path}
                 className={({ isActive }) =>
-                  `group relative flex items-center gap-3 px-3 py-3 text-sm transition ${
-                    isActive
-                      ? 'bg-[#111111]/[0.06] font-medium text-white'
-                      : 'text-neutral-500 hover:bg-[#111111]/[0.03] hover:text-neutral-200'
+                  `group relative flex items-center gap-3 px-3 py-3 text-sm transition ${isActive
+                    ? 'bg-[#111111]/[0.06] font-medium text-white'
+                    : 'text-neutral-500 hover:bg-[#111111]/[0.03] hover:text-neutral-200'
                   }`
                 }
               >
@@ -161,10 +159,9 @@ function RecruiterSidebar() {
                 key={item.path}
                 to={item.path}
                 className={({ isActive }) =>
-                  `relative flex items-center gap-3 px-3 py-3 text-sm transition ${
-                    isActive
-                      ? 'bg-[#111111]/[0.06] font-medium text-white'
-                      : 'text-neutral-500 hover:bg-[#111111]/[0.03] hover:text-neutral-200'
+                  `relative flex items-center gap-3 px-3 py-3 text-sm transition ${isActive
+                    ? 'bg-[#111111]/[0.06] font-medium text-white'
+                    : 'text-neutral-500 hover:bg-[#111111]/[0.03] hover:text-neutral-200'
                   }`
                 }
               >

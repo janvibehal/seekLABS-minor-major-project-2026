@@ -14,17 +14,56 @@ ENV_FILE = EVALUATION_DIR / ".env"
 load_dotenv(ENV_FILE)
 
 
+def _env(name, default=None):
+    """Return a stripped env value; blank values count as unset."""
+    value = os.getenv(name)
+
+    if value is None or not value.strip():
+        return default
+
+    return value.strip()
+
+
 # ==========================================================
 # Groq Configuration
 # ==========================================================
 
-GROQ_API_KEY = os.getenv(
-    "GROQ_API_KEY"
-)
+GROQ_API_KEY = _env("GROQ_API_KEY")
 
-GROQ_MODEL = os.getenv(
+GROQ_MODEL = _env(
     "GROQ_MODEL",
     "openai/gpt-oss-120b"
+)
+
+# Request timeout (seconds) and retry count for Groq calls.
+GROQ_TIMEOUT_SECONDS = float(
+    _env("GROQ_TIMEOUT_SECONDS", "60")
+)
+
+GROQ_MAX_RETRIES = int(
+    _env("GROQ_MAX_RETRIES", "2")
+)
+
+
+# ==========================================================
+# API Access
+# ==========================================================
+# Optional. When set, every /v1/* endpoint of the evaluation API
+# requires a matching X-API-Key header. Unset = no auth (previous
+# behaviour).
+
+API_ACCESS_KEY = _env("INTERVIEW_AI_API_KEY")
+
+
+# ==========================================================
+# Adaptive interview
+# ==========================================================
+# Hard cap on candidate turns per question when the caller does not
+# send max_turns. The adaptive policy may stop earlier (target
+# reference reached); this only bounds a candidate who never gets there.
+
+MAX_TURNS_PER_QUESTION = int(
+    _env("MAX_TURNS_PER_QUESTION", "5")
 )
 
 
@@ -34,11 +73,9 @@ GROQ_MODEL = os.getenv(
 # Kept temporarily for backward compatibility.
 # These can be removed after the complete migration to Groq.
 
-OPENAI_API_KEY = os.getenv(
-    "OPENAI_API_KEY"
-)
+OPENAI_API_KEY = _env("OPENAI_API_KEY")
 
-OPENAI_MODEL = os.getenv(
+OPENAI_MODEL = _env(
     "OPENAI_MODEL",
     "gpt-4.1-mini"
 )
@@ -47,10 +84,10 @@ OPENAI_MODEL = os.getenv(
 # ==========================================================
 # Ollama Configuration
 # ==========================================================
-# Kept temporarily because the remaining components are
-# being migrated from Ollama to Groq one by one.
+# Still required: embeddings (semantic similarity) are served by a
+# local Ollama instance at /api/embed.
 
-OLLAMA_BASE_URL = os.getenv(
+OLLAMA_BASE_URL = _env(
     "OLLAMA_BASE_URL",
     "http://localhost:11434"
 )
@@ -65,25 +102,25 @@ OLLAMA_BASE_URL = os.getenv(
 # All LLM-based components will eventually use GROQ_MODEL.
 
 # NLP extraction model
-EXTRACTOR_MODEL = os.getenv(
+EXTRACTOR_MODEL = _env(
     "EXTRACTOR_MODEL",
     GROQ_MODEL
 )
 
 # Reference solution matching model
-REFERENCE_MATCHER_MODEL = os.getenv(
+REFERENCE_MATCHER_MODEL = _env(
     "REFERENCE_MATCHER_MODEL",
     GROQ_MODEL
 )
 
 # Candidate evaluation model
-EVALUATOR_MODEL = os.getenv(
+EVALUATOR_MODEL = _env(
     "EVALUATOR_MODEL",
     GROQ_MODEL
 )
 
 # Interview follow-up generation model
-FOLLOWUP_MODEL = os.getenv(
+FOLLOWUP_MODEL = _env(
     "FOLLOWUP_MODEL",
     GROQ_MODEL
 )
@@ -95,7 +132,7 @@ FOLLOWUP_MODEL = os.getenv(
 # This is still separate from the chat/completion model.
 # We will migrate the embedding layer separately.
 
-EMBEDDING_MODEL = os.getenv(
+EMBEDDING_MODEL = _env(
     "EMBEDDING_MODEL",
     "nomic-embed-text"
 )

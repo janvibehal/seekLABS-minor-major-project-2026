@@ -236,3 +236,23 @@ def test_no_turns_remaining_stops():
     )
 
     assert result["action"] == "STOP"
+
+def test_explicit_adaptive_gap_overrides_historical_high_score():
+    engine = PolicyEngine()
+    scores = strong_scores()
+    # This score is historical; the evaluator says complexity still needs
+    # a focused assessment on the current turn.
+    scores["complexity"] = 85
+    state = {"primary_adaptive_gap": "Complexity Gap"}
+
+    result = engine.decide(
+        scores=scores,
+        time_remaining=180,
+        candidate_state=state,
+        current_reference_id="P001-R2",
+        target_reference_id="P001-R2",
+    )
+
+    assert result["action"] == "ASK_FOLLOW_UP"
+    assert result["target_dimension"] == "complexity"
+    assert "explicitly identified" in result["reason"]

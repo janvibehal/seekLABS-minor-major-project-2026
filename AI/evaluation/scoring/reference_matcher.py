@@ -2,7 +2,7 @@ import json
 
 from AI.evaluation.configs.ai_config import REFERENCE_MATCHER_MODEL
 from AI.evaluation.dataset_loader import load_reference_solution
-from AI.evaluation.llm.ollama_client import (
+from AI.evaluation.llm.groq_client import (
     generate_structured_json
 )
 

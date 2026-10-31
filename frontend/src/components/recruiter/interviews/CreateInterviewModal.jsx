@@ -183,13 +183,13 @@ function CreateInterviewModal({ onClose, onSuccess }) {
 
         const apiHasNextPage =
           typeof response?.pagination?.hasNextPage ===
-          'boolean'
+            'boolean'
             ? response.pagination.hasNextPage
             : typeof response?.data?.pagination?.hasNextPage ===
-                'boolean'
+              'boolean'
               ? response.data.pagination.hasNextPage
               : nextQuestions.length ===
-                QUESTIONS_PER_PAGE
+              QUESTIONS_PER_PAGE
 
         setQuestions(nextQuestions)
         setHasNextPage(apiHasNextPage)
@@ -377,13 +377,13 @@ function CreateInterviewModal({ onClose, onSuccess }) {
       previous.map((question) =>
         question.id === questionId
           ? {
-              ...question,
-              time:
-                Number.isNaN(time) ||
+            ...question,
+            time:
+              Number.isNaN(time) ||
                 time < 1
-                  ? 1
-                  : time,
-            }
+                ? 1
+                : time,
+          }
           : question,
       ),
     )
@@ -631,7 +631,7 @@ function CreateInterviewModal({ onClose, onSuccess }) {
                         event.target.value,
                       )
                     }
-                    placeholder="e.g. SeekLABS"
+                    placeholder="e.g. Qore"
                     className="w-full border border-zinc-700 bg-[#181818] px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-500 transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20"
                   />
 
@@ -656,7 +656,7 @@ function CreateInterviewModal({ onClose, onSuccess }) {
                             checked={
                               candidates.length > 0 &&
                               selectedCandidateIds.length ===
-                                candidates.length
+                              candidates.length
                             }
                             onChange={(event) => {
 
@@ -693,24 +693,24 @@ function CreateInterviewModal({ onClose, onSuccess }) {
                               candidates.length &&
                               candidates.length > 0 && (
 
-                              <svg
-                                viewBox="0 0 16 16"
-                                fill="none"
-                                className="h-3 w-3 text-white"
-                                aria-hidden="true"
-                              >
+                                <svg
+                                  viewBox="0 0 16 16"
+                                  fill="none"
+                                  className="h-3 w-3 text-white"
+                                  aria-hidden="true"
+                                >
 
-                                <path
-                                  d="M3.5 8.25 6.5 11l6-6"
-                                  stroke="currentColor"
-                                  strokeWidth="2"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
+                                  <path
+                                    d="M3.5 8.25 6.5 11l6-6"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  />
 
-                              </svg>
+                                </svg>
 
-                            )}
+                              )}
 
                           </span>
 
@@ -720,7 +720,7 @@ function CreateInterviewModal({ onClose, onSuccess }) {
 
                           {selectedCandidateIds.length ===
                             candidates.length &&
-                          candidates.length > 0
+                            candidates.length > 0
                             ? 'Deselect All'
                             : 'Select All'}
 
@@ -758,9 +758,8 @@ function CreateInterviewModal({ onClose, onSuccess }) {
 
                             const name =
                               candidate.name ||
-                              `${candidate.firstName || ''} ${
-                                candidate.lastName || ''
-                              }`.trim()
+                              `${candidate.firstName || ''} ${candidate.lastName || ''
+                                }`.trim()
 
                             const selected =
                               selectedCandidateIds.includes(
@@ -787,14 +786,14 @@ function CreateInterviewModal({ onClose, onSuccess }) {
                                             candidate.id,
                                           )
                                             ? previous.filter(
-                                                (id) =>
-                                                  id !==
-                                                  candidate.id,
-                                              )
-                                            : [
-                                                ...previous,
+                                              (id) =>
+                                                id !==
                                                 candidate.id,
-                                              ],
+                                            )
+                                            : [
+                                              ...previous,
+                                              candidate.id,
+                                            ],
                                       )
 
                                     }}
@@ -902,7 +901,7 @@ function CreateInterviewModal({ onClose, onSuccess }) {
               <div className="mt-4 space-y-2">
 
                 {selectedQuestions.length ===
-                0 ? (
+                  0 ? (
 
                   <div className="border border-zinc-800 bg-[#111111] px-5 py-8 text-center">
 
@@ -1075,7 +1074,7 @@ function CreateInterviewModal({ onClose, onSuccess }) {
                             MEDIUM: 'Medium',
                             HARD: 'Hard',
                           }[
-                            difficulty
+                          difficulty
                           ]
                         }
                       </span>
@@ -1129,12 +1128,11 @@ function CreateInterviewModal({ onClose, onSuccess }) {
                                 )
 
                               }}
-                              className={`block w-full px-4 py-3 text-left text-xs transition ${
-                                difficulty ===
-                                option.value
+                              className={`block w-full px-4 py-3 text-left text-xs transition ${difficulty ===
+                                  option.value
                                   ? 'bg-blue-500/10 text-blue-400'
                                   : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
-                              }`}
+                                }`}
                             >
                               {
                                 option.label
@@ -1189,7 +1187,7 @@ function CreateInterviewModal({ onClose, onSuccess }) {
 
 
                   {paginatedQuestions.length >
-                      0 && (
+                    0 && (
 
                       <div>
 
@@ -1209,11 +1207,10 @@ function CreateInterviewModal({ onClose, onSuccess }) {
                                 key={
                                   question.remoteId
                                 }
-                                className={`flex items-center justify-between gap-4 border-b border-zinc-800 px-5 py-4 transition ${
-                                  selected
+                                className={`flex items-center justify-between gap-4 border-b border-zinc-800 px-5 py-4 transition ${selected
                                     ? 'bg-blue-500/5'
                                     : 'hover:bg-zinc-900'
-                                }`}
+                                  }`}
                               >
 
                                 <div className="min-w-0 flex-1">
@@ -1260,14 +1257,13 @@ function CreateInterviewModal({ onClose, onSuccess }) {
 
                                           const topicName =
                                             typeof topic ===
-                                            'string'
+                                              'string'
                                               ? topic
                                               : topic?.name ||
-                                                topic?.slug ||
-                                                `Topic ${
-                                                  index +
-                                                  1
-                                                }`
+                                              topic?.slug ||
+                                              `Topic ${index +
+                                              1
+                                              }`
 
                                           return (
 
@@ -1300,19 +1296,18 @@ function CreateInterviewModal({ onClose, onSuccess }) {
                                   disabled={
                                     !question.referenceSupported ||
                                     importingQuestionSlug ===
-                                      question.slug
+                                    question.slug
                                   }
-                                  className={`min-w-[80px] px-4 py-2 text-[10px] font-semibold transition ${
-                                    !question.referenceSupported
+                                  className={`min-w-[80px] px-4 py-2 text-[10px] font-semibold transition ${!question.referenceSupported
                                       ? 'cursor-not-allowed border border-zinc-800 bg-zinc-900 text-zinc-600'
                                       : selected
                                         ? 'border border-red-500/20 bg-red-500/10 text-red-400 hover:bg-red-500/20'
                                         : 'border border-blue-500/20 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20'
-                                  } disabled:cursor-wait disabled:opacity-70`}
+                                    } disabled:cursor-wait disabled:opacity-70`}
                                 >
 
                                   {importingQuestionSlug ===
-                                  question.slug
+                                    question.slug
                                     ? 'Adding...'
                                     : !question.referenceSupported
                                       ? 'Unavailable'
@@ -1336,7 +1331,7 @@ function CreateInterviewModal({ onClose, onSuccess }) {
 
                   {!loadingQuestions &&
                     paginatedQuestions.length ===
-                      0 && (
+                    0 && (
 
                       <div className="px-5 py-14 text-center">
 
@@ -1445,7 +1440,7 @@ function CreateInterviewModal({ onClose, onSuccess }) {
               {selectedQuestions.length}{' '}
               question
               {selectedQuestions.length !==
-              1
+                1
                 ? 's'
                 : ''}{' '}
               selected

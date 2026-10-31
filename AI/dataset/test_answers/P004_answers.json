@@ -2,7 +2,7 @@
   "problem_id": "P004",
   "candidate_test_answers": [
     {
-      "test_answer_id": "P004_04",
+      "test_answer_id": "P004_TA001",
       "category": "fully_correct",
       "answer": "I would sort the intervals by start time. Then keep the last merged interval and compare each new interval's start with its end. If they overlap, extend the end; otherwise append a new interval. Sorting dominates at O(n log n), and the merge pass is O(n). I would handle empty input and touching/overlapping boundaries consistently.",
       "expected_evaluation": {
@@ -17,7 +17,7 @@
       }
     },
     {
-      "test_answer_id": "P004_04",
+      "test_answer_id": "P004_TA002",
       "category": "correct_but_inefficient",
       "answer": "I would compare every interval against the others and repeatedly merge overlaps until no more merges are possible. This can work, but sorting once and doing a single pass is more efficient.",
       "expected_evaluation": {
@@ -32,7 +32,7 @@
       }
     },
     {
-      "test_answer_id": "P004_04",
+      "test_answer_id": "P004_TA003",
       "category": "complexity_mistake",
       "answer": "I would sort by start time and merge intervals in one pass. The logic is correct. I think the overall time is O(n) because after sorting we only traverse once, and sorting does not change the overall linear behavior.",
       "expected_evaluation": {
@@ -47,7 +47,7 @@
       }
     },
     {
-      "test_answer_id": "P004_04",
+      "test_answer_id": "P004_TA004",
       "category": "edge_case_missing",
       "answer": "I would sort intervals by their starting values and merge whenever the next start is less than the current end. I haven't considered whether touching intervals should merge, empty input, or intervals contained completely inside another interval.",
       "expected_evaluation": {
@@ -62,7 +62,7 @@
       }
     },
     {
-      "test_answer_id": "P004_04",
+      "test_answer_id": "P004_TA005",
       "category": "partially_correct",
       "answer": "I would compare each interval with the next interval and merge them if they overlap. I don't think sorting is necessary because the input already represents intervals that are close together.",
       "expected_evaluation": {

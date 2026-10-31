@@ -1,0 +1,250 @@
+{
+  "candidate_id": "cli_candidate",
+  "question_id": "cli355b0abb9edb_q1",
+  "reference_answer_id": "P001-R3",
+  "reference_match_confidence": null,
+  "target_reference_id": "P001-R2",
+  "current_answer": "I don't know , maybe I will use a hashmap",
+  "nlp_state": {
+    "approach": "use a graph",
+    "algorithms": [],
+    "concepts": [
+      "graph"
+    ],
+    "operations": [],
+    "data_structures": [
+      "hashmap",
+      "graph"
+    ],
+    "time_complexity": null,
+    "space_complexity": null,
+    "edge_cases": [],
+    "reasoning_summary": null,
+    "assumptions": [],
+    "optimization": null
+  },
+  "scores": {
+    "algorithm_correctness": 90.0,
+    "concept_coverage": 20.0,
+    "completeness": 65.0,
+    "data_structure": 40.0
+  },
+  "primary_classification": "Partially Correct",
+  "secondary_classification": null,
+  "adaptive_classifications": [],
+  "primary_adaptive_gap": null,
+  "evidence": {
+    "algorithm_correctness": "The candidate only states 'maybe I will use a hashmap' without describing any algorithmic steps, so there is insufficient information to determine correctness.",
+    "logical_reasoning": "The candidate provides no explanation or justification for the approach, only a brief suggestion.",
+    "concept_coverage": "The candidate mentions the concept of a hashmap as a possible tool, but does not discuss other relevant concepts such as complement lookup or iteration.",
+    "completeness": "The answer lacks description of the core steps, input handling, or output, so completeness cannot be assessed.",
+    "data_structure": "The candidate explicitly mentions using a hashmap, which is a relevant data structure for the two-sum problem.",
+    "complexity": "No time or space complexity is provided.",
+    "edge_cases": "The candidate does not discuss any edge cases."
+  },
+  "history": [
+    {
+      "turn_number": 1,
+      "candidate_answer": "The Two Sum problem can be solved using three main approaches. Brute Force: Use two nested loops to check every pair of elements and return the indices when their sum equals the target.",
+      "reference_answer_id": "P001-R1",
+      "reference_match_confidence": null,
+      "target_reference_id": "P001-R2",
+      "scores": {
+        "algorithm_correctness": 90.0,
+        "logical_reasoning": null,
+        "concept_coverage": 80.0,
+        "completeness": 65.0,
+        "data_structure": null,
+        "complexity": null,
+        "edge_cases": null
+      },
+      "primary_classification": "Partially Correct",
+      "secondary_classification": null,
+      "adaptive_classifications": [],
+      "primary_adaptive_gap": null,
+      "evidence": {
+        "algorithm_correctness": "The candidate explicitly describes a brute‑force method: using two nested loops to examine every pair of elements and returning the indices when their sum equals the target. This procedure correctly solves the Two Sum problem.",
+        "logical_reasoning": "The candidate provides no explanation of why the brute‑force approach works or any reasoning linking the steps to the problem requirements.",
+        "concept_coverage": "The answer mentions the brute‑force approach, nested loops, checking every pair of elements, and returning the matching indices, covering the core concepts needed for this solution.",
+        "completeness": "The candidate includes the core algorithmic idea and the result production (returning indices) but omits other typical solution components such as complexity analysis, data‑structure specification, and edge‑case considerations.",
+        "data_structure": "No specific data structure (e.g., array, list, hash map) is mentioned or described in the candidate's response.",
+        "complexity": "The candidate does not provide any time or space complexity information.",
+        "edge_cases": "The response does not discuss any edge cases such as empty input, duplicate values, or cases with no solution."
+      },
+      "current_interviewer_question": "Please explain your approach for solving Two Sum.",
+      "nlp_state": {
+        "original_answer": "The Two Sum problem can be solved using three main approaches. Brute Force: Use two nested loops to check every pair of elements and return the indices when their sum equals the target.",
+        "normalized_answer": "The Two Sum problem can be solved using three main approaches. Brute Force: Use two nested loops to check every pair of elements and return the indices when their sum equals the target.",
+        "concepts_detected": [
+          "nested loops",
+          "Brute Force",
+          "check every pair of elements",
+          "return the indices when their sum equals the target"
+        ],
+        "reasoning": [],
+        "complexity_claim": {
+          "time": null,
+          "space": null
+        },
+        "approach": "Brute Force",
+        "algorithms": [
+          "Brute Force"
+        ],
+        "concepts": [
+          "nested loops"
+        ],
+        "operations": [
+          "check every pair of elements",
+          "return the indices when their sum equals the target"
+        ],
+        "data_structures": [],
+        "time_complexity": null,
+        "space_complexity": null,
+        "edge_cases": [],
+        "reasoning_summary": null,
+        "assumptions": [],
+        "optimization": null,
+        "extraction_source": "llm"
+      },
+      "evaluation_status": "assessed"
+    },
+    {
+      "turn_number": 2,
+      "candidate_answer": "I don't know , maybe I will use a hashmap",
+      "reference_answer_id": "P001-R3",
+      "reference_match_confidence": null,
+      "target_reference_id": "P001-R2",
+      "scores": {
+        "algorithm_correctness": null,
+        "logical_reasoning": null,
+        "concept_coverage": 20.0,
+        "completeness": null,
+        "data_structure": 40.0,
+        "complexity": null,
+        "edge_cases": null
+      },
+      "primary_classification": "Partially Correct",
+      "secondary_classification": null,
+      "adaptive_classifications": [],
+      "primary_adaptive_gap": null,
+      "evidence": {
+        "algorithm_correctness": "The candidate only states 'maybe I will use a hashmap' without describing any algorithmic steps, so there is insufficient information to determine correctness.",
+        "logical_reasoning": "The candidate provides no explanation or justification for the approach, only a brief suggestion.",
+        "concept_coverage": "The candidate mentions the concept of a hashmap as a possible tool, but does not discuss other relevant concepts such as complement lookup or iteration.",
+        "completeness": "The answer lacks description of the core steps, input handling, or output, so completeness cannot be assessed.",
+        "data_structure": "The candidate explicitly mentions using a hashmap, which is a relevant data structure for the two-sum problem.",
+        "complexity": "No time or space complexity is provided.",
+        "edge_cases": "The candidate does not discuss any edge cases."
+      },
+      "current_interviewer_question": "How would you handle duplicate values in the array to ensure you return the correct pair of indices?",
+      "nlp_state": {
+        "original_answer": "I don't know , maybe I will use a hashmap",
+        "normalized_answer": "I don't know , maybe I will use a hashmap",
+        "concepts_detected": [
+          "hashmap"
+        ],
+        "reasoning": [],
+        "complexity_claim": {
+          "time": null,
+          "space": null
+        },
+        "approach": "use a hashmap",
+        "algorithms": [],
+        "concepts": [],
+        "operations": [],
+        "data_structures": [
+          "hashmap"
+        ],
+        "time_complexity": null,
+        "space_complexity": null,
+        "edge_cases": [],
+        "reasoning_summary": null,
+        "assumptions": [],
+        "optimization": null,
+        "extraction_source": "llm"
+      },
+      "evaluation_status": "assessed"
+    },
+    {
+      "turn_number": 3,
+      "candidate_answer": "i will use a graph",
+      "evaluation_status": "failed",
+      "scores": {},
+      "primary_classification": null,
+      "evidence": {},
+      "current_interviewer_question": "How would you solve Two Sum by first sorting the array (or value‑index pairs) and then using a two‑pointer technique to find the target sum while preserving the original indices?",
+      "nlp_state": {
+        "original_answer": "i will use a graph",
+        "normalized_answer": "i will use a graph",
+        "concepts_detected": [
+          "graph"
+        ],
+        "reasoning": [],
+        "complexity_claim": {
+          "time": null,
+          "space": null
+        },
+        "approach": "use a graph",
+        "algorithms": [],
+        "concepts": [
+          "graph"
+        ],
+        "operations": [],
+        "data_structures": [
+          "graph"
+        ],
+        "time_complexity": null,
+        "space_complexity": null,
+        "edge_cases": [],
+        "reasoning_summary": null,
+        "assumptions": [],
+        "optimization": null,
+        "extraction_source": "llm"
+      },
+      "evaluation_error": "Matched reference ID was not found in the supplied reference set."
+    },
+    {
+      "turn_number": 4,
+      "candidate_answer": "don't know let's end",
+      "evaluation_status": "failed",
+      "scores": {},
+      "primary_classification": null,
+      "evidence": {},
+      "current_interviewer_question": "How would you solve Two Sum by first sorting the array (or value‑index pairs) and then using a two‑pointer technique to find the target sum while preserving the original indices?",
+      "nlp_state": {
+        "original_answer": "don't know let's end",
+        "normalized_answer": "don't know let's end",
+        "concepts_detected": [],
+        "reasoning": [],
+        "complexity_claim": {
+          "time": null,
+          "space": null
+        },
+        "approach": null,
+        "algorithms": [],
+        "concepts": [],
+        "operations": [],
+        "data_structures": [],
+        "time_complexity": null,
+        "space_complexity": null,
+        "edge_cases": [],
+        "reasoning_summary": null,
+        "assumptions": [],
+        "optimization": null,
+        "extraction_source": "llm"
+      },
+      "evaluation_error": "Matched reference ID was not found in the supplied reference set."
+    },
+    {
+      "turn_number": 5,
+      "candidate_answer": "let's end the interview",
+      "evaluation_status": "exit_requested",
+      "scores": {},
+      "primary_classification": null,
+      "evidence": {},
+      "current_interviewer_question": "How would you solve Two Sum by first sorting the array (or value‑index pairs) and then using a two‑pointer technique to find the target sum while preserving the original indices?"
+    }
+  ],
+  "current_interviewer_question": "How would you solve Two Sum by first sorting the array (or value‑index pairs) and then using a two‑pointer technique to find the target sum while preserving the original indices?",
+  "should_continue": false
+}

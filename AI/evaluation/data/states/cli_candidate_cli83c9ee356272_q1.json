@@ -1,0 +1,294 @@
+{
+  "candidate_id": "cli_candidate",
+  "question_id": "cli83c9ee356272_q1",
+  "reference_answer_id": "P001-R2",
+  "reference_match_confidence": null,
+  "target_reference_id": "P001-R2",
+  "current_answer": "My approach handles edge cases by first checking whether the array has fewer than two elements; if it does, no valid pair exists. Duplicate values are handled correctly because the two pointers can identify different elements with the same value, such as two 3s adding up to 6. Negative numbers also work because the two-pointer technique depends on the sorted order, not whether the numbers are positive or negative. To return the correct original indices after sorting, I would store each element with its original index before sorting and use those indices when the target sum is found.",
+  "nlp_state": {
+    "approach": "Check array length, sort while preserving original indices, then use two-pointer technique to find the target sum and return the original indices",
+    "algorithms": [
+      "two-pointer technique"
+    ],
+    "concepts": [
+      "sorted order",
+      "two-pointer technique"
+    ],
+    "operations": [
+      "check if array length < 2",
+      "store each element with its original index before sorting",
+      "apply two-pointer technique to find target sum",
+      "return original indices when target sum is found"
+    ],
+    "data_structures": [
+      "array"
+    ],
+    "time_complexity": null,
+    "space_complexity": null,
+    "edge_cases": [
+      "array has fewer than two elements",
+      "duplicate values",
+      "negative numbers"
+    ],
+    "reasoning_summary": "Duplicate values work because the two pointers can identify different elements with the same value, and negative numbers work because the technique depends on sorted order rather than the sign of the numbers",
+    "assumptions": [],
+    "optimization": null
+  },
+  "scores": {
+    "algorithm_correctness": 90.0,
+    "logical_reasoning": 85.0,
+    "concept_coverage": 80.0,
+    "completeness": 75.0,
+    "data_structure": 70.0,
+    "complexity": 85.0,
+    "edge_cases": 85.0
+  },
+  "primary_classification": "Partially Correct",
+  "secondary_classification": "Verbose",
+  "adaptive_classifications": [],
+  "primary_adaptive_gap": null,
+  "evidence": {
+    "algorithm_correctness": "The candidate describes checking array length, sorting while preserving original indices, then using a two-pointer technique to find the target sum and returning the original indices, which correctly solves the Two Sum problem.",
+    "logical_reasoning": "The candidate explains that duplicate values work because the two pointers can identify different elements with the same value and that negative numbers work because the technique relies on sorted order, providing logical justification for the approach.",
+    "concept_coverage": "The answer mentions sorting, the two-pointer technique, preserving original indices, and handling duplicates and negatives, covering the core technical concepts required for this solution.",
+    "completeness": "The candidate outlines the main steps (length check, sort with indices, two-pointer search, return indices) and discusses some edge cases, covering essential parts of a solution though it does not specify behavior when no pair is found.",
+    "data_structure": "The candidate states that each element is stored with its original index before sorting, implying use of an array of (value, index) pairs.",
+    "complexity": "The candidate does not provide any time or space complexity analysis.",
+    "edge_cases": "The candidate explicitly mentions handling arrays with fewer than two elements, duplicate values, and negative numbers as edge cases."
+  },
+  "history": [
+    {
+      "turn_number": 1,
+      "candidate_answer": "The Two Sum problem can be solved using three main approaches. Brute Force: Use two nested loops to check every pair of elements and return the indices when their sum equals the target; this takes O(n2) time and O(1) extra space.",
+      "reference_answer_id": "P001-R1",
+      "reference_match_confidence": null,
+      "target_reference_id": "P001-R2",
+      "scores": {
+        "algorithm_correctness": 80.0,
+        "logical_reasoning": 40.0,
+        "concept_coverage": 70.0,
+        "completeness": 50.0,
+        "data_structure": 70.0,
+        "complexity": 90.0,
+        "edge_cases": null
+      },
+      "primary_classification": "Partially Correct",
+      "secondary_classification": null,
+      "adaptive_classifications": [
+        "Reasoning Gap",
+        "Completeness Gap"
+      ],
+      "primary_adaptive_gap": "Reasoning Gap",
+      "evidence": {
+        "algorithm_correctness": "The candidate describes a brute‑force method that uses two nested loops to examine every pair of elements and returns the indices when their sum equals the target, which is a correct way to solve the Two Sum problem when a solution exists.",
+        "logical_reasoning": "The candidate merely states the approach and its time/space costs without explaining why the nested‑loop search guarantees finding a correct pair or why it terminates correctly.",
+        "concept_coverage": "The answer mentions the key concepts of a brute‑force approach and nested loops, and the operation of checking every pair and returning indices, covering the essential ideas for this method.",
+        "completeness": "The candidate provides the core algorithm and its complexity but omits handling of cases such as no valid pair, input validation, and other required details, making the answer only partially complete.",
+        "data_structure": "While no explicit data structure is named, the description of iterating over \"every pair of elements\" implies the use of the input array, which is appropriate for the brute‑force solution.",
+        "complexity": "The candidate explicitly states the time complexity as O(n^2) and the space complexity as O(1) extra space, which accurately reflects the brute‑force algorithm they described.",
+        "edge_cases": "The candidate does not mention or discuss any edge cases such as empty input, single element arrays, duplicate values, or the situation where no pair sums to the target."
+      },
+      "current_interviewer_question": "Please explain your approach for solving Two Sum.",
+      "nlp_state": {
+        "original_answer": "The Two Sum problem can be solved using three main approaches. Brute Force: Use two nested loops to check every pair of elements and return the indices when their sum equals the target; this takes O(n2) time and O(1) extra space.",
+        "normalized_answer": "The Two Sum problem can be solved using three main approaches. Brute Force: Use two nested loops to check every pair of elements and return the indices when their sum equals the target; this takes O(n2) time and O(1) extra space.",
+        "concepts_detected": [
+          "nested loops",
+          "Brute Force",
+          "check every pair of elements",
+          "return the indices"
+        ],
+        "reasoning": [],
+        "complexity_claim": {
+          "time": "O(n2)",
+          "space": "O(1) extra space"
+        },
+        "approach": "Brute Force",
+        "algorithms": [
+          "Brute Force"
+        ],
+        "concepts": [
+          "nested loops"
+        ],
+        "operations": [
+          "check every pair of elements",
+          "return the indices"
+        ],
+        "data_structures": [],
+        "time_complexity": "O(n^2)",
+        "space_complexity": "O(1) extra space",
+        "edge_cases": [],
+        "reasoning_summary": null,
+        "assumptions": [],
+        "optimization": null,
+        "extraction_source": "llm"
+      },
+      "evaluation_status": "assessed"
+    },
+    {
+      "turn_number": 2,
+      "candidate_answer": "In the brute-force approach, we check every possible pair, which takes \\(O(n^2)\\) time. By sorting the array and using the two-pointer technique, we place one pointer at the beginning and the other at the end. If their sum equals the target, we find the answer; if the sum is smaller, we move the left pointer forward, and if it is larger, we move the right pointer backward. This reduces the overall time complexity to \\(O(n\\log n)\\), including sorting, making it more efficient than brute force. However, if we need the original indices, we must track them while sorting.",
+      "reference_answer_id": "P001-R2",
+      "reference_match_confidence": null,
+      "target_reference_id": "P001-R2",
+      "scores": {
+        "algorithm_correctness": 90.0,
+        "logical_reasoning": 85.0,
+        "concept_coverage": 80.0,
+        "completeness": 75.0,
+        "data_structure": 80.0,
+        "complexity": 85.0,
+        "edge_cases": null
+      },
+      "primary_classification": "Partially Correct",
+      "secondary_classification": "Verbose",
+      "adaptive_classifications": [],
+      "primary_adaptive_gap": null,
+      "evidence": {
+        "algorithm_correctness": "The candidate describes sorting the array, then using two pointers moving inward based on the sum, and mentions tracking original indices, which correctly finds a pair that sums to the target and returns their original positions.",
+        "logical_reasoning": "The candidate explains that sorting enables the two‑pointer technique, and that moving the left pointer when the sum is too small and the right pointer when too large will converge to the correct pair, justifying the approach.",
+        "concept_coverage": "The answer references sorting, brute‑force, two‑pointer technique, pair sum, target value, and the need to preserve original indices, covering the main concepts required for the solution.",
+        "completeness": "The candidate outlines the overall algorithm, mentions the need to track original indices, and provides the time‑complexity claim, covering the essential steps to solve the problem, though details such as exact index tracking method are omitted.",
+        "data_structure": "The candidate states that the array is the data structure being sorted and processed, which is appropriate for the described algorithm.",
+        "complexity": "The candidate explicitly states the time complexity as O(n log n) after sorting and notes the brute‑force alternative O(n²), which correctly reflects the algorithm’s performance.",
+        "edge_cases": "The candidate does not mention any specific edge cases such as empty input, single element, duplicates, or how to handle cases where no pair exists."
+      },
+      "current_interviewer_question": "Why does iterating over all possible pairs with nested loops guarantee finding a correct pair if it exists, and how does the algorithm know when to stop?",
+      "nlp_state": {
+        "original_answer": "In the brute-force approach, we check every possible pair, which takes \\(O(n^2)\\) time. By sorting the array and using the two-pointer technique, we place one pointer at the beginning and the other at the end. If their sum equals the target, we find the answer; if the sum is smaller, we move the left pointer forward, and if it is larger, we move the right pointer backward. This reduces the overall time complexity to \\(O(n\\log n)\\), including sorting, making it more efficient than brute force. However, if we need the original indices, we must track them while sorting.",
+        "normalized_answer": "In the brute-force approach, we check every possible pair, which takes \\(O(n^2)\\) time. By sorting the array and using the two-pointer technique, we place one pointer at the beginning and the other at the end. If their sum equals the target, we find the answer; if the sum is smaller, we move the left pointer forward, and if it is larger, we move the right pointer backward. This reduces the overall time complexity to \\(O(n\\log n)\\), including sorting, making it more efficient than brute force. However, if we need the original indices, we must track them while sorting.",
+        "concepts_detected": [
+          "pair sum",
+          "target",
+          "original indices",
+          "array",
+          "brute-force",
+          "two-pointer technique",
+          "check every possible pair",
+          "sort the array",
+          "place one pointer at the beginning and the other at the end",
+          "move the left pointer forward",
+          "move the right pointer backward",
+          "track original indices while sorting"
+        ],
+        "reasoning": [
+          "Sorting plus two-pointer reduces time to O(n log n), which is more efficient than brute-force O(n^2)."
+        ],
+        "complexity_claim": {
+          "time": "O(n log n)",
+          "space": null
+        },
+        "approach": "sort array then use two-pointer technique",
+        "algorithms": [
+          "brute-force",
+          "two-pointer technique"
+        ],
+        "concepts": [
+          "pair sum",
+          "target",
+          "original indices"
+        ],
+        "operations": [
+          "check every possible pair",
+          "sort the array",
+          "place one pointer at the beginning and the other at the end",
+          "move the left pointer forward",
+          "move the right pointer backward",
+          "track original indices while sorting"
+        ],
+        "data_structures": [
+          "array"
+        ],
+        "time_complexity": "O(n log n)",
+        "space_complexity": null,
+        "edge_cases": [],
+        "reasoning_summary": "Sorting plus two-pointer reduces time to O(n log n), which is more efficient than brute-force O(n^2).",
+        "assumptions": [],
+        "optimization": true,
+        "extraction_source": "llm"
+      },
+      "evaluation_status": "assessed"
+    },
+    {
+      "turn_number": 3,
+      "candidate_answer": "My approach handles edge cases by first checking whether the array has fewer than two elements; if it does, no valid pair exists. Duplicate values are handled correctly because the two pointers can identify different elements with the same value, such as two 3s adding up to 6. Negative numbers also work because the two-pointer technique depends on the sorted order, not whether the numbers are positive or negative. To return the correct original indices after sorting, I would store each element with its original index before sorting and use those indices when the target sum is found.",
+      "reference_answer_id": "P001-R2",
+      "reference_match_confidence": null,
+      "target_reference_id": "P001-R2",
+      "scores": {
+        "algorithm_correctness": 90.0,
+        "logical_reasoning": 85.0,
+        "concept_coverage": 80.0,
+        "completeness": 75.0,
+        "data_structure": 70.0,
+        "complexity": null,
+        "edge_cases": 85.0
+      },
+      "primary_classification": "Partially Correct",
+      "secondary_classification": "Verbose",
+      "adaptive_classifications": [],
+      "primary_adaptive_gap": null,
+      "evidence": {
+        "algorithm_correctness": "The candidate describes checking array length, sorting while preserving original indices, then using a two-pointer technique to find the target sum and returning the original indices, which correctly solves the Two Sum problem.",
+        "logical_reasoning": "The candidate explains that duplicate values work because the two pointers can identify different elements with the same value and that negative numbers work because the technique relies on sorted order, providing logical justification for the approach.",
+        "concept_coverage": "The answer mentions sorting, the two-pointer technique, preserving original indices, and handling duplicates and negatives, covering the core technical concepts required for this solution.",
+        "completeness": "The candidate outlines the main steps (length check, sort with indices, two-pointer search, return indices) and discusses some edge cases, covering essential parts of a solution though it does not specify behavior when no pair is found.",
+        "data_structure": "The candidate states that each element is stored with its original index before sorting, implying use of an array of (value, index) pairs.",
+        "complexity": "The candidate does not provide any time or space complexity analysis.",
+        "edge_cases": "The candidate explicitly mentions handling arrays with fewer than two elements, duplicate values, and negative numbers as edge cases."
+      },
+      "current_interviewer_question": "How does your algorithm handle edge cases such as empty or single‑element arrays, duplicate values, negative numbers, or situations where no valid pair exists?",
+      "nlp_state": {
+        "original_answer": "My approach handles edge cases by first checking whether the array has fewer than two elements; if it does, no valid pair exists. Duplicate values are handled correctly because the two pointers can identify different elements with the same value, such as two 3s adding up to 6. Negative numbers also work because the two-pointer technique depends on the sorted order, not whether the numbers are positive or negative. To return the correct original indices after sorting, I would store each element with its original index before sorting and use those indices when the target sum is found.",
+        "normalized_answer": "My approach handles edge cases by first checking whether the array has fewer than two elements; if it does, no valid pair exists. Duplicate values are handled correctly because the two pointers can identify different elements with the same value, such as two 3s adding up to 6. Negative numbers also work because the two-pointer technique depends on the sorted order, not whether the numbers are positive or negative. To return the correct original indices after sorting, I would store each element with its original index before sorting and use those indices when the target sum is found.",
+        "concepts_detected": [
+          "sorted order",
+          "two-pointer technique",
+          "array",
+          "check if array length < 2",
+          "store each element with its original index before sorting",
+          "apply two-pointer technique to find target sum",
+          "return original indices when target sum is found"
+        ],
+        "reasoning": [
+          "Duplicate values work because the two pointers can identify different elements with the same value, and negative numbers work because the technique depends on sorted order rather than the sign of the numbers"
+        ],
+        "complexity_claim": {
+          "time": null,
+          "space": null
+        },
+        "approach": "Check array length, sort while preserving original indices, then use two-pointer technique to find the target sum and return the original indices",
+        "algorithms": [
+          "two-pointer technique"
+        ],
+        "concepts": [
+          "sorted order",
+          "two-pointer technique"
+        ],
+        "operations": [
+          "check if array length < 2",
+          "store each element with its original index before sorting",
+          "apply two-pointer technique to find target sum",
+          "return original indices when target sum is found"
+        ],
+        "data_structures": [
+          "array"
+        ],
+        "time_complexity": null,
+        "space_complexity": null,
+        "edge_cases": [
+          "array has fewer than two elements",
+          "duplicate values",
+          "negative numbers"
+        ],
+        "reasoning_summary": "Duplicate values work because the two pointers can identify different elements with the same value, and negative numbers work because the technique depends on sorted order rather than the sign of the numbers",
+        "assumptions": [],
+        "optimization": null,
+        "extraction_source": "llm"
+      },
+      "evaluation_status": "assessed"
+    }
+  ],
+  "current_interviewer_question": "What are the time and space complexities of your two‑pointer solution, and can it be further optimized?",
+  "should_continue": false
+}

@@ -44,7 +44,7 @@ def evaluate_submission(
                     "logical_reasoning": 0,
                     "concept_coverage": 0,
                     "completeness": 0,
-                    "data_structure_usage": 0,
+                    "data_structure": 0,
                     "complexity": 0,
                     "edge_cases": 0
                 },

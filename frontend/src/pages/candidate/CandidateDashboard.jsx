@@ -128,24 +128,24 @@ function CandidateDashboard() {
               {/* LEFT */}
 
               <div>
-                <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-blue-400/20 bg-blue-400/10 px-3 py-1.5">
-                  <span className="h-1.5 w-1.5 rounded-full bg-blue-400 shadow-[0_0_12px_#60a5fa]" />
-
-                  <span className="text-xs font-medium text-blue-300">
-                    Candidate Workspace
-                  </span>
-                </div>
 
                 <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
                   Good morning,
                   <span className="ml-2 text-blue-400">
-                    {user?.firstName || 'Candidate'}
+                    {user?.firstName
+                      ? user.firstName.charAt(0).toUpperCase() + user.firstName.slice(1)
+                      : 'Candidate'}
                   </span>
                 </h1>
 
                 <p className="mt-3 max-w-xl text-sm leading-6 text-zinc-400">
                   Track your interview performance, sharpen your skills,
                   and stay prepared for your next opportunity.
+                </p>
+
+                <p className="mt-3 max-w-xl text-sm italic leading-6 text-zinc-400">
+                  "Great things are done by a series of small things brought together."
+                  <span className="ml-1 text-zinc-500 not-italic">— Vincent van Gogh</span>
                 </p>
               </div>
 
@@ -200,214 +200,15 @@ function CandidateDashboard() {
 
         </div>
 
-        {/* =====================================================
-            MAIN GRID
-        ====================================================== */}
-
-        <div className="mt-8 grid gap-6 xl:grid-cols-3">
-
-          {/* ================= UPCOMING ================= */}
-
-          <div className="xl:col-span-3">
-
-            <SectionHeader
-              title="Upcoming Interview"
-              subtitle="Your next scheduled session"
-              action="View all"
-              onAction={() => navigate('/candidate/interviews')}
-            />
-
-            {upcoming ? (
-              <div className="group relative overflow-hidden rounded-2xl border border-white/[0.07] bg-[#0b0d12] transition-all duration-300 hover:border-blue-400/20 hover:bg-[#0e1118]">
-
-                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-blue-400/60 to-transparent" />
-
-                <div className="p-6 sm:p-7">
-
-                  <div className="flex flex-col justify-between gap-8 md:flex-row">
-
-                    <div>
-                      <div className="flex items-center gap-4">
-
-                        <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-blue-400/20 bg-blue-400/10 text-blue-400">
-                          <CodeIcon />
-                        </div>
-
-                        <div>
-                          <h3 className="text-lg font-semibold text-white">
-                            {upcoming.title}
-                          </h3>
-
-                          <p className="mt-1 text-sm text-zinc-500">
-                            Technical Interview Session
-                          </p>
-                        </div>
-
-                      </div>
-
-                      <div className="mt-7 flex flex-wrap gap-x-6 gap-y-3 text-sm text-zinc-400">
-
-                        <InterviewMeta
-                          icon={<CalendarIcon />}
-                          value={candidateApi.formatDate(upcoming.scheduledAt)}
-                        />
-
-                        <InterviewMeta
-                          icon={<ClockIcon />}
-                          value={candidateApi.formatTime(upcoming.scheduledAt)}
-                        />
-
-                        <InterviewMeta
-                          icon={<TimerIcon />}
-                          value={candidateApi.formatDuration(upcoming.duration)}
-                        />
-
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col items-start gap-5 md:items-end">
-
-                      <span className="rounded-full border border-blue-400/20 bg-blue-400/10 px-3 py-1.5 text-xs font-medium text-blue-300">
-                        {candidateApi.toInterviewStatusLabel(upcoming.status)}
-                      </span>
-
-                      <button
-                        type="button"
-                        onClick={() =>
-                          navigate(`/candidate/interview/${upcoming.id}`)
-                        }
-                        className="group/btn flex items-center gap-2 rounded-xl bg-blue-400 px-5 py-3 text-sm font-semibold text-black transition-all hover:bg-blue-300 hover:shadow-[0_0_30px_rgba(96,165,250,0.25)]"
-                      >
-                        View Interview
-
-                        <span className="transition-transform group-hover/btn:translate-x-1">
-                          →
-                        </span>
-                      </button>
-
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <EmptyState
-                message="No upcoming interviews scheduled."
-                action="Browse interviews"
-                onAction={() => navigate('/candidate/interviews')}
-              />
-            )}
-
-          </div>
-
-        </div>
-
-        {/* =====================================================
-            PERFORMANCE
-        ====================================================== */}
-
-        <div className="mt-10">
-
-          <SectionHeader
-            title="Performance Breakdown"
-            subtitle="Your latest interview evaluation"
-            action="View detailed results"
-            onAction={() => navigate('/candidate/results')}
+        {/* QORE Image Section */}
+        <div className="mx-auto w-full max-w-7xl overflow-hidden rounded-2xl mt-10">
+          <img
+            src="/images/qore-promo.png"
+            alt="QORE – Your AI-Powered Interview Companion"
+            className="block h-auto w-full rounded-2xl object-cover"
           />
-
-          {dimensionEntries.length > 0 ? (
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-
-              {dimensionEntries.map(([key, score]) => (
-                <DimensionCard
-                  key={key}
-                  title={DIMENSION_LABELS[key] || key}
-                  score={`${score}%`}
-                  progress={score}
-                />
-              ))}
-
-              <button
-                type="button"
-                onClick={() => navigate('/candidate/results')}
-                className="group flex min-h-[145px] flex-col items-center justify-center rounded-2xl border border-dashed border-white/10 bg-white/[0.015] p-5 transition-all hover:border-blue-400/40 hover:bg-blue-400/[0.04]"
-              >
-                <span className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 text-zinc-400 transition group-hover:border-blue-400/40 group-hover:text-blue-400">
-                  →
-                </span>
-
-                <span className="mt-3 text-sm font-medium text-zinc-400 group-hover:text-white">
-                  Full Evaluation
-                </span>
-              </button>
-
-            </div>
-          ) : (
-            <EmptyState
-              message="Complete an interview to unlock your performance insights."
-            />
-          )}
-
         </div>
 
-        {/* =====================================================
-            BOTTOM SECTION
-        ====================================================== */}
-
-        <div className="mt-10">
-
-          {/* ================= FEEDBACK ================= */}
-
-          <div>
-
-            <SectionHeader
-              title="Recent Feedback"
-              subtitle="Insights from your latest interview"
-              action="View all"
-              onAction={() => navigate('/candidate/results')}
-            />
-
-            {latestResult ? (
-              <div className="rounded-2xl border border-white/[0.07] bg-[#0b0d12] p-6">
-
-                <div className="flex gap-4">
-
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-400/10 text-blue-400">
-                    <MessageIcon />
-                  </div>
-
-                  <div>
-                    <p className="text-sm leading-7 text-zinc-400">
-                      {latestResult.feedback}
-                    </p>
-
-                    <button
-                      type="button"
-                      onClick={() =>
-                        navigate(
-                          `/candidate/results/${latestResult.interviewId}`
-                        )
-                      }
-                      className="group mt-5 inline-flex items-center gap-2 text-sm font-medium text-white"
-                    >
-                      View full feedback
-
-                      <span className="text-blue-400 transition-transform group-hover:translate-x-1">
-                        →
-                      </span>
-                    </button>
-                  </div>
-
-                </div>
-              </div>
-            ) : (
-              <EmptyState
-                message="Feedback will appear after your first completed interview."
-              />
-            )}
-
-          </div>
-
-        </div>
       </div>
     </CandidateLayout>
   )

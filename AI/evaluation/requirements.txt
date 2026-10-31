@@ -1,9 +1,6 @@
 openai
-sentence-transformers
 pydantic
 python-dotenv
-numpy
-pytest
 httpx
 fastapi
 uvicorn

@@ -1,4 +1,4 @@
-from AI.evaluation.llm.ollama_client import generate_evaluation
+from AI.evaluation.llm.groq_client import generate_evaluation
 
 
 def build_evaluation_prompt(

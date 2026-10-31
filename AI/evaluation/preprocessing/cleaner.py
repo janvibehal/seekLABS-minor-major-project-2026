@@ -1,6 +1,23 @@
 import unicodedata
 
 
+# NFKC would flatten superscripts (n\u00b2 -> n2), changing the meaning
+# of complexity claims such as O(n^2). Convert them to explicit
+# exponent notation first.
+_SUPERSCRIPT_DIGITS = str.maketrans({
+    "\u2070": "^0",
+    "\u00b9": "^1",
+    "\u00b2": "^2",
+    "\u00b3": "^3",
+    "\u2074": "^4",
+    "\u2075": "^5",
+    "\u2076": "^6",
+    "\u2077": "^7",
+    "\u2078": "^8",
+    "\u2079": "^9",
+})
+
+
 def normalize_answer(answer: str) -> dict:
     """
     Normalize a candidate's programming answer while preserving
@@ -25,7 +42,7 @@ def normalize_answer(answer: str) -> dict:
 
     normalized_answer = unicodedata.normalize(
         "NFKC",
-        answer
+        answer.translate(_SUPERSCRIPT_DIGITS)
     )
 
     # --------------------------------------------------

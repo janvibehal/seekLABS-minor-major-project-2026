@@ -1,5 +1,10 @@
 # AI Decisions - Week 1
 
+> NOTE: This file records the original Week 1 decisions. The chat/
+> extraction/evaluation LLM calls now go through Groq
+> (see `configs/ai_config.py` and `llm/groq_client.py`). Ollama is
+> still used for embeddings (`nomic-embed-text`).
+
 ## LLM
 
 - Provider: Ollama

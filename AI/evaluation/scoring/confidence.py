@@ -1,3 +1,9 @@
+from AI.evaluation.scoring.dimensions import (
+    EVALUATION_DIMENSIONS,
+    LEGACY_DIMENSION_ALIASES,
+)
+
+
 def calculate_confidence(
     llm_evaluation: dict,
     semantic_similarity: float
@@ -20,15 +26,13 @@ def calculate_confidence(
 
     scores = llm_evaluation.get("scores", {})
 
-    dimensions = [
-        "algorithm_correctness",
-        "logical_reasoning",
-        "concept_coverage",
-        "completeness",
-        "data_structure_usage",
-        "complexity",
-        "edge_cases"
-    ]
+    dimensions = EVALUATION_DIMENSIONS
+
+    legacy_keys = {
+        canonical: legacy
+        for legacy, canonical
+        in LEGACY_DIMENSION_ALIASES.items()
+    }
 
     if not scores:
         return 0.0
@@ -37,7 +41,14 @@ def calculate_confidence(
 
     for dimension in dimensions:
 
-        value = scores.get(dimension, 0)
+        value = scores.get(dimension)
+
+        # Accept the legacy key name (e.g. data_structure_usage).
+        if value is None and dimension in legacy_keys:
+            value = scores.get(legacy_keys[dimension])
+
+        if value is None:
+            value = 0
 
         # --------------------------------------------------
         # Structured score format

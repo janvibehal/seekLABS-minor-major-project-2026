@@ -1,45 +1,11 @@
 # ============================================================
-# ADAPTIVE INTERVIEW POLICY ENGINE — DATA FLOW OVERVIEW
+# ADAPTIVE INTERVIEW POLICY ENGINE
 # ============================================================
-# This module is the DECISION / ORCHESTRATION layer of the adaptive
-# interviewer. It does not itself evaluate the candidate's answer.
-#
-# High-level flow:
-#
-#   Candidate answer
-#        |
-#        v
-#   Evaluation Engine
-#        |  scores: 0-100 per dimension
-#        v
-#   PolicyEngine.decide(...)
-#        |
-#        +--> ProgressTracker   -> remembers score history
-#        +--> analyze_gaps(...) -> identifies/prioritizes weaknesses
-#        +--> RepetitionGuard   -> prevents asking the same dimension
-#        |                         too many times
-#        +--> reference metadata -> determines whether the candidate's
-#        |                         approach is progressing toward the
-#        |                         canonical/target solution
-#        +--> time + candidate level -> controls difficulty and scope
-#        |
-#        v
-#   POLICY DECISION DICT
-#   {action, target_dimension, difficulty, goal, ...}
-#        |
-#        v
-#   DOWNSTREAM INTERVIEW / QUESTION GENERATOR LAYER
-#        |
-#        v
-#   Next question shown to candidate
-#
-# IMPORTANT:
-# - `scores` enter this layer from the evaluation layer.
-# - This class decides WHAT to ask next, not the final candidate score.
-# - The returned dictionary is effectively a contract/API for the next
-#   interviewer/question-generation layer.
-# ============================================================
+
+import math
 import re
+from typing import Any
+
 from AI.adaptive.progress_tracker import ProgressTracker
 from AI.adaptive.config import (
     LOW_SCORE_THRESHOLD,
@@ -50,52 +16,23 @@ from AI.adaptive.config import (
     THIRTY_SECONDS,
     REFERENCE_CONFIDENCE_THRESHOLD,
 )
-
 from AI.adaptive.gap_analyzer import analyze_gaps
 from AI.adaptive.repetition_guard import RepetitionGuard
 
 
+CONCEPT_DIMENSION = "concept_coverage"
+
+
 class PolicyEngine:
-    # The class owns the adaptive decision policy. The interviewer
-    # controller is expected to call `decide()` after a candidate
-    # response has been evaluated.
     """
-    Decides what the adaptive interviewer should do next.
+    Select the next adaptive interview action.
 
-    Dimension scores are raw 0-100 scores produced by the
-    evaluation engine. Adaptive thresholds are therefore applied
-    directly to those scores.
-
-    Dimension weights remain available for overall scoring and
-    prioritization, but they must not be used to reinterpret an
-    individual dimension's 0-100 evaluation score.
-
-    Decides what the system should do next.
-
-    Uses:
-    - gap analysis
-    - progress tracking
-    - repetition prevention
-    - score thresholds
-    - candidate level
-    - remaining interview time
-
-    Updated reference-progression inputs:
-    - candidate state
-    - current matched reference solution
-    - reference match confidence
-    - target/optimal reference solution
-    - possible next reference solutions
-    - missing concepts
-    - hints already given
-    - remaining turns
+    decide() must be called exactly once per candidate turn. It records
+    progress and consumes repetition budget when it selects an action.
     """
 
-    # These weights describe the relative importance of evaluation
-    # dimensions for the broader scoring/prioritization system.
-    # They are NOT used here to convert a dimension's raw 0-100 score.
-    # Example: a correctness score of 70 remains 70, rather than becoming
-    # 17.5 after applying the 25% weight.
+    MAX_CLARIFICATION_ATTEMPTS = 2
+
     DIMENSION_WEIGHTS = {
         "algorithm_correctness": 25,
         "logical_reasoning": 20,
@@ -106,855 +43,714 @@ class PolicyEngine:
         "edge_cases": 10,
     }
 
-        # Runtime state is created once for an interview session.
-        # `repetition_guard` tracks which dimensions have already been
-        # targeted so the interviewer does not repeatedly probe the same
-        # weakness.
+    DIMENSION_GOALS = {
+        "algorithm_correctness": "improve_algorithm_correctness",
+        "logical_reasoning": "improve_logical_reasoning",
+        "concept_coverage": "improve_concept_coverage",
+        "completeness": "improve_completeness",
+        "data_structure": "improve_data_structure_selection",
+        "complexity": "improve_complexity_analysis",
+        "edge_cases": "improve_edge_case_handling",
+    }
+
+    DIMENSION_ALIASES = {
+        "data_structure_usage": "data_structure",
+        "data_structure_selection": "data_structure",
+        "reasoning": "logical_reasoning",
+        "edge_case_handling": "edge_cases",
+        "complexity_analysis": "complexity",
+        "correctness": "algorithm_correctness",
+        "algorithm_correctness_gap": "algorithm_correctness",
+        "logical_reasoning_gap": "logical_reasoning",
+        "concept_coverage_gap": "concept_coverage",
+        "completeness_gap": "completeness",
+        "data_structure_gap": "data_structure",
+        "complexity_gap": "complexity",
+        "edge_case_gap": "edge_cases",
+        "reasoning_gap": "logical_reasoning",
+        "concept_gap": "concept_coverage",
+    }
+
+    UNASSESSED_STATUSES = {
+        "not_assessed",
+        "unassessed",
+        "not_evaluated",
+        "pending",
+        "not_available",
+        "not_applicable",
+        "not_scored",
+    }
+
+    VALID_LEVELS = {"beginner", "easy", "medium", "hard", "advanced"}
+
     def __init__(self):
         self.repetition_guard = RepetitionGuard(
             max_revisits=MAX_DIMENSION_REVISITS
         )
-
-        # `progress_tracker` stores score history so the engine can
-        # compare the latest evaluation with earlier evaluations and
-        # determine whether a previously weak dimension has improved.
         self.progress_tracker = ProgressTracker()
+        self._clarification_attempts = 0
 
-    # ==========================================================
-    # TARGET REFERENCE SELECTION
-    # ==========================================================
+    # ========================================================
+    # COERCION HELPERS
+    # ========================================================
 
-        # INPUT FROM REFERENCE-DATA / KNOWLEDGE LAYER:
-        # `references` is expected to contain candidate/solution reference
-        # records loaded from the problem's reference-solution dataset.
-        #
-        # OUTPUT:
-        # A single Reference ID is returned. The caller can use that ID to
-        # identify the canonical target solution for this problem.
-    def select_target_reference(
-        self,
-        references: list[dict]
-    ) -> str | None:
-        """
-        Select one canonical target reference for a problem.
-
-        References are ranked using the metadata available in
-        the dataset.
-
-        Priority:
-        1. Validity/correctness metadata, if available
-        2. Better time complexity
-        3. Better space complexity
-        4. Quality/preference metadata, if available
-        5. Deterministic Reference ID ordering
-        """
-
-        if not references:
+    @staticmethod
+    def _coerce_int(value: Any) -> int | None:
+        if value is None or isinstance(value, bool):
             return None
 
-        # The dataset may contain multiple acceptable solution paths.
-        # We sort them first so that the first record is the canonical
-        # target selected by this policy.
-        ranked_references = sorted(
-            references,
-            key=self._reference_rank_key
-        )
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return None
 
-        target = ranked_references[0]
+    @staticmethod
+    def _coerce_float(value: Any) -> float | None:
+        if value is None or isinstance(value, bool):
+            return None
 
-        reference_id = target.get(
-            "Reference ID"
-        )
+        try:
+            numeric = float(value)
+        except (TypeError, ValueError):
+            return None
+
+        if not math.isfinite(numeric):
+            return None
+
+        return numeric
+
+    @classmethod
+    def _normalize_score(cls, score: Any) -> float | None:
+        """Validate a score on the evaluator's 0-100 scale."""
+
+        numeric = cls._coerce_float(score)
+
+        if numeric is None or not 0.0 <= numeric <= 100.0:
+            return None
+
+        return numeric
+
+    # ========================================================
+    # NORMALIZATION
+    # ========================================================
+
+    @staticmethod
+    def _normalize_reference_id(reference_id: Any) -> str | None:
+        """Normalize reference IDs, including accidentally quoted IDs."""
 
         if reference_id is None:
             return None
 
-        return str(
-            reference_id
-        ).strip()
+        value = str(reference_id).strip()
 
-
-    def _reference_rank_key(
-        self,
-        reference: dict
-    ) -> tuple:
-        """
-        Build a deterministic ranking key for a reference.
-
-        Lower values are better.
-        """
-
-        # First ranking signal: explicit validity/correctness metadata.
-        # This lets the system avoid selecting a reference that the dataset
-        # marks as invalid or incorrect.
-        validity_rank = self._get_validity_rank(
-            reference
-        )
-
-        # Second ranking signal: time complexity. Among otherwise
-        # equivalent references, lower asymptotic time complexity ranks first.
-        time_rank = self._complexity_rank(
-            reference.get(
-                "Time Complexity"
-            )
-        )
-
-        # Third ranking signal: space complexity.
-        space_rank = self._complexity_rank(
-            reference.get(
-                "Space Complexity"
-            )
-        )
-
-        # Fourth ranking signal: an optional dataset-provided quality/
-        # preference score.
-        quality_rank = self._get_quality_rank(
-            reference
-        )
-
-        reference_id = str(
-            reference.get(
-                "Reference ID",
-                ""
-            )
-        ).strip()
-
-        # The tuple is compared left-to-right by Python's sorting:
-        # validity -> time -> space -> quality -> Reference ID.
-        # This makes reference selection deterministic.
-        return (
-            validity_rank,
-            time_rank,
-            space_rank,
-            quality_rank,
-            reference_id
-        )
-
-
-    def _get_validity_rank(
-        self,
-        reference: dict
-    ) -> int:
-        """
-        Return a ranking based on validity/correctness metadata
-        when such metadata exists.
-
-        Lower is better.
-        """
-
-        # Different datasets may call the same concept by different
-        # column names, so the method accepts several possible metadata keys.
-        for key in (
-            "Validity",
-            "Correctness",
-            "Is Valid",
-            "Is Correct"
+        while (
+            len(value) >= 2
+            and value[0] == value[-1]
+            and value[0] in {"'", '"'}
         ):
+            value = value[1:-1].strip()
 
+        return value or None
+
+    @staticmethod
+    def _normalize_name(value: Any) -> str:
+        """Normalize a dimension or status name."""
+
+        if value is None:
+            return ""
+
+        value = str(value).strip().lower()
+        value = value.replace("-", "_").replace(" ", "_")
+        value = re.sub(r"_+", "_", value)
+
+        return value.strip("_")
+
+    @classmethod
+    def _normalize_dimension(cls, dimension: Any) -> str | None:
+        """Convert a supported dimension alias into a canonical ID."""
+
+        normalized = cls._normalize_name(dimension)
+
+        if not normalized:
+            return None
+
+        normalized = cls.DIMENSION_ALIASES.get(normalized, normalized)
+
+        if normalized in cls.DIMENSION_WEIGHTS:
+            return normalized
+
+        return None
+
+    @classmethod
+    def _normalize_level(cls, level: Any) -> str:
+        normalized = str(level or "medium").strip().lower()
+
+        return normalized if normalized in cls.VALID_LEVELS else "medium"
+
+    # ========================================================
+    # TARGET REFERENCE SELECTION
+    # ========================================================
+
+    def select_target_reference(
+        self,
+        references: list[dict],
+    ) -> str | None:
+        """
+        Select the canonical reference deterministically.
+
+        Call this once per question and pass the result to decide()
+        as target_reference_id. Do not recompute it per turn.
+        """
+
+        if not isinstance(references, list) or not references:
+            return None
+
+        valid_references = [
+            reference
+            for reference in references
+            if isinstance(reference, dict)
+            and self._normalize_reference_id(
+                reference.get("Reference ID")
+            )
+        ]
+
+        if not valid_references:
+            return None
+
+        ranked = sorted(valid_references, key=self._reference_rank_key)
+
+        return self._normalize_reference_id(
+            ranked[0].get("Reference ID")
+        )
+
+    def _reference_rank_key(self, reference: dict) -> tuple:
+        return (
+            self._get_validity_rank(reference),
+            self._complexity_rank(reference.get("Time Complexity")),
+            self._complexity_rank(reference.get("Space Complexity")),
+            self._get_quality_rank(reference),
+            self._normalize_reference_id(
+                reference.get("Reference ID")
+            ) or "",
+        )
+
+    @staticmethod
+    def _get_validity_rank(reference: dict) -> int:
+        """Lower is better. Unknown validity is neutral."""
+
+        for key in ("Validity", "Correctness", "Is Valid", "Is Correct"):
             value = reference.get(key)
 
             if value is None:
                 continue
 
-            normalized = str(
-                value
-            ).strip().lower()
+            if isinstance(value, bool):
+                return 0 if value else 1
 
-            if normalized in (
-                "true",
-                "yes",
-                "valid",
-                "correct"
-            ):
+            normalized = str(value).strip().lower()
+
+            if normalized in {"true", "yes", "valid", "correct", "1"}:
                 return 0
 
-            if normalized in (
-                "false",
-                "no",
-                "invalid",
-                "incorrect"
-            ):
+            if normalized in {"false", "no", "invalid", "incorrect", "0"}:
                 return 1
 
-        # No explicit validity metadata.
         return 0
 
+    @staticmethod
+    def _get_quality_rank(reference: dict) -> float:
+        """Lower rank is preferred for sorting."""
 
-    def _get_quality_rank(
-        self,
-        reference: dict
-    ) -> float:
-        """
-        Use preference/quality metadata if the dataset provides it.
-
-        Lower is better.
-
-        If no such metadata exists, all references remain tied
-        on this criterion.
-        """
-
-        for key in (
-            "Quality Score",
-            "Solution Quality",
-            "Reference Priority",
-            "Priority"
-        ):
-
+        for key in ("Quality Score", "Solution Quality"):
             value = reference.get(key)
 
-            if value is None:
-                continue
+            if value is not None:
+                try:
+                    return -float(value)
+                except (TypeError, ValueError):
+                    pass
 
-            try:
-                return float(value)
+        for key in ("Reference Priority", "Priority"):
+            value = reference.get(key)
 
-            except (
-                TypeError,
-                ValueError
-            ):
-                continue
+            if value is not None:
+                try:
+                    return float(value)
+                except (TypeError, ValueError):
+                    pass
 
         return 0.0
 
-
-    def _complexity_rank(
-        self,
-        complexity: object
-    ) -> tuple:
-        """
-        Convert common Big-O complexity strings into a ranking.
-
-        Lower rank means better asymptotic complexity.
-
-        Unknown complexities are ranked after recognized ones.
-        """
+    @staticmethod
+    def _complexity_rank(complexity: Any) -> tuple:
+        """Heuristic ranking of common Big-O expressions."""
 
         if complexity is None:
-            return (
-                99,
-                ""
-            )
+            return (99, "")
 
-        normalized = str(
-            complexity
-        ).lower()
+        normalized = str(complexity).lower().strip()
+        normalized = re.sub(r"\s+", "", normalized)
+        normalized = normalized.replace("²", "^2")
+        normalized = normalized.replace("³", "^3")
+        normalized = normalized.replace("**2", "^2")
+        normalized = normalized.replace("**3", "^3")
 
-        normalized = re.sub(
-            r"\s+",
-            "",
-            normalized
-        )
+        aliases = {
+            "o(1)": 0,
+            "o(logn)": 1,
+            "o(log(m+n))": 1,
+            "o(log(min(m,n)))": 1,
+            "o(n)": 2,
+            "o(m+n)": 2,
+            "o(max(m,n))": 2,
+            "o(nlogn)": 3,
+            "o(nlog(m+n))": 3,
+            "o(n^2)": 4,
+            "o(mn)": 4,
+            "o(n^3)": 5,
+            "o(2^n)": 6,
+            "exponential": 6,
+            "o(n!)": 7,
+        }
 
-        normalized = normalized.replace(
-            "average",
-            ""
-        )
+        rank = aliases.get(normalized)
 
-            # Recognized complexity strings are converted to an ordinal
-            # ranking so references can be compared consistently.
-        rankings = [
-            ("o(1)", 0),
-            ("o(logn)", 1),
-            ("o(log(m+n))", 1),
-            ("o(log(min(m,n)))", 1),
-            ("o(n)", 2),
-            ("o(m+n)", 2),
-            ("o(max(m,n))", 2),
-            ("o(nlogn)", 3),
-            ("o(nlog(m+n))", 3),
-            ("o(n^2)", 4),
-            ("o(mn)", 4),
-            ("o(n^3)", 5),
-            ("exponential", 6),
-        ]
+        if rank is not None:
+            return (rank, normalized)
 
-        for pattern, rank in rankings:
+        return (99, normalized)
 
-            if pattern == normalized:
-                return (
-                    rank,
-                    normalized
-                )
+    # ========================================================
+    # MAIN POLICY DECISION
+    # ========================================================
 
-        return (
-            99,
-            normalized
-        )
-
-    # ==========================================================
-    # MAIN DECISION
-    # ==========================================================
-
-        # ========================================================
-        # CORE INPUT CONTRACT
-        # ========================================================
-        # `scores`: output of the evaluation engine. Expected shape is
-        # approximately:
-        # {
-        #   "algorithm_correctness": {"score": 72, ...},
-        #   "logical_reasoning": {"score": 61, ...},
-        #   ...
-        # }
-        #
-        # `time_remaining`: current interview clock in seconds.
-        #
-        # Reference-related arguments describe the candidate's current
-        # solution path and where the system wants to move it.
-        #
-        # Other state (`missing_concepts`, `hints_given`, `turns_remaining`)
-        # is contextual information produced by earlier layers.
-        #
-        # OUTPUT:
-        # A policy dictionary consumed by the downstream interviewer/
-        # question-generation layer.
     def decide(
         self,
         scores: dict,
         time_remaining: int,
         candidate_level: str = "medium",
-        candidate_state: str | None = None,
-        current_reference_solution: str | None = None,
+        candidate_state: Any = None,
+        current_reference_solution: Any = None,
         reference_match_confidence: float | None = None,
-        target_reference_solution: str | None = None,
-        possible_next_reference_solutions: list[str] | None = None,
+        target_reference_solution: Any = None,
+        possible_next_reference_solutions: list | None = None,
         missing_concepts: list[str] | None = None,
         hints_given: list[str] | None = None,
         turns_remaining: int | None = None,
         current_reference_id: str | None = None,
-        target_reference_id: str | None = None
+        target_reference_id: str | None = None,
     ) -> dict:
+        """Decide the next interview action. Call once per turn."""
 
-        """
-        Generate the next adaptive policy decision.
+        scores = scores if isinstance(scores, dict) else {}
 
-        The policy first checks stopping conditions.
+        missing_concepts = (
+            list(missing_concepts)
+            if isinstance(missing_concepts, list)
+            else []
+        )
 
-        Then it determines whether the candidate's current
-        approach can be confidently identified.
-
-        If the current approach is valid but not yet optimal,
-        the policy asks a discovery question targeting the
-        next useful improvement.
-
-        Otherwise, normal gap analysis is used to identify
-        the weakest evaluation dimension.
-        """
+        hints_given = (
+            list(hints_given)
+            if isinstance(hints_given, list)
+            else []
+        )
 
         # --------------------------------------------------
-        # Rule 1: Interview time is over
+        # Rule 1: Terminal conditions
         # --------------------------------------------------
 
-            # STOP is an immediate terminal signal.
-            # DOWNSTREAM: the interview controller should end questioning
-            # and move to its closing/final-evaluation flow.
-        if time_remaining <= 0:
+        seconds_left = self._coerce_int(time_remaining)
+
+        if seconds_left is None:
+            return self._stop_decision(
+                "Time remaining is missing or invalid."
+            )
+
+        if seconds_left <= 0:
             return self._stop_decision(
                 "Interview time has ended."
             )
 
-        # Push the newly received evaluation into historical state.
-        # DOWNSTREAM WITHIN THIS CLASS:
-        # ProgressTracker.latest_scores() can later use this history to
-        # decide whether a gap has been resolved.
-        self.progress_tracker.record(scores)
+        if turns_remaining is not None:
+            remaining_turns = self._coerce_int(turns_remaining)
 
-        # GAP ANALYZER consumes the current dimension scores and returns
-        # prioritized weaknesses. This is the bridge from "how well did
-        # the candidate answer?" to "what should we probe next?"
-        gap_analysis = analyze_gaps(scores)
+            if remaining_turns is None:
+                return self._stop_decision(
+                    "Turns remaining is missing or invalid."
+                )
 
-        prioritized_gaps = (
-            gap_analysis.get(
-                "prioritized_gaps",
-                []
-            )
-            or []
-        )
-        # --------------------------------------------------
-        # Rule 2: No turns remaining
-        # --------------------------------------------------
+            if remaining_turns <= 0:
+                return self._stop_decision(
+                    "No interview turns remain."
+                )
 
-        if (
-            # No remaining turns means there is no capacity for another
-            # question, regardless of score quality.
-            turns_remaining is not None
-            and turns_remaining <= 0
-        ):
-            return self._stop_decision(
-                "No interview turns remain."
-            )
-
-        # --------------------------------------------------
-        # Step 1: Record current scores for progress tracking
-        # --------------------------------------------------
-
-        # NOTE: the supplied implementation records the same `scores`
-        # object a second time here. This appears redundant because the
-        # same `scores` were already recorded above at line 349.
-        # If `ProgressTracker.record()` appends history, this can create
-        # duplicate history entries. Consider removing one of the calls
-        # after verifying the intended tracker semantics.
-        self.progress_tracker.record(scores)
-
-        # --------------------------------------------------
-        # Step 2: Check reference-match confidence BEFORE
-        # comparing reference IDs.
-        #
-        # This check must happen first. A low-confidence match means
-        # the system is not sufficiently certain about the candidate's
-        # current approach, so it must clarify rather than act on a
-        # potentially incorrect reference match.
-        # --------------------------------------------------
-
-        if (
-            reference_match_confidence is not None
-            and reference_match_confidence < REFERENCE_CONFIDENCE_THRESHOLD
-        ):
-            return {
-                "action": "ASK_CLARIFICATION",
-                "target_dimension": None,
-                "difficulty": "easy",
-                "goal": "clarify_current_approach",
-                "hint_level": len(hints_given or []),
-                "do_not_reveal_solution": True,
-                "time_policy": self._get_time_policy(
-                    time_remaining
-                ),
-                "reason": (
-                    "The candidate's current approach could "
-                    "not be identified with sufficient confidence."
-                ),
-                "candidate_state": candidate_state,
-                "current_reference_solution":
-                    current_reference_solution,
-                "target_reference_solution":
-                    target_reference_solution,
-                "missing_concepts":
-                    missing_concepts or []
-            }
-
-        # --------------------------------------------------
-        # Step 3: Compare the candidate's current reference
-        # with the canonical target reference.
-        #
-        # Same reference ID means the candidate has reached
-        # the target approach.
-        # --------------------------------------------------
-
-        if (
-            current_reference_id is not None
-            and target_reference_id is not None
-            and current_reference_id == target_reference_id
-        ):
-            return self._stop_decision(
-                "Candidate has reached the target reference solution."
-            )
-
-        # --------------------------------------------------
-        # Candidate is on a different reference approach.
-        # Guide them toward the target.
-        # --------------------------------------------------
-
-        if (
-            current_reference_id is not None
-            and target_reference_id is not None
-            and current_reference_id != target_reference_id
-        ):
-            next_reference = None
-
-            # `possible_next_reference_solutions` comes from the
-            # reference-progression layer. The first item is treated as
-            # the next candidate target by this implementation.
-            if possible_next_reference_solutions:
-                next_reference = possible_next_reference_solutions[0]
-
-            # If missing concepts are available, target the first missing
-            # concept. Otherwise use concept coverage as the general
-            # improvement dimension.
-            target_dimension = (
-                missing_concepts[0]
-                if missing_concepts
-                else "concept_coverage"
-            )
-
-            # Read the score associated with the selected concept/dimension
-            # so difficulty can be adapted to the candidate's current level.
-            target_score = self._get_score(
-                scores,
-                target_dimension
-            )
-
-            difficulty = self._determine_difficulty(
-                candidate_level,
-                target_score
-            )
-
-            # THIS DICTIONARY IS THE MAIN HANDOFF TO THE NEXT LAYER.
-            return {
-                "action": "ASK_DISCOVERY",
-                "target_dimension": target_dimension,
-                "difficulty": difficulty,
-                "goal": f"discover_{target_dimension}",
-                "hint_level": len(hints_given or []),
-                "do_not_reveal_solution": True,
-                "time_policy": self._get_time_policy(
-                    time_remaining
-                ),
-                "reason": (
-                    "The candidate's current approach is valid "
-                    "but has not yet reached the target approach."
-                ),
-                "candidate_state": candidate_state,
-                "current_reference_solution":
-                    current_reference_solution,
-                "next_reference_solution":
-                    next_reference,
-                "target_reference_solution":
-                    target_reference_solution,
-                "missing_concepts":
-                    missing_concepts or []
-            }
-
-
-        # --------------------------------------------------
-        # Step 4: Normal gap analysis
-        #
-        # Used when:
-        # - the current approach is already optimal, or
-        # - reference-progression information is not supplied.
-        # --------------------------------------------------
-
-        # At this point reference progression did not produce a special
-        # discovery action, so the engine falls back to ordinary score-based
-        # adaptive interviewing.
-        #
-        # `analyze_gaps` -> prioritized_gaps -> repetition filter ->
-        # resolved-gap filter -> choose first remaining gap.
-        gap_analysis = analyze_gaps(scores)
-
-        prioritized_gaps = (
-            gap_analysis["prioritized_gaps"]
-        )
-
-        # --------------------------------------------------
-        # Step 5: Remove dimensions targeted too many times
-        # --------------------------------------------------
-
-            # RepetitionGuard consumes the prioritized list and removes
-            # dimensions that have already been targeted too many times.
-            # This protects the interview from repeatedly asking about one
-            # weakness while ignoring other dimensions.
-        available_gaps = (
-            self.repetition_guard.filter_available(
-                prioritized_gaps
-            )
-        )
-
-        # --------------------------------------------------
-        # Step 6: Remove gaps that are now resolved
-        # --------------------------------------------------
-
-        # A gap that was previously weak but has now crossed the follow-up
-        # threshold is removed from the active queue.
-        available_gaps = [
-            dimension
-            for dimension in available_gaps
-            if not self._is_gap_resolved(dimension)
-        ]
-
-        # ------------------------------------------------------
-        # If there are no detected gaps, do not automatically
-        # terminate because the interviewer may still need to
-        # probe unassessed dimensions.
-        # ------------------------------------------------------
-        # --------------------------------------------------
-        # Rule 3: No unresolved gaps available
-        # --------------------------------------------------
-
-            # No active weakness remains. The engine terminates instead of
-            # generating an unnecessary follow-up.
-            #
-            # Note that the comment above says the interviewer may still
-            # probe unassessed dimensions, but this implementation does not
-            # actually do that here; it returns STOP.
-        if not available_gaps:
-            return self._stop_decision(
-                "No assessed weakness requires a targeted follow-up."
-            )
-
-        # --------------------------------------------------
-        # Step 7: Select highest-priority gap
-        # --------------------------------------------------
-
-        # `analyze_gaps` has already ordered the remaining weaknesses by
-        # priority, so index 0 becomes the next dimension to probe.
-        target_dimension = available_gaps[0]
-
-        target_score = self._get_score(
-            scores,
-            target_dimension
-        )
-
-        # Clamp the evaluator's score into the expected 0-100 range.
-        # This protects threshold comparisons from malformed/out-of-range
-        # evaluator output.
-        normalized_score = self._normalize_score(
-            target_dimension,
-            target_score
-        )
-
-        # ------------------------------------------------------
-        # IMPORTANT:
-        #
-        # FOLLOW_UP_THRESHOLD is interpreted on a 0-100
-        # normalized scale.
-        # ------------------------------------------------------
-        # --------------------------------------------------
-        # Step 8: Check whether a follow-up is required
-        # --------------------------------------------------
-
-        if (
-            # If the selected weakness is no longer below the follow-up
-            # threshold, there is no reason to ask another targeted question.
-            normalized_score is not None
-            and normalized_score >= FOLLOW_UP_THRESHOLD
-        ):
-            return self._stop_decision(
-                "Selected gap is no longer below the follow-up threshold."
-            )
-
-        # --------------------------------------------------
-        # Step 9: Time-aware decision
-        # --------------------------------------------------
-
-        # Time policy is calculated before generating the next action so
-        # the downstream layer knows how aggressively it can continue.
-        time_policy = self._get_time_policy(
-            time_remaining
-        )
+        time_policy = self._get_time_policy(seconds_left)
 
         if time_policy == "STOP":
             return self._stop_decision(
                 "Not enough time to start a new topic."
             )
 
-        # --------------------------------------------------
-        # Step 10: Determine difficulty
-        # --------------------------------------------------
+        # Side effect: record progress once per turn.
+        self.progress_tracker.record(scores)
 
-        # Difficulty combines candidate level with the selected dimension's
-        # current score. This determines the difficulty metadata passed to the
-        # question generator.
-        difficulty = self._determine_difficulty(
-            candidate_level,
-            normalized_score
+        current_reference_id = self._normalize_reference_id(
+            current_reference_id
+        )
+        target_reference_id = self._normalize_reference_id(
+            target_reference_id
         )
 
-        # --------------------------------------------------
-        # Step 11: Determine follow-up goal
-        # --------------------------------------------------
-
-        # Goal describes the intended learning/evaluation operation for the
-        # next question: clarify a weak dimension or probe a moderate one.
-        goal = self._determine_goal(
-            target_dimension,
-            normalized_score
-        )
-
-        # --------------------------------------------------
-        # Step 12: Record selected dimension
-        # --------------------------------------------------
-
-        # Record the chosen dimension BEFORE returning it so the next
-        # iteration knows that this dimension has just been targeted.
-        self.repetition_guard.record_dimension(
-            target_dimension
-        )
-
-        # ========================================================
-        # FINAL OUTPUT / DOWNSTREAM CONTRACT
-        # ========================================================
-        # The caller should pass this policy object into the layer that
-        # generates the next interview question.
-        #
-        # Conceptually:
-        #
-        #   PolicyEngine.decide(...)
-        #          |
-        #          v
-        #   {
-        #       action: "ASK_FOLLOW_UP",
-        #       target_dimension: "...",
-        #       difficulty: "...",
-        #       goal: "...",
-        #       hint_level: ...,
-        #       time_policy: "...",
-        #       reference context: ...
-        #   }
-        #          |
-        #          v
-        #   Question Generator / Interview Controller
-        #          |
-        #          v
-        #   Next question -> Candidate
-        #
-        # After the candidate answers, that answer is evaluated again,
-        # producing a new `scores` object. The cycle repeats.
-        return {
-            "action": "ASK_FOLLOW_UP",
-            "target_dimension": target_dimension,
-            "difficulty": difficulty,
-            "goal": goal,
-            "hint_level": len(hints_given or []),
-            "do_not_reveal_solution": True,
+        context = {
             "time_policy": time_policy,
-            "reason": (
-                f"{target_dimension} is the highest-priority "
-                f"unresolved gap."
-            ),
+            "hint_level": len(hints_given),
             "candidate_state": candidate_state,
-            "current_reference_solution":
-                current_reference_solution,
-            "target_reference_solution":
-                target_reference_solution,
-            "missing_concepts":
-                missing_concepts or []
+            "current_reference_id": current_reference_id,
+            "target_reference_id": target_reference_id,
+            "current_reference_solution": current_reference_solution,
+            "target_reference_solution": target_reference_solution,
+            "missing_concepts": missing_concepts,
         }
 
-    # ==========================================================
-    # SCORE HELPERS
-    # ==========================================================
+        # --------------------------------------------------
+        # Rule 2: Uncertain reference match (bounded)
+        # --------------------------------------------------
 
-    def _get_score(
-        self,
-        scores: dict,
-        dimension: str
-    ) -> float | None:
+        confidence = self._coerce_float(reference_match_confidence)
 
-        # This helper is the boundary between the evaluator's score format
-        # and the policy engine's internal numeric comparisons.
+        if confidence is not None:
+            if confidence < REFERENCE_CONFIDENCE_THRESHOLD:
+                if (
+                    self._clarification_attempts
+                    < self.MAX_CLARIFICATION_ATTEMPTS
+                ):
+                    self._clarification_attempts += 1
+
+                    return self._decision(
+                        action="ASK_CLARIFICATION",
+                        target_dimension=CONCEPT_DIMENSION,
+                        difficulty="easy",
+                        goal="clarify_current_approach",
+                        reason=(
+                            "The current approach could not be identified "
+                            "with sufficient confidence."
+                        ),
+                        next_reference_solution=None,
+                        **context,
+                    )
+
+                # Clarification budget used up: continue with gap analysis
+                # rather than asking the same clarification again.
+
+            else:
+                self._clarification_attempts = 0
+
+        # --------------------------------------------------
+        # Rule 3: Honor the evaluator's explicit adaptive gap.
         #
-        # It accepts either:
-        #   "algorithm_correctness": 72
-        # or:
-        #   "algorithm_correctness": {"score": 72, ...}
-        if dimension == "data_structure":
-            dimension = "data_structure"
+        # The aggregate score map can contain historical scores for a
+        # dimension that was NOT ASSESSED on the latest turn. An explicit
+        # adaptive gap must therefore take precedence over aggregate scores.
+        # --------------------------------------------------
 
-        # Extract the dimension's value from the complete score payload.
-        value = scores.get(
-            dimension
+        explicit_gap = self._get_state_value(
+            candidate_state,
+            "primary_adaptive_gap",
         )
+        explicit_dimension = self._normalize_dimension(explicit_gap)
 
-        # ------------------------------------------------------
-        # Scores normally arrive as:
-        #
-        # {
-        #     "score": 10,
-        #     "assessment_status": "ASSESSED"
-        # }
-        #
-        # Be tolerant of a plain numeric score as well.
-        # ------------------------------------------------------
+        if (
+            explicit_dimension is not None
+            and self.repetition_guard.can_target(explicit_dimension)
+        ):
+            self.repetition_guard.record_dimension(explicit_dimension)
+            explicit_score = self._get_score(scores, explicit_dimension)
 
-            # Evaluation layer normally returns metadata alongside the
-            # score. Only the numeric `score` is needed for adaptive policy.
-        if isinstance(value, dict):
-
-            value = value.get(
-                "score"
+            return self._decision(
+                action="ASK_FOLLOW_UP",
+                target_dimension=explicit_dimension,
+                difficulty=self._determine_difficulty(
+                    candidate_level, explicit_score
+                ),
+                goal=self._determine_goal(explicit_dimension),
+                reason=(
+                    f"The evaluator explicitly identified an unresolved "
+                    f"adaptive gap: {explicit_gap}. This takes precedence "
+                    f"over historical aggregate scores."
+                ),
+                next_reference_solution=None,
+                **context,
             )
 
-        if value is None:
-            return None
+        # --------------------------------------------------
+        # Rule 4: Discovery when the approach differs from target
+        #
+        # Only probe discovery if concept_coverage is still unresolved.
+        # If it already meets the threshold, further discovery questions
+        # repeat known ground; fall through to gap analysis instead.
+        # --------------------------------------------------
 
-        try:
-            return float(value)
+        references_differ = (
+            current_reference_id is not None
+            and target_reference_id is not None
+            and current_reference_id != target_reference_id
+        )
 
-        except (
-            TypeError,
-            ValueError
+        if (
+            references_differ
+            and self._is_unresolved(CONCEPT_DIMENSION, scores)
+            and self.repetition_guard.can_target(CONCEPT_DIMENSION)
         ):
-            return None
+            score = self._get_score(scores, CONCEPT_DIMENSION)
 
-        # IMPORTANT DATA CONTRACT:
-        # The evaluator's individual dimension score remains a 0-100 score.
-        # Dimension weights are intentionally not applied here.
-    def _normalize_score(
-        self,
-        dimension: str,
-        score: float | None
-    ) -> float | None:
-        """Return the evaluator's raw 0-100 dimension score.
+            next_reference = (
+                possible_next_reference_solutions[0]
+                if possible_next_reference_solutions
+                else None
+            )
 
-        Dimension weights are used elsewhere for overall scoring and
-        prioritization. They must not rescale an individual dimension
-        score before adaptive thresholds are applied.
-        """
+            # Side effect: consume budget only when this action is chosen.
+            self.repetition_guard.record_dimension(CONCEPT_DIMENSION)
+
+            return self._decision(
+                action="ASK_DISCOVERY",
+                target_dimension=CONCEPT_DIMENSION,
+                difficulty=self._determine_difficulty(candidate_level, score),
+                goal="discover_concept_coverage",
+                reason=(
+                    "The current reference differs from the target "
+                    "reference. Probe the candidate's approach and "
+                    "conceptual understanding."
+                ),
+                next_reference_solution=next_reference,
+                **context,
+            )
+
+        # --------------------------------------------------
+        # Rules 4-5: Choose a follow-up dimension
+        # --------------------------------------------------
+
+        candidates = self._select_candidates(scores, time_policy)
+
+        if not candidates:
+            return self._stop_decision(
+                self._no_candidates_reason(scores, time_policy)
+            )
+
+        # --------------------------------------------------
+        # Rule 6: Build the follow-up decision
+        # --------------------------------------------------
+
+        target_dimension = candidates[0]
+        score = self._get_score(scores, target_dimension)
+
+        # Side effect: consume budget only when this action is chosen.
+        self.repetition_guard.record_dimension(target_dimension)
 
         if score is None:
+            reason = f"{target_dimension} has not been assessed yet."
+        else:
+            reason = (
+                f"{target_dimension} is below the follow-up threshold "
+                f"({score:.0f}/100)."
+            )
+
+        return self._decision(
+            action="ASK_FOLLOW_UP",
+            target_dimension=target_dimension,
+            difficulty=self._determine_difficulty(candidate_level, score),
+            goal=self._determine_goal(target_dimension),
+            reason=reason,
+            next_reference_solution=None,
+            **context,
+        )
+
+    # ========================================================
+    # CANDIDATE SELECTION
+    # ========================================================
+
+    def _select_candidates(
+        self,
+        scores: dict,
+        time_policy: str,
+    ) -> list[str]:
+        """
+        Return dimensions eligible for follow-up, highest priority first.
+
+        1. Unresolved gaps from gap analysis (assessed, below threshold).
+        2. If none are available and time allows, unassessed dimensions,
+           ordered by weight.
+        """
+
+        gap_analysis = analyze_gaps(scores) or {}
+
+        prioritized = (
+            gap_analysis.get("prioritized_gaps", [])
+            if isinstance(gap_analysis, dict)
+            else []
+        )
+
+        if not isinstance(prioritized, list):
+            prioritized = []
+
+        unresolved_gaps = [
+            dimension
+            for dimension in self._unique_dimensions(prioritized)
+            if self._is_unresolved(dimension, scores)
+        ]
+
+        candidates = self._unique_dimensions(
+            self.repetition_guard.filter_available(unresolved_gaps)
+        )
+
+        if candidates or time_policy == "URGENT":
+            return candidates
+
+        unassessed = sorted(
+            self._get_unassessed_dimensions(scores),
+            key=lambda dimension: -self.DIMENSION_WEIGHTS[dimension],
+        )
+
+        return self._unique_dimensions(
+            self.repetition_guard.filter_available(unassessed)
+        )
+
+    def _no_candidates_reason(
+        self,
+        scores: dict,
+        time_policy: str,
+    ) -> str:
+        all_resolved = all(
+            not self._is_unresolved(dimension, scores)
+            for dimension in self.DIMENSION_WEIGHTS
+        )
+
+        if all_resolved:
+            return "All dimensions meet the follow-up threshold."
+
+        if time_policy == "URGENT":
+            return "Too little time remains to open new dimensions."
+
+        return "Remaining dimensions have reached their revisit limit."
+
+    @staticmethod
+    def _get_state_value(state: Any, key: str) -> Any:
+        """Read a value from either a state object or a state dictionary."""
+        if isinstance(state, dict):
+            return state.get(key)
+        return getattr(state, key, None) if state is not None else None
+
+    # ========================================================
+    # SCORE HELPERS
+    # ========================================================
+
+    @classmethod
+    def _get_assessment_status(cls, value: Any) -> str | None:
+        if not isinstance(value, dict):
             return None
 
-        return max(
-            0.0,
-            min(
-                100.0,
-                float(score)
-            )
-        )
+        for key in (
+            "assessment_status",
+            "assessment_status_label",
+            "status",
+        ):
+            status = value.get(key)
 
-    # ==========================================================
-    # GAP RESOLUTION
-    # ==========================================================
+            if status is not None:
+                return cls._normalize_name(status)
 
-    def _is_gap_resolved(
-        self,
-        dimension: str
-    ) -> bool:
+        return None
 
-        # Read the most recent evaluation from ProgressTracker rather than
-        # relying only on the current local score. This allows the engine to
-        # decide whether a previously targeted weakness has been fixed.
-        latest_scores = (
-            self.progress_tracker.latest_scores()
-        )
+    @classmethod
+    def _extract_valid_score(cls, value: Any) -> float | None:
+        """Return a valid assessed score from a raw score entry."""
 
-        if latest_scores is None:
-            return False
+        if isinstance(value, dict):
+            status = cls._get_assessment_status(value)
 
-        latest_score = self._get_score(
-            latest_scores,
+            if status in cls.UNASSESSED_STATUSES:
+                return None
+
+            value = value.get("score")
+
+        return cls._normalize_score(value)
+
+    @classmethod
+    def _get_score(cls, scores: dict, dimension: str) -> float | None:
+        """
+        Return the valid assessed score for a dimension, or None.
+
+        Only the scores passed in are used. The canonical key is checked
+        first, then any alias keys that map to the same dimension.
+        """
+
+        if not isinstance(scores, dict):
+            return None
+
+        canonical = cls._normalize_dimension(dimension)
+
+        if canonical is None:
+            return None
+
+        keys = [canonical]
+
+        for key in scores:
+            if (
+                isinstance(key, str)
+                and key != canonical
+                and cls._normalize_dimension(key) == canonical
+            ):
+                keys.append(key)
+
+        for key in keys:
+            if key not in scores:
+                continue
+
+            score = cls._extract_valid_score(scores[key])
+
+            if score is not None:
+                return score
+
+        return None
+
+    @classmethod
+    def _get_unassessed_dimensions(cls, scores: dict) -> list[str]:
+        return [
             dimension
-        )
+            for dimension in cls.DIMENSION_WEIGHTS
+            if cls._get_score(scores, dimension) is None
+        ]
 
-        normalized_score = self._normalize_score(
-            dimension,
-            latest_score)
-        if latest_score is None:
-            return False
+    @classmethod
+    def _unique_dimensions(cls, dimensions: list) -> list[str]:
+        result = []
+        seen = set()
 
-        # A dimension is considered resolved once its latest score reaches
-        # the configured follow-up threshold.
-        return (
-            normalized_score is not None
-            and normalized_score >= FOLLOW_UP_THRESHOLD
-        )
+        for dimension in dimensions:
+            canonical = cls._normalize_dimension(dimension)
 
-    # ==========================================================
+            if canonical is None or canonical in seen:
+                continue
+
+            seen.add(canonical)
+            result.append(canonical)
+
+        return result
+
+    def _is_unresolved(self, dimension: str, scores: dict) -> bool:
+        """Unresolved means unassessed or below the follow-up threshold."""
+
+        score = self._get_score(scores, dimension)
+
+        return score is None or score < FOLLOW_UP_THRESHOLD
+
+    # ========================================================
     # TIME POLICY
-    # ==========================================================
+    # ========================================================
 
-    def _get_time_policy(
-        self,
-        time_remaining: int
-    ) -> str:
-        """
-        Determine the adaptive strategy based on remaining interview time.
-        """
-
-        if time_remaining <= 0:
-            return "STOP"
-
+    @staticmethod
+    def _get_time_policy(time_remaining: int) -> str:
         if time_remaining <= THIRTY_SECONDS:
             return "STOP"
 
@@ -966,114 +762,102 @@ class PolicyEngine:
 
         return "LIMITED"
 
-    # ==========================================================
+    # ========================================================
+    # DIFFICULTY AND GOAL
+    # ========================================================
 
     def _determine_difficulty(
         self,
         candidate_level: str,
-        score: float | None
+        score: float | None,
     ) -> str:
-        """
-        Determine the difficulty metadata for the next question.
+        level = self._normalize_level(candidate_level)
+        validated = self._normalize_score(score)
 
-        Candidate level provides the baseline. The current weakness score
-        then adjusts the question so that a very weak area is not probed
-        with an unnecessarily difficult question, while a stronger candidate
-        can receive a more demanding probe.
+        if validated is None:
+            return "easy" if level in {"beginner", "easy"} else "medium"
 
-        Returns one of: easy, medium, hard.
-        """
-
-        level = str(candidate_level or "medium").strip().lower()
-
-        if level not in {"beginner", "easy", "medium", "hard", "advanced"}:
-            level = "medium"
-
-        normalized_score = (
-            self._normalize_score("", score)
-            if score is not None
-            else None
-        )
-
-        # Very weak dimension: keep the probe accessible.
-        if normalized_score is not None and normalized_score < LOW_SCORE_THRESHOLD:
+        if validated < LOW_SCORE_THRESHOLD:
             return "easy"
 
-        # Strong performance: allow a harder probe when the candidate level
-        # supports it.
-        if normalized_score is not None and normalized_score >= FOLLOW_UP_THRESHOLD:
+        if validated >= FOLLOW_UP_THRESHOLD:
             if level in {"hard", "advanced"}:
                 return "hard"
-            if level == "medium":
-                return "medium"
-            return "easy"
 
-        # Moderate weakness: preserve the candidate's baseline without
-        # exceeding the supported difficulty range.
+            if level in {"beginner", "easy"}:
+                return "easy"
+
+            return "medium"
+
         if level in {"hard", "advanced"}:
             return "hard"
+
         if level in {"beginner", "easy"}:
             return "easy"
 
         return "medium"
 
-    def _determine_goal(
-        self,
-        target_dimension: str,
-        score: float | None
-    ) -> str:
-        """
-        Convert an evaluation dimension into a stable downstream goal.
+    def _determine_goal(self, target_dimension: str) -> str:
+        canonical = self._normalize_dimension(target_dimension)
 
-        The question-generation layer uses this goal as intent metadata;
-        it should not be interpreted as the final evaluation result.
-        """
+        if canonical is None:
+            return "improve_technical_reasoning"
 
-        dimension = str(target_dimension or "").strip().lower()
-
-        goal_map = {
-            "algorithm_correctness": "improve_algorithm_correctness",
-            "logical_reasoning": "improve_logical_reasoning",
-            "concept_coverage": "improve_concept_coverage",
-            "completeness": "improve_completeness",
-            "data_structure": "improve_data_structure_selection",
-            "complexity": "improve_complexity_analysis",
-            "edge_cases": "improve_edge_case_handling",
-        }
-
-        return goal_map.get(
-            dimension,
-            f"improve_{dimension}" if dimension else "improve_technical_reasoning"
+        return self.DIMENSION_GOALS.get(
+            canonical,
+            "improve_technical_reasoning",
         )
 
-    # ==========================================================
-    # STOP DECISION HELPER
-    # ==========================================================
+    # ========================================================
+    # RESPONSE CONTRACT
+    # ========================================================
 
-    def _stop_decision(
-        self,
-        reason: str
+    @staticmethod
+    def _decision(
+        *,
+        action: str,
+        target_dimension: str | None,
+        difficulty: str | None,
+        goal: str,
+        reason: str,
+        hint_level: int,
+        time_policy: str,
+        candidate_state: Any = None,
+        current_reference_id: str | None = None,
+        target_reference_id: str | None = None,
+        current_reference_solution: Any = None,
+        next_reference_solution: Any = None,
+        target_reference_solution: Any = None,
+        missing_concepts: list | None = None,
     ) -> dict:
-        """
-        Build the terminal policy contract.
-
-        This keeps terminal responses consistent across all stopping
-        conditions and avoids duplicating the same dictionary throughout
-        `decide()`.
-        """
-
         return {
-            "action": "STOP",
-            "target_dimension": None,
-            "difficulty": None,
-            "goal": "complete_interview",
-            "hint_level": 0,
+            "action": action,
+            "target_dimension": target_dimension,
+            "difficulty": difficulty,
+            "goal": goal,
+            "hint_level": hint_level,
             "do_not_reveal_solution": True,
-            "time_policy": "STOP",
-            "reason": str(reason),
-            "candidate_state": None,
-            "current_reference_solution": None,
-            "target_reference_solution": None,
-            "next_reference_solution": None,
-            "missing_concepts": [],
+            "time_policy": time_policy,
+            "reason": reason,
+            "candidate_state": candidate_state,
+            "current_reference_id": current_reference_id,
+            "target_reference_id": target_reference_id,
+            "current_reference_solution": current_reference_solution,
+            "next_reference_solution": next_reference_solution,
+            "target_reference_solution": target_reference_solution,
+            "missing_concepts": (
+                list(missing_concepts) if missing_concepts else []
+            ),
         }
+
+    @classmethod
+    def _stop_decision(cls, reason: str) -> dict:
+        return cls._decision(
+            action="STOP",
+            target_dimension=None,
+            difficulty=None,
+            goal="complete_interview",
+            reason=str(reason),
+            hint_level=0,
+            time_policy="STOP",
+        )

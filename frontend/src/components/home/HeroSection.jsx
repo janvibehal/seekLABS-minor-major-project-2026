@@ -63,7 +63,7 @@ function HeroSection() {
                     <span className="h-1.5 w-1.5 rounded-full bg-white" />
 
                     <span className="text-[10px] uppercase tracking-[0.25em] text-white/40">
-                        SeekLABS - Adaptive Technical Interviews
+                        Qore - Adaptive Technical Interviews
                     </span>
 
                 </motion.div>
@@ -120,7 +120,7 @@ function HeroSection() {
                     className="mt-8 max-w-xl text-center text-sm leading-7 text-white/50"
                 >
 
-                    SeekLABS transform technical assessments into
+                    Qore transform technical assessments into
                     adaptive conversations that evaluate reasoning,
                     decision-making, and problem-solving ability.
 
@@ -222,7 +222,7 @@ function HeroSection() {
                             {/* Title */}
 
                             <span className="text-[9px] uppercase tracking-[0.18em] text-white/25">
-                                SeekLABS / Live Session
+                                Qore / Live Session
                             </span>
 
 

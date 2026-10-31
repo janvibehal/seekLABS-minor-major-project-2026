@@ -1,0 +1,106 @@
+{
+  "candidate_id": "cli_candidate",
+  "question_id": "cli714dc5ab581f_q1",
+  "reference_answer_id": "P001-R1",
+  "reference_match_confidence": null,
+  "target_reference_id": "P001-R3",
+  "current_answer": "The Two Sum problem can be solved using three main approaches. Brute Force: Use two nested loops to check every pair of elements and return the indices when their sum equals the target; this takes O(n2) time and O(1) extra space.",
+  "nlp_state": {
+    "approach": "Brute Force",
+    "algorithms": [
+      "Brute Force"
+    ],
+    "concepts": [
+      "nested loops",
+      "pairwise sum check"
+    ],
+    "operations": [
+      "check every pair of elements",
+      "return the indices when their sum equals the target"
+    ],
+    "data_structures": [],
+    "time_complexity": "O(n2)",
+    "space_complexity": "O(1)",
+    "edge_cases": [],
+    "reasoning_summary": null,
+    "assumptions": [],
+    "optimization": null
+  },
+  "scores": {
+    "algorithm_correctness": null,
+    "logical_reasoning": null,
+    "concept_coverage": null,
+    "completeness": null,
+    "data_structure": null,
+    "complexity": null,
+    "edge_cases": null
+  },
+  "primary_classification": "Partially Correct",
+  "secondary_classification": null,
+  "adaptive_classifications": [],
+  "primary_adaptive_gap": null,
+  "evidence": {
+    "algorithm_correctness": "The evaluation could not be completed.",
+    "logical_reasoning": "The evaluation could not be completed.",
+    "concept_coverage": "The evaluation could not be completed.",
+    "completeness": "The evaluation could not be completed.",
+    "data_structure": "The evaluation could not be completed.",
+    "complexity": "The evaluation could not be completed.",
+    "edge_cases": "The evaluation could not be completed."
+  },
+  "history": [
+    {
+      "turn_number": 1,
+      "candidate_answer": "The Two Sum problem can be solved using three main approaches. Brute Force: Use two nested loops to check every pair of elements and return the indices when their sum equals the target; this takes O(n2) time and O(1) extra space.",
+      "reference_answer_id": "P001-R1",
+      "reference_match_confidence": null,
+      "target_reference_id": "P001-R3",
+      "scores": {
+        "algorithm_correctness": null,
+        "logical_reasoning": null,
+        "concept_coverage": null,
+        "completeness": null,
+        "data_structure": null,
+        "complexity": null,
+        "edge_cases": null
+      },
+      "primary_classification": "Partially Correct",
+      "secondary_classification": null,
+      "adaptive_classifications": [],
+      "primary_adaptive_gap": null,
+      "evidence": {
+        "algorithm_correctness": "The evaluation could not be completed.",
+        "logical_reasoning": "The evaluation could not be completed.",
+        "concept_coverage": "The evaluation could not be completed.",
+        "completeness": "The evaluation could not be completed.",
+        "data_structure": "The evaluation could not be completed.",
+        "complexity": "The evaluation could not be completed.",
+        "edge_cases": "The evaluation could not be completed."
+      },
+      "current_interviewer_question": "Please explain your approach for solving Two Sum.",
+      "nlp_state": {
+        "approach": "Brute Force",
+        "algorithms": [
+          "Brute Force"
+        ],
+        "concepts": [
+          "nested loops",
+          "pairwise sum check"
+        ],
+        "operations": [
+          "check every pair of elements",
+          "return the indices when their sum equals the target"
+        ],
+        "data_structures": [],
+        "time_complexity": "O(n2)",
+        "space_complexity": "O(1)",
+        "edge_cases": [],
+        "reasoning_summary": null,
+        "assumptions": [],
+        "optimization": null
+      }
+    }
+  ],
+  "current_interviewer_question": "What data structure would support your approach, and why would it be appropriate?",
+  "should_continue": true
+}

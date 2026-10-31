@@ -16,7 +16,7 @@ import json
 from typing import Any, Dict, List, Optional
 
 from AI.evaluation.configs.ai_config import EXTRACTOR_MODEL
-from AI.evaluation.llm.ollama_client import generate_structured_json
+from AI.evaluation.llm.groq_client import generate_structured_json
 
 
 # ============================================================

@@ -1,21 +1,15 @@
 import json
 
-from AI.evaluation.llm.ollama_client import generate_evaluation
+from AI.evaluation.llm.groq_client import generate_evaluation
+from AI.evaluation.scoring.dimensions import EVALUATION_DIMENSIONS
 
 
 # ============================================================
 # EVALUATION DIMENSIONS
 # ============================================================
 
-EVALUATION_DIMENSIONS = [
-    "algorithm_correctness",
-    "logical_reasoning",
-    "concept_coverage",
-    "completeness",
-    "data_structure",
-    "complexity",
-    "edge_cases",
-]
+# EVALUATION_DIMENSIONS is imported from
+# AI.evaluation.scoring.dimensions (single source of truth).
 
 
 # ============================================================
@@ -47,6 +41,9 @@ def _empty_evaluation(error_message: str) -> dict:
             for dimension in EVALUATION_DIMENSIONS
         },
         "errors": [error_message],
+        # Lets callers (e.g. the API) distinguish a failed evaluation
+        # from a genuine all-NOT_ASSESSED result.
+        "evaluation_failed": True,
     }
 
 
@@ -229,6 +226,17 @@ def _build_evaluation_prompt(
         candidate_features
     )
 
+    # The rubric section is included only when a rubric is supplied.
+    rubric_section = ""
+
+    if rubric is not None:
+        rubric_section = (
+            "============================================================\n"
+            "EVALUATION RUBRIC\n"
+            "============================================================\n\n"
+            f"{json.dumps(rubric, ensure_ascii=False, indent=2)}\n\n"
+        )
+
     return f"""
 You are an AI coding interview evaluator.
 
@@ -254,13 +262,7 @@ REFERENCE SOLUTION
 
 {json.dumps(reference_solution, ensure_ascii=False, indent=2)}
 
-============================================================
-EVALUATION RUBRIC
-============================================================
-
-{json.dumps(rubric, ensure_ascii=False, indent=2)}
-
-============================================================
+{rubric_section}============================================================
 CANDIDATE ANSWER
 ============================================================
 
@@ -1026,7 +1028,7 @@ def evaluate_with_llm(
     )
 
     # --------------------------------------------------
-    # Call central Ollama evaluation client
+    # Call central LLM evaluation client
     # --------------------------------------------------
 
     try:

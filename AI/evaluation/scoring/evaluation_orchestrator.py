@@ -340,8 +340,7 @@ def evaluate_candidate_turn(
     print()
     print("=" * 60)
     print(
-        f"TURN {current_turn}"
-        .center(60)
+        f"TURN {current_turn}".center(60)
     )
     print("=" * 60)
 
@@ -399,7 +398,22 @@ def evaluate_candidate_turn(
         matched_reference_id
     )
 
-    state.reference_match_confidence = match_confidence
+    print(
+        "[DEBUG] Matched reference ID:",
+        repr(matched_reference_id)
+    )
+
+    print(
+        "[DEBUG] Available reference IDs:",
+        [
+            repr(
+                reference.get("Reference ID")
+                or reference.get("reference_id")
+            )
+            for reference in reference_solutions
+            if isinstance(reference, dict)
+        ]
+    )
 
     _print_section(
         "REFERENCE MATCH"
@@ -412,7 +426,7 @@ def evaluate_candidate_turn(
 
     print(
         f"{'Confidence':<24}: "
-        f"{_display(None)}"
+        f"{_display(match_confidence)}"
     )
 
     # ==================================================
@@ -742,9 +756,17 @@ def evaluate_candidate_turn(
     # 10. STORE REAL GAP
     # ==================================================
 
-    state.primary_adaptive_gap = (
+    # Persist either a scored adaptive classification or the unassessed
+    # dimension selected for probing. The policy engine needs this explicit
+    # signal because cumulative scores may still contain an older score for
+    # a dimension that was not assessed on the latest turn.
+    effective_adaptive_gap = (
         primary_adaptive_gap
+        if primary_adaptive_gap
+        else adaptive_probe
     )
+
+    state.primary_adaptive_gap = effective_adaptive_gap
 
     # ==================================================
     # 11. UPDATE HISTORY
@@ -754,7 +776,7 @@ def evaluate_candidate_turn(
 
         state.history[-1][
             "primary_adaptive_gap"
-        ] = primary_adaptive_gap
+        ] = effective_adaptive_gap
 
     # ==================================================
     # 12. CONTINUE / STOP

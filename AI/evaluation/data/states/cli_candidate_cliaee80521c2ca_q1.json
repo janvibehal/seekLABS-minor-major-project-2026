@@ -1,0 +1,160 @@
+{
+  "candidate_id": "cli_candidate",
+  "question_id": "cliaee80521c2ca_q1",
+  "reference_answer_id": "P001-R1",
+  "reference_match_confidence": 0.95,
+  "target_reference_id": "P001-R3",
+  "current_answer": "This approach might take more time for a large array, but I think it’s a good starting point. After that, I can try to think of a more optimized solution.",
+  "nlp_state": {
+    "approach": "This approach might take more time for a large array, but I think it's a good starting point.",
+    "algorithms": [],
+    "concepts": [
+      "sum",
+      "indices"
+    ],
+    "operations": [
+      "take the first element",
+      "check it with all the elements after it",
+      "return their indices",
+      "move to the next element"
+    ],
+    "data_structures": [],
+    "time_complexity": null,
+    "space_complexity": null,
+    "edge_cases": [],
+    "reasoning_summary": "Check each pair of elements by summing the first element with each subsequent element to see if it equals the target. It might take more time for a large array, but it's a good starting point.",
+    "assumptions": [],
+    "optimization": null
+  },
+  "scores": {
+    "algorithm_correctness": 100.0,
+    "logical_reasoning": null,
+    "concept_coverage": 70.0,
+    "completeness": 30.0,
+    "data_structure": null,
+    "complexity": null,
+    "edge_cases": null
+  },
+  "primary_classification": "Partially Correct",
+  "secondary_classification": null,
+  "adaptive_classifications": [
+    "Completeness Gap"
+  ],
+  "primary_adaptive_gap": "Completeness Gap",
+  "evidence": {
+    "algorithm_correctness": "The extracted operations indicate the candidate described checking each pair of elements and returning indices when the sum equals the target, which correctly solves the Two Sum problem.",
+    "logical_reasoning": "The candidate did not provide any explanation of why the approach works.",
+    "concept_coverage": "The candidate mentioned the concepts of summing values and returning indices, which are the core concepts needed for the Two Sum problem.",
+    "completeness": "The candidate's answer lacks a detailed algorithmic description, steps, or result production, indicating an incomplete solution.",
+    "data_structure": "The candidate did not mention any data structure usage.",
+    "complexity": "The candidate did not discuss time or space complexity.",
+    "edge_cases": "The candidate did not address any edge cases."
+  },
+  "history": [
+    {
+      "turn_number": 1,
+      "candidate_answer": "So, my first thought is to take the first element and check it with all the elements after it. If their sum equals the target, I can return their indices.",
+      "reference_answer_id": "P001-R1",
+      "reference_match_confidence": 0.9,
+      "target_reference_id": "P001-R3",
+      "scores": {
+        "algorithm_correctness": 0.0,
+        "logical_reasoning": 20.0,
+        "concept_coverage": 20.0,
+        "completeness": 20.0,
+        "data_structure": null,
+        "complexity": null,
+        "edge_cases": null
+      },
+      "primary_classification": "Incorrect",
+      "secondary_classification": null,
+      "adaptive_classifications": [],
+      "primary_adaptive_gap": null,
+      "evidence": {
+        "algorithm_correctness": "The candidate describes only checking the first element against all subsequent elements, which would miss any valid pair that does not involve the first element.",
+        "logical_reasoning": "The candidate states that if the sum equals the target, the indices can be returned, but does not explain why this approach would find all solutions or why it is sufficient.",
+        "concept_coverage": "The candidate mentions the concepts of \"sum\" and \"indices\", but does not reference any other relevant concepts such as iteration or pairwise comparison.",
+        "completeness": "The answer lacks discussion of loops, termination conditions, handling of multiple pairs, or how to proceed after finding a match.",
+        "data_structure": "The candidate does not provide any evidence of using or choosing a data structure.",
+        "complexity": "No time or space complexity is mentioned or implied in the answer.",
+        "edge_cases": "The candidate does not discuss or imply handling of empty input, single-element arrays, or other edge conditions."
+      },
+      "current_interviewer_question": "Please explain your approach for solving Two Sum.",
+      "nlp_state": {
+        "approach": "take the first element and check it with all the elements after it; if their sum equals the target, return their indices",
+        "algorithms": [],
+        "concepts": [
+          "sum",
+          "indices"
+        ],
+        "operations": [
+          "take the first element",
+          "check it with all the elements after it",
+          "return their indices"
+        ],
+        "data_structures": [],
+        "time_complexity": null,
+        "space_complexity": null,
+        "edge_cases": [],
+        "reasoning_summary": "Check each pair of elements by summing the first element with each subsequent element to see if it equals the target.",
+        "assumptions": [],
+        "optimization": null
+      }
+    },
+    {
+      "turn_number": 2,
+      "candidate_answer": "This approach might take more time for a large array, but I think it’s a good starting point. After that, I can try to think of a more optimized solution.",
+      "reference_answer_id": "P001-R1",
+      "reference_match_confidence": 0.95,
+      "target_reference_id": "P001-R3",
+      "scores": {
+        "algorithm_correctness": 100.0,
+        "logical_reasoning": null,
+        "concept_coverage": 70.0,
+        "completeness": 30.0,
+        "data_structure": null,
+        "complexity": null,
+        "edge_cases": null
+      },
+      "primary_classification": "Partially Correct",
+      "secondary_classification": null,
+      "adaptive_classifications": [
+        "Completeness Gap"
+      ],
+      "primary_adaptive_gap": "Completeness Gap",
+      "evidence": {
+        "algorithm_correctness": "The extracted operations indicate the candidate described checking each pair of elements and returning indices when the sum equals the target, which correctly solves the Two Sum problem.",
+        "logical_reasoning": "The candidate did not provide any explanation of why the approach works.",
+        "concept_coverage": "The candidate mentioned the concepts of summing values and returning indices, which are the core concepts needed for the Two Sum problem.",
+        "completeness": "The candidate's answer lacks a detailed algorithmic description, steps, or result production, indicating an incomplete solution.",
+        "data_structure": "The candidate did not mention any data structure usage.",
+        "complexity": "The candidate did not discuss time or space complexity.",
+        "edge_cases": "The candidate did not address any edge cases."
+      },
+      "current_interviewer_question": "What is the time and space complexity of the approach you described, and can you think of a way to reduce either of them? If so, how would you modify the algorithm?",
+      "nlp_state": {
+        "approach": "This approach might take more time for a large array, but I think it's a good starting point.",
+        "algorithms": [],
+        "concepts": [
+          "sum",
+          "indices"
+        ],
+        "operations": [
+          "take the first element",
+          "check it with all the elements after it",
+          "return their indices",
+          "move to the next element"
+        ],
+        "data_structures": [],
+        "time_complexity": null,
+        "space_complexity": null,
+        "edge_cases": [],
+        "reasoning_summary": "Check each pair of elements by summing the first element with each subsequent element to see if it equals the target. It might take more time for a large array, but it's a good starting point.",
+        "assumptions": [],
+        "optimization": null
+      }
+    }
+  ],
+  "current_interviewer_question": "Could you describe the step-by-step process you would use to implement your two-sum solution, including how you would read the input array and produce the output indices?",
+  "should_continue": true
+}

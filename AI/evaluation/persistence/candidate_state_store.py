@@ -14,18 +14,28 @@ class CandidateStateStore:
 
     One file represents one candidate/question pair.
 
-    Default location:
-        evaluation/data/states/
+    Default location (independent of the current working directory):
+        <evaluation package dir>/data/states/
 
     The save() method returns the actual path so the caller can verify
     where the state was written.
     """
 
+    DEFAULT_ROOT_DIR = (
+        Path(__file__).resolve().parent.parent
+        / "data"
+        / "states"
+    )
+
     def __init__(
         self,
-        root_dir: str = "evaluation/data/states"
+        root_dir: str | None = None
     ):
-        self.root_dir = Path(root_dir)
+        self.root_dir = (
+            Path(root_dir)
+            if root_dir is not None
+            else self.DEFAULT_ROOT_DIR
+        )
         self.root_dir.mkdir(
             parents=True,
             exist_ok=True

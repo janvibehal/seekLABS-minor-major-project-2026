@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import CandidateLayout from '../../components/layout/CandidateLayout'
 import * as candidateApi from '../../api/candidate.api.js'
 
 const DIMENSION_META = {
@@ -60,11 +59,15 @@ function CandidateResults() {
 
         if (cancelled) return
 
-        setResults(Array.isArray(resultsList) ? resultsList : [])
+        const safeResults = Array.isArray(resultsList)
+          ? resultsList
+          : []
 
-        if (resultsList?.length > 0) {
+        setResults(safeResults)
+
+        if (safeResults.length > 0) {
           const detail = await candidateApi.getResultDetail(
-            resultsList[0].interviewId
+            safeResults[0].interviewId
           )
 
           if (!cancelled) {
@@ -89,83 +92,70 @@ function CandidateResults() {
     }
   }, [])
 
+  // LOADING STATE
   if (loading) {
     return (
-      <CandidateLayout>
-        <div className="flex h-80 items-center justify-center">
-          <div className="flex flex-col items-center gap-4">
-            <span className="h-10 w-10 animate-spin rounded-full border-2 border-violet-500/20 border-t-violet-400" />
-
-            <p className="text-sm text-slate-500">
-              Loading your performance...
-            </p>
-          </div>
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <span className="h-9 w-9 animate-spin rounded-full border-2 border-blue-400/20 border-t-blue-400" />
+          <p className="text-sm text-zinc-500">
+            Loading your results...
+          </p>
         </div>
-      </CandidateLayout>
+      </div>
     )
   }
 
+  // ERROR STATE
   if (error) {
     return (
-      <CandidateLayout>
-        <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-6">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-500/10 text-red-400">
-              !
-            </div>
+      <div className="rounded-2xl border border-red-500/20 bg-red-500/[0.06] p-5">
+        <div className="flex items-start gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-red-500/10 text-red-400">
+            !
+          </div>
 
-            <div>
-              <p className="font-semibold text-red-400">
-                Unable to load results
-              </p>
-
-              <p className="mt-1 text-sm text-red-300/70">
-                {error}
-              </p>
-            </div>
+          <div>
+            <p className="font-semibold text-red-400">
+              Unable to load results
+            </p>
+            <p className="mt-1 text-sm text-red-300/70">
+              {error}
+            </p>
           </div>
         </div>
-      </CandidateLayout>
+      </div>
     )
   }
 
+  // EMPTY STATE
   if (results.length === 0) {
     return (
-      <CandidateLayout>
-        <div className="mx-auto flex min-h-[70vh] max-w-xl items-center justify-center">
-
-          <div className="w-full rounded-3xl border border-white/[0.08] bg-[#111827] p-10 text-center shadow-2xl">
-
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-violet-500/10 text-violet-400">
-              <ChartIcon />
-            </div>
-
-            <p className="mt-8 text-xs font-semibold uppercase tracking-[0.2em] text-violet-400">
-              Performance
-            </p>
-
-            <h1 className="mt-3 text-2xl font-bold tracking-tight text-white">
-              No results yet
-            </h1>
-
-            <p className="mx-auto mt-3 max-w-sm text-sm leading-6 text-slate-400">
-              Complete an interview and your AI-powered performance
-              analysis will appear here.
-            </p>
-
-            <button
-              type="button"
-              onClick={() => navigate('/candidate/interviews')}
-              className="mt-7 rounded-xl bg-violet-500 px-6 py-3 text-sm font-semibold text-white transition hover:bg-violet-400 hover:shadow-lg hover:shadow-violet-500/20"
-            >
-              View Interviews
-              <span className="ml-2">→</span>
-            </button>
-
+      <div className="flex min-h-[65vh] items-center justify-center">
+        <div className="w-full max-w-md rounded-2xl border border-white/[0.07] bg-[#10141b] px-6 py-10 text-center">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-400/[0.08] text-blue-400">
+            <ChartIcon />
           </div>
 
+          <h1 className="mt-6 text-xl font-semibold text-white">
+            No results yet
+          </h1>
+
+          <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-zinc-500">
+            Your interview performance and AI-generated feedback
+            will appear here once you complete your first interview.
+          </p>
+
+          <button
+            type="button"
+            onClick={() => navigate('/candidate/interviews')}
+            className="mt-6 inline-flex items-center gap-2 rounded-lg bg-blue-400 px-5 py-2.5 text-sm font-semibold text-[#061018] transition hover:bg-blue-300"
+          >
+            Explore Interviews
+            <span>→</span>
+          </button>
         </div>
-      </CandidateLayout>
+      </div>
     )
   }
 
@@ -174,16 +164,16 @@ function CandidateResults() {
     : []
 
   const strongest = dimensionEntries.length
-    ? dimensionEntries.reduce((a, b) => (b[1] > a[1] ? b : a))
+    ? dimensionEntries.reduce((a, b) => b[1] > a[1] ? b : a)
     : null
 
   const weakest = dimensionEntries.length
-    ? dimensionEntries.reduce((a, b) => (b[1] < a[1] ? b : a))
+    ? dimensionEntries.reduce((a, b) => b[1] < a[1] ? b : a)
     : null
 
   const previousScores = results
     .slice(1)
-    .map((result) => result.overallScore)
+    .map((result) => Number(result.overallScore) || 0)
 
   const previousAverage = previousScores.length
     ? Math.round(
@@ -192,467 +182,351 @@ function CandidateResults() {
       )
     : null
 
-  const currentScore = results[0]?.overallScore || 0
+  const currentScore = Number(results[0]?.overallScore) || 0
 
   return (
-    <CandidateLayout>
+    <div className="min-h-full text-white">
 
-      {/* =====================================================
-          PAGE HEADER
-      ====================================================== */}
+      {/* PAGE HEADER */}
+      <section className="relative mb-5 overflow-hidden rounded-2xl border border-white/[0.06] bg-gradient-to-br from-[#10151d] via-[#0b0d11] to-[#07090d] px-5 py-5 sm:px-6 sm:py-6">
+        <div className="pointer-events-none absolute -right-20 -top-28 h-64 w-64 rounded-full bg-blue-400/[0.07] blur-[90px]" />
+        <div className="pointer-events-none absolute bottom-0 left-[20%] h-32 w-64 rounded-full bg-blue-500/[0.035] blur-[80px]" />
 
-      <div className="mb-10 flex flex-col justify-between gap-6 md:flex-row md:items-end">
-
-        <div>
-
-          <div className="flex items-center gap-2">
-
-            <div className="h-2 w-2 rounded-full bg-violet-400 shadow-lg shadow-violet-500/60" />
-
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-violet-400">
-              Performance Analytics
-            </p>
-
-          </div>
-
-          <h1 className="mt-3 text-3xl font-bold tracking-tight text-white lg:text-4xl">
-            Interview Results
+        <div className="relative">
+          <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+            Your Results
           </h1>
 
-          <p className="mt-3 max-w-xl text-sm leading-6 text-slate-400">
-            Track your interview performance, discover your strengths,
-            and identify the skills that need more practice.
+          <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-400">
+            Review your interview performance, see what you did well,
+            and discover where you can improve.
           </p>
-
         </div>
-
-      </div>
-
-
-      {/* =====================================================
-          PERFORMANCE CARDS
-      ====================================================== */}
-
-      <div className="grid gap-5 xl:grid-cols-3">
-
-        {/* OVERALL PERFORMANCE */}
-
-        <div className="group relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#111827] p-7 transition hover:border-violet-500/30 hover:bg-[#131c2d]">
-
-          <div className="absolute right-0 top-0 h-32 w-32 rounded-full bg-violet-500/[0.05] blur-3xl" />
-
-          <p className="relative text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-            Overall Performance
-          </p>
-
-          <div className="relative mt-7 flex items-center gap-6">
-
-            <ScoreCircle score={currentScore} />
-
-            <div>
-
-              <p className="text-xl font-bold text-white">
-                {levelForScore(currentScore)}
-              </p>
-
-              <p className="mt-2 text-sm leading-6 text-slate-400">
-                Based on your most recent completed interview.
-              </p>
-
-            </div>
-
-          </div>
-
-          <div className="relative mt-7 border-t border-white/[0.06] pt-5">
-
-            {previousAverage !== null ? (
-              <div className="space-y-3">
-
-                <div className="flex items-center justify-between">
-
-                  <span className="text-xs text-slate-500">
-                    Previous average
-                  </span>
-
-                  <span className="text-sm font-semibold text-slate-300">
-                    {previousAverage}%
-                  </span>
-
-                </div>
-
-                <div className="flex items-center justify-between">
-
-                  <span className="text-xs text-slate-500">
-                    Current score
-                  </span>
-
-                  <span
-                    className={`text-sm font-semibold ${
-                      currentScore >= previousAverage
-                        ? 'text-emerald-400'
-                        : 'text-rose-400'
-                    }`}
-                  >
-                    {currentScore}%
-                    {currentScore >= previousAverage ? ' ↑' : ' ↓'}
-                  </span>
-
-                </div>
-
-              </div>
-            ) : (
-              <p className="text-xs text-slate-500">
-                Complete more interviews to unlock performance trends.
-              </p>
-            )}
-
-          </div>
-
-        </div>
-
-
-        {/* STRONGEST AREA */}
-
-        <div className="group rounded-2xl border border-white/[0.08] bg-[#111827] p-7 transition hover:border-emerald-500/30 hover:bg-[#131c2d]">
-
-          <div className="flex items-start justify-between">
-
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400">
-              <StrengthIcon />
-            </div>
-
-            <span className="rounded-full border border-emerald-500/15 bg-emerald-500/5 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-emerald-400">
-              Best Skill
-            </span>
-
-          </div>
-
-          <p className="mt-6 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-            Strongest Area
-          </p>
-
-          <h3 className="mt-3 text-xl font-bold text-white">
-            {strongest
-              ? DIMENSION_META[strongest[0]]?.name || strongest[0]
-              : '—'}
-          </h3>
-
-          <div className="mt-5 flex items-end gap-2">
-
-            <p className="text-4xl font-bold text-emerald-400">
-              {strongest ? `${strongest[1]}` : '—'}
-            </p>
-
-            <span className="mb-1 text-sm text-emerald-400/70">
-              %
-            </span>
-
-          </div>
-
-          <p className="mt-3 text-sm leading-6 text-slate-400">
-            {strongest
-              ? DIMENSION_META[strongest[0]]?.description
-              : ''}
-          </p>
-
-          <div className="mt-6 h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
-
-            <div
-              className="h-full rounded-full bg-emerald-400 transition-all duration-700"
-              style={{
-                width: `${strongest ? strongest[1] : 0}%`,
-              }}
-            />
-
-          </div>
-
-        </div>
-
-
-        {/* FOCUS AREA */}
-
-        <div className="group rounded-2xl border border-white/[0.08] bg-[#111827] p-7 transition hover:border-amber-500/30 hover:bg-[#131c2d]">
-
-          <div className="flex items-start justify-between">
-
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-500/10 text-amber-400">
-              <ImproveIcon />
-            </div>
-
-            <span className="rounded-full border border-amber-500/15 bg-amber-500/5 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-amber-400">
-              Focus Next
-            </span>
-
-          </div>
-
-          <p className="mt-6 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-            Improvement Area
-          </p>
-
-          <h3 className="mt-3 text-xl font-bold text-white">
-            {weakest
-              ? DIMENSION_META[weakest[0]]?.name || weakest[0]
-              : '—'}
-          </h3>
-
-          <div className="mt-5 flex items-end gap-2">
-
-            <p className="text-4xl font-bold text-amber-400">
-              {weakest ? `${weakest[1]}` : '—'}
-            </p>
-
-            <span className="mb-1 text-sm text-amber-400/70">
-              %
-            </span>
-
-          </div>
-
-          <p className="mt-3 text-sm leading-6 text-slate-400">
-            {weakest
-              ? DIMENSION_META[weakest[0]]?.description
-              : ''}
-          </p>
-
-          <div className="mt-6 h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
-
-            <div
-              className="h-full rounded-full bg-amber-400 transition-all duration-700"
-              style={{
-                width: `${weakest ? weakest[1] : 0}%`,
-              }}
-            />
-
-          </div>
-
-        </div>
-
-      </div>
-
-
-      {/* =====================================================
-          DIMENSION PERFORMANCE
-      ====================================================== */}
-
-      <section className="mt-10">
-
-        <div className="mb-5">
-
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-            Evaluation Breakdown
-          </p>
-
-          <h2 className="mt-2 text-xl font-bold text-white">
-            7-Dimension Performance
-          </h2>
-
-          <p className="mt-2 text-sm text-slate-400">
-            A detailed breakdown of your latest interview evaluation.
-          </p>
-
-        </div>
-
-        <div className="overflow-hidden rounded-2xl border border-white/[0.08] bg-[#111827]">
-
-          {dimensionEntries.map(([key, score], index) => (
-
-            <DimensionRow
-              key={key}
-              index={index}
-              dimension={{
-                name: DIMENSION_META[key]?.name || key,
-                description:
-                  DIMENSION_META[key]?.description || '',
-                score,
-              }}
-            />
-
-          ))}
-
-        </div>
-
       </section>
 
+      {/* PERFORMANCE OVERVIEW */}
+      <section className="mb-6">
+        <div className="mb-4">
+          <h2 className="text-base font-semibold text-white">
+            Performance Overview
+          </h2>
+          <p className="mt-1 text-xs text-zinc-500">
+            Based on your most recent completed interview.
+          </p>
+        </div>
 
-      {/* =====================================================
-          HISTORY
-      ====================================================== */}
+        <div className="grid gap-3 xl:grid-cols-3">
 
-      <section className="mt-10">
+          {/* OVERALL PERFORMANCE */}
+          <div className="relative overflow-hidden rounded-2xl border border-white/[0.07] bg-[#10141b] p-5">
+            <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-blue-400/[0.06] blur-3xl" />
 
-        <div className="mb-5 flex items-end justify-between gap-4">
-
-          <div>
-
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-              Interview History
+            <p className="relative text-xs font-medium text-zinc-500">
+              Overall Performance
             </p>
 
-            <h2 className="mt-2 text-xl font-bold text-white">
+            <div className="relative mt-5 flex items-center gap-5">
+              <ScoreCircle score={currentScore} />
+
+              <div>
+                <p className="text-xl font-semibold text-white">
+                  {levelForScore(currentScore)}
+                </p>
+
+                <p className="mt-1 max-w-[150px] text-xs leading-5 text-zinc-500">
+                  Your latest interview evaluation.
+                </p>
+              </div>
+            </div>
+
+            <div className="relative mt-5 border-t border-white/[0.06] pt-4">
+              {previousAverage !== null ? (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-zinc-500">
+                      Previous average
+                    </span>
+                    <span className="text-sm font-medium text-zinc-300">
+                      {previousAverage}%
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-zinc-500">
+                      Latest performance
+                    </span>
+
+                    <span
+                      className={`text-sm font-semibold ${
+                        currentScore >= previousAverage
+                          ? 'text-emerald-400'
+                          : 'text-rose-400'
+                      }`}
+                    >
+                      {currentScore}%
+                      {currentScore >= previousAverage ? ' ↑' : ' ↓'}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-xs leading-5 text-zinc-500">
+                  Complete more interviews to see how your performance
+                  changes over time.
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* STRONGEST AREA */}
+          <div className="rounded-2xl border border-white/[0.07] bg-[#10141b] p-5 transition hover:border-emerald-400/20">
+            <div className="flex items-center justify-between">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-400/[0.08] text-emerald-400">
+                <StrengthIcon />
+              </div>
+
+              <span className="rounded-full border border-emerald-400/15 bg-emerald-400/[0.05] px-2.5 py-1 text-[10px] font-medium text-emerald-400">
+                Your strength
+              </span>
+            </div>
+
+            <p className="mt-5 text-xs text-zinc-500">
+              Strongest Area
+            </p>
+
+            <h3 className="mt-2 text-lg font-semibold text-white">
+              {strongest
+                ? DIMENSION_META[strongest[0]]?.name || strongest[0]
+                : 'Not available'}
+            </h3>
+
+            <div className="mt-3 flex items-baseline gap-1">
+              <span className="text-3xl font-semibold text-emerald-400">
+                {strongest ? strongest[1] : '—'}
+              </span>
+              {strongest && (
+                <span className="text-sm text-emerald-400/70">%</span>
+              )}
+            </div>
+
+            <p className="mt-2 min-h-10 text-xs leading-5 text-zinc-500">
+              {strongest
+                ? DIMENSION_META[strongest[0]]?.description
+                : 'Your strongest skill will appear after evaluation.'}
+            </p>
+
+            <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
+              <div
+                className="h-full rounded-full bg-emerald-400 transition-all duration-700"
+                style={{
+                  width: `${strongest ? strongest[1] : 0}%`,
+                }}
+              />
+            </div>
+          </div>
+
+          {/* IMPROVEMENT AREA */}
+          <div className="rounded-2xl border border-white/[0.07] bg-[#10141b] p-5 transition hover:border-amber-400/20">
+            <div className="flex items-center justify-between">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-400/[0.08] text-amber-400">
+                <ImproveIcon />
+              </div>
+
+              <span className="rounded-full border border-amber-400/15 bg-amber-400/[0.05] px-2.5 py-1 text-[10px] font-medium text-amber-400">
+                Focus next
+              </span>
+            </div>
+
+            <p className="mt-5 text-xs text-zinc-500">
+              Improvement Area
+            </p>
+
+            <h3 className="mt-2 text-lg font-semibold text-white">
+              {weakest
+                ? DIMENSION_META[weakest[0]]?.name || weakest[0]
+                : 'Not available'}
+            </h3>
+
+            <div className="mt-3 flex items-baseline gap-1">
+              <span className="text-3xl font-semibold text-amber-400">
+                {weakest ? weakest[1] : '—'}
+              </span>
+              {weakest && (
+                <span className="text-sm text-amber-400/70">%</span>
+              )}
+            </div>
+
+            <p className="mt-2 min-h-10 text-xs leading-5 text-zinc-500">
+              {weakest
+                ? DIMENSION_META[weakest[0]]?.description
+                : 'Your improvement areas will appear after evaluation.'}
+            </p>
+
+            <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
+              <div
+                className="h-full rounded-full bg-amber-400 transition-all duration-700"
+                style={{
+                  width: `${weakest ? weakest[1] : 0}%`,
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* DIMENSION BREAKDOWN */}
+      <section className="mb-6">
+        <div className="mb-4">
+          <h2 className="text-base font-semibold text-white">
+            Performance Breakdown
+          </h2>
+          <p className="mt-1 text-xs text-zinc-500">
+            See how you performed across the seven evaluation dimensions.
+          </p>
+        </div>
+
+        <div className="overflow-hidden rounded-2xl border border-white/[0.07] bg-[#10141b]">
+          {dimensionEntries.length > 0 ? (
+            dimensionEntries.map(([key, score], index) => (
+              <DimensionRow
+                key={key}
+                index={index}
+                dimension={{
+                  name: DIMENSION_META[key]?.name || key,
+                  description: DIMENSION_META[key]?.description || '',
+                  score,
+                }}
+              />
+            ))
+          ) : (
+            <p className="p-5 text-sm text-zinc-500">
+              Evaluation breakdown is not available for this interview.
+            </p>
+          )}
+        </div>
+      </section>
+
+      {/* INTERVIEW HISTORY */}
+      <section className="mb-6">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-base font-semibold text-white">
               Recent Results
             </h2>
-
+            <p className="mt-1 text-xs text-zinc-500">
+              Revisit your completed interview evaluations.
+            </p>
           </div>
 
           <button
             type="button"
             onClick={() => navigate('/candidate/interviews')}
-            className="text-xs font-semibold text-violet-400 transition hover:text-violet-300"
+            className="shrink-0 text-xs font-medium text-blue-400 transition hover:text-blue-300"
           >
-            View Interviews →
+            All Interviews →
           </button>
-
         </div>
 
-
-        <div className="overflow-hidden rounded-2xl border border-white/[0.08] bg-[#111827]">
-
+        <div className="overflow-hidden rounded-2xl border border-white/[0.07] bg-[#10141b]">
           {results.map((result) => (
-
             <div
               key={result.interviewId}
-              className="group flex flex-col gap-5 border-b border-white/[0.06] p-6 transition last:border-b-0 hover:bg-white/[0.02] sm:flex-row sm:items-center sm:justify-between"
+              className="flex flex-col gap-4 border-b border-white/[0.06] p-4 transition last:border-b-0 hover:bg-white/[0.02] sm:flex-row sm:items-center sm:justify-between sm:px-5"
             >
-
-              <div className="flex items-center gap-4">
-
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-violet-400">
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-400/[0.08] text-blue-400">
                   <CodeIcon />
                 </div>
 
-                <div>
-
-                  <h3 className="font-semibold text-slate-200">
+                <div className="min-w-0">
+                  <h3 className="truncate text-sm font-medium text-zinc-200">
                     {result.title}
                   </h3>
 
-                  <p className="mt-1 text-xs text-slate-500">
+                  <p className="mt-1 text-xs text-zinc-500">
                     {candidateApi.formatDate(result.completedAt)}
                   </p>
-
                 </div>
-
               </div>
 
-
-              <div className="flex flex-wrap items-center gap-6">
-
-                <div className="min-w-[80px]">
-
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+              <div className="flex flex-wrap items-center gap-4 sm:gap-6">
+                <div>
+                  <p className="text-[10px] font-medium uppercase tracking-wider text-zinc-600">
                     Result
                   </p>
-
-                  <p className="mt-1 text-sm font-medium text-slate-300">
-                    {levelForScore(result.overallScore)}
+                  <p className="mt-1 text-sm font-medium text-zinc-300">
+                    {levelForScore(Number(result.overallScore) || 0)}
                   </p>
-
                 </div>
 
-
-                <div className="min-w-[70px]">
-
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                <div>
+                  <p className="text-[10px] font-medium uppercase tracking-wider text-zinc-600">
                     Score
                   </p>
-
-                  <p className="mt-1 text-xl font-bold text-violet-400">
+                  <p className="mt-1 text-sm font-semibold text-blue-400">
                     {result.overallScore}%
                   </p>
-
                 </div>
-
 
                 <button
                   type="button"
                   onClick={() =>
-                    navigate(
-                      `/candidate/results/${result.interviewId}`
-                    )
+                    navigate(`/candidate/results/${result.interviewId}`)
                   }
-                  className="rounded-xl border border-white/[0.1] bg-white/[0.03] px-4 py-2.5 text-xs font-semibold text-slate-300 transition hover:border-violet-500/40 hover:bg-violet-500/10 hover:text-violet-300"
+                  className="rounded-lg border border-white/[0.08] bg-white/[0.025] px-3.5 py-2 text-xs font-medium text-zinc-400 transition hover:border-blue-400/30 hover:bg-blue-400/[0.06] hover:text-blue-300"
                 >
-                  View Details
+                  View Details →
                 </button>
-
               </div>
-
             </div>
-
           ))}
-
         </div>
-
       </section>
 
+      {/* AI FEEDBACK */}
+      {latestDetail?.feedback && (
+        <section className="relative overflow-hidden rounded-2xl border border-blue-400/15 bg-gradient-to-br from-blue-400/[0.07] to-[#10141b] p-5 sm:p-6">
+          <div className="pointer-events-none absolute -right-10 -top-16 h-48 w-48 rounded-full bg-blue-400/[0.06] blur-3xl" />
 
-      {/* =====================================================
-          AI INSIGHT
-      ====================================================== */}
-
-      {latestDetail && (
-
-        <section className="relative mt-10 overflow-hidden rounded-2xl border border-violet-500/20 bg-gradient-to-br from-violet-500/[0.10] to-[#111827] p-7">
-
-          <div className="absolute right-0 top-0 h-48 w-48 rounded-full bg-violet-500/[0.08] blur-3xl" />
-
-          <div className="relative flex items-start gap-5">
-
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-violet-500/15 text-violet-400">
+          <div className="relative flex items-start gap-4">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-400/[0.10] text-blue-400">
               <InsightIcon />
             </div>
 
-            <div>
-
-              <div className="flex items-center gap-2">
-
-                <span className="h-2 w-2 animate-pulse rounded-full bg-violet-400" />
-
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-400">
-                  AI Performance Insight
-                </p>
-
-              </div>
-
-              <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-300">
-                {latestDetail.feedback}
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-white">
+                AI Performance Feedback
               </p>
 
+              <p className="mt-2 text-sm leading-6 text-zinc-400">
+                {latestDetail.feedback}
+              </p>
             </div>
-
           </div>
-
         </section>
-
       )}
-
-    </CandidateLayout>
+    </div>
   )
 }
 
 
-/* ============================================================
-   SCORE CIRCLE
-============================================================ */
-
+/* SCORE CIRCLE */
 function ScoreCircle({ score }) {
   const circumference = 2 * Math.PI * 42
-  const offset =
-    circumference - (score / 100) * circumference
+  const safeScore = Math.min(100, Math.max(0, Number(score) || 0))
+  const offset = circumference - (safeScore / 100) * circumference
 
   return (
-    <div className="relative h-28 w-28 shrink-0">
-
+    <div className="relative h-24 w-24 shrink-0">
       <svg
         className="h-full w-full -rotate-90"
         viewBox="0 0 100 100"
       >
-
         <circle
           cx="50"
           cy="50"
           r="42"
           fill="none"
-          stroke="#1e293b"
+          stroke="#272d38"
           strokeWidth="7"
         />
 
@@ -661,101 +535,82 @@ function ScoreCircle({ score }) {
           cy="50"
           r="42"
           fill="none"
-          stroke="#8b5cf6"
+          stroke="#60a5fa"
           strokeWidth="7"
           strokeDasharray={circumference}
           strokeDashoffset={offset}
           strokeLinecap="round"
           className="transition-all duration-1000"
         />
-
       </svg>
 
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-
-        <span className="text-2xl font-bold text-white">
-          {score}
+        <span className="text-2xl font-semibold text-white">
+          {safeScore}
         </span>
-
-        <span className="text-[9px] font-medium uppercase tracking-wider text-slate-500">
+        <span className="text-[9px] font-medium uppercase tracking-wider text-zinc-500">
           Score
         </span>
-
       </div>
-
     </div>
   )
 }
 
 
-/* ============================================================
-   DIMENSION ROW
-============================================================ */
-
+/* DIMENSION ROW */
 function DimensionRow({ dimension, index }) {
+  const score = Number(dimension.score) || 0
+
   const scoreColor =
-    dimension.score >= 80
+    score >= 80
       ? 'bg-emerald-400'
-      : dimension.score >= 65
-        ? 'bg-violet-400'
+      : score >= 65
+        ? 'bg-blue-400'
         : 'bg-amber-400'
 
   const textColor =
-    dimension.score >= 80
+    score >= 80
       ? 'text-emerald-400'
-      : dimension.score >= 65
-        ? 'text-violet-400'
+      : score >= 65
+        ? 'text-blue-400'
         : 'text-amber-400'
 
   return (
-    <div className="group flex flex-col gap-5 border-b border-white/[0.06] p-6 transition last:border-b-0 hover:bg-white/[0.02] md:flex-row md:items-center">
-
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.03] text-xs font-bold text-slate-400">
+    <div className="flex flex-col gap-3 border-b border-white/[0.06] p-4 transition last:border-b-0 hover:bg-white/[0.02] sm:flex-row sm:items-center sm:gap-5 sm:px-5">
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/[0.06] bg-white/[0.03] text-[10px] font-semibold text-zinc-500">
         {String(index + 1).padStart(2, '0')}
       </div>
 
-
-      <div className="w-full md:w-72">
-
-        <h3 className="font-semibold text-slate-200">
+      <div className="w-full sm:w-64">
+        <h3 className="text-sm font-medium text-zinc-200">
           {dimension.name}
         </h3>
 
-        <p className="mt-1 text-xs leading-5 text-slate-500">
+        <p className="mt-1 text-xs leading-5 text-zinc-500">
           {dimension.description}
         </p>
-
       </div>
 
-
-      <div className="flex flex-1 items-center gap-4">
-
-        <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/[0.06]">
-
+      <div className="flex flex-1 items-center gap-3">
+        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/[0.06]">
           <div
             className={`h-full rounded-full ${scoreColor} transition-all duration-700`}
             style={{
-              width: `${dimension.score}%`,
+              width: `${Math.min(100, Math.max(0, score))}%`,
             }}
           />
-
         </div>
 
-        <span className={`w-12 text-right text-sm font-bold ${textColor}`}>
-          {dimension.score}%
+        <span className={`w-10 text-right text-xs font-semibold ${textColor}`}>
+          {score}%
         </span>
-
       </div>
-
     </div>
   )
 }
 
 
-/* ============================================================
-   ICONS
-============================================================ */
-
+/* ICONS */
 function StrengthIcon() {
   return (
     <svg
@@ -772,7 +627,6 @@ function StrengthIcon() {
   )
 }
 
-
 function ImproveIcon() {
   return (
     <svg
@@ -787,7 +641,6 @@ function ImproveIcon() {
     </svg>
   )
 }
-
 
 function InsightIcon() {
   return (
@@ -805,7 +658,6 @@ function InsightIcon() {
   )
 }
 
-
 function CodeIcon() {
   return (
     <svg
@@ -822,11 +674,10 @@ function CodeIcon() {
   )
 }
 
-
 function ChartIcon() {
   return (
     <svg
-      className="h-7 w-7"
+      className="h-6 w-6"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -838,6 +689,5 @@ function ChartIcon() {
     </svg>
   )
 }
-
 
 export default CandidateResults

@@ -22,15 +22,12 @@ import {
 import {
   evaluateFinal,
   evaluateTurn,
+  EvaluationUnavailableError,
 } from "./evaluation.client.js";
 
-import {
-  shouldAdvanceQuestion,
-} from "./ai.service.js";
+import { buildClosingMessage, buildTransitionMessage } from "./ai.service.js";
 
-import type {
-  SendMessageInput,
-} from "../validators/session.validator.js";
+import type { SendMessageInput } from "../validators/session.validator.js";
 
 import {
   NotFoundError,
@@ -38,87 +35,53 @@ import {
   ConflictError,
 } from "../utils/app-error.js";
 
-
-type OwnedSession = NonNullable<
-  Awaited<
-    ReturnType<
-      typeof findSessionById
-    >
-  >
->;
-
+type OwnedSession = NonNullable<Awaited<ReturnType<typeof findSessionById>>>;
 
 type InterviewQuestionWithQuestion =
-  NonNullable<
-    OwnedSession
-  >["interview"]["questions"][number];
+  NonNullable<OwnedSession>["interview"]["questions"][number];
 
+// Hard cap on candidate messages per question.
+//
+// It is sent to the AI service, which usually stops earlier (the
+// candidate reached the target solution), and it is the only rule used
+// for questions the AI service cannot run adaptively (no reference
+// solutions). Override with MAX_TURNS_PER_QUESTION.
+const configuredMaxTurns = Math.floor(
+  Number(process.env.MAX_TURNS_PER_QUESTION),
+);
 
-const assertOwnedSession = async (
-  candidateId: string,
-  sessionId: string,
-) => {
+const MAX_TURNS_PER_QUESTION =
+  configuredMaxTurns > 0 ? configuredMaxTurns : 5;
 
-  const session =
-    await findSessionById(
-      sessionId,
-    );
+const assertOwnedSession = async (candidateId: string, sessionId: string) => {
+  const session = await findSessionById(sessionId);
 
   if (!session) {
-    throw new NotFoundError(
-      "Interview session not found",
-    );
+    throw new NotFoundError("Interview session not found");
   }
 
-  if (
-    session.candidateId !==
-    candidateId
-  ) {
-    throw new ForbiddenError(
-      "This interview session does not belong to you",
-    );
+  if (session.candidateId !== candidateId) {
+    throw new ForbiddenError("This interview session does not belong to you");
   }
 
   return session;
 };
 
+const isSessionExpired = (session: OwnedSession) => {
+  const durationSeconds = session.interview.duration * 60;
 
-const isSessionExpired = (
-  session: OwnedSession,
-) => {
+  const elapsedSeconds = (Date.now() - session.startedAt.getTime()) / 1000;
 
-  const durationSeconds =
-    session.interview.duration * 60;
-
-  const elapsedSeconds =
-    (
-      Date.now() -
-      session.startedAt.getTime()
-    ) / 1000;
-
-  return (
-    elapsedSeconds >=
-    durationSeconds
-  );
+  return elapsedSeconds >= durationSeconds;
 };
 
-
-const getElapsedDurationSeconds = (
-  session: OwnedSession,
-) => {
-
+const getElapsedDurationSeconds = (session: OwnedSession) => {
   return Math.max(
     0,
 
-    Math.floor(
-      (
-        Date.now() -
-        session.startedAt.getTime()
-      ) / 1000,
-    ),
+    Math.floor((Date.now() - session.startedAt.getTime()) / 1000),
   );
 };
-
 
 // ============================================================
 // EXPIRE INTERVIEW
@@ -128,53 +91,30 @@ const expireInterviewSession = async (
   candidateId: string,
   sessionId: string,
 ) => {
+  const session = await assertOwnedSession(candidateId, sessionId);
 
-  const session =
-    await assertOwnedSession(
-      candidateId,
-      sessionId,
-    );
+  const endedAt = new Date();
 
-  const endedAt =
-    new Date();
+  const durationSeconds = Math.max(
+    0,
 
-  const durationSeconds =
-    Math.max(
-      0,
+    Math.floor((endedAt.getTime() - session.startedAt.getTime()) / 1000),
+  );
 
-      Math.floor(
-        (
-          endedAt.getTime() -
-          session.startedAt.getTime()
-        ) / 1000,
-      ),
-    );
+  const result = await endSessionRepo(sessionId, {
+    status: "EXPIRED",
 
-  const result =
-    await endSessionRepo(
-      sessionId,
-      {
-        status: "EXPIRED",
+    endedAt,
 
-        endedAt,
+    durationSeconds,
+  });
 
-        durationSeconds,
-      },
-    );
-
-  if (
-    result.count > 0
-  ) {
-
-    await updateInterviewStatus(
-      session.interview.id,
-      "EXPIRED",
-    );
+  if (result.count > 0) {
+    await updateInterviewStatus(session.interview.id, "EXPIRED");
   }
 
   return {
-    message:
-      "Interview time has expired.",
+    message: "Interview time has expired.",
 
     durationSeconds,
 
@@ -182,885 +122,599 @@ const expireInterviewSession = async (
   };
 };
 
-
 // ============================================================
 // GET SESSION
 // ============================================================
 
-export const getSessionDetail =
-  async (
-    candidateId: string,
-    sessionId: string,
-  ) => {
+export const getSessionDetail = async (
+  candidateId: string,
+  sessionId: string,
+) => {
+  let session = await assertOwnedSession(candidateId, sessionId);
 
-    let session =
-      await assertOwnedSession(
-        candidateId,
-        sessionId,
-      );
+  if (session.status === "IN_PROGRESS" && isSessionExpired(session)) {
+    const messages = await findMessagesBySession(sessionId);
 
-    if (
-      session.status ===
-        "IN_PROGRESS" &&
-      isSessionExpired(
-        session,
-      )
-    ) {
+    const hasCandidateAttempt = messages.some(
+      (message) => message.sender === "CANDIDATE",
+    );
 
-      const messages =
-        await findMessagesBySession(
-          sessionId,
-        );
+    if (hasCandidateAttempt) {
+      try {
+        await endInterviewSession(candidateId, sessionId);
+      } catch (error) {
+        // The AI evaluation is temporarily unavailable. The session
+        // stays IN_PROGRESS and the evaluation is retried on the
+        // next request; nothing is saved until it succeeds.
+        if (!(error instanceof EvaluationUnavailableError)) {
+          throw error;
+        }
 
-      const hasCandidateAttempt =
-        messages.some(
-          (message) =>
-            message.sender ===
-            "CANDIDATE",
-        );
-
-      if (
-        hasCandidateAttempt
-      ) {
-
-        await endInterviewSession(
-          candidateId,
-          sessionId,
-        );
-
-      } else {
-
-        await expireInterviewSession(
-          candidateId,
-          sessionId,
-        );
+        console.warn("Final evaluation pending:", error.message);
       }
-
-      // Re-fetch so the response contains
-      // the updated session status.
-      session =
-        await assertOwnedSession(
-          candidateId,
-          sessionId,
-        );
+    } else {
+      await expireInterviewSession(candidateId, sessionId);
     }
 
-    const questions =
-      session.interview.questions.map(
-        ({
-          question,
-          status,
-          order,
-        }: InterviewQuestionWithQuestion) => ({
-          id:
-            question.id,
+    // Re-fetch so the response contains
+    // the updated session status.
+    session = await assertOwnedSession(candidateId, sessionId);
+  }
 
-          title:
-            question.title,
+  const questions = session.interview.questions.map(
+    ({ question, status, order }: InterviewQuestionWithQuestion) => ({
+      id: question.id,
 
-          difficulty:
-            question.difficulty,
+      title: question.title,
 
-          topics:
-            question.topics,
+      difficulty: question.difficulty,
 
-          description:
-            question.description,
+      topics: question.topics,
 
-          examples:
-            question.examples,
+      description: question.description,
 
-          constraints:
-            question.constraints,
+      examples: question.examples,
 
-          status,
+      constraints: question.constraints,
 
-          order,
-        }),
-      );
+      status,
 
-    return {
-      session: {
-        id:
-          session.id,
+      order,
+    }),
+  );
 
-        status:
-          session.status,
+  return {
+    session: {
+      id: session.id,
 
-        duration:
-          session.interview.duration *
-          60,
+      status: session.status,
 
-        startedAt:
-          session.startedAt,
+      duration: session.interview.duration * 60,
 
-        currentQuestionId:
-          session.currentQuestionId,
-      },
+      startedAt: session.startedAt,
 
-      questions,
-    };
+      currentQuestionId: session.currentQuestionId,
+    },
+
+    questions,
   };
-
+};
 
 // ============================================================
 // GET MESSAGES
 // ============================================================
 
-export const getSessionMessages =
-  async (
-    candidateId: string,
-    sessionId: string,
-  ) => {
+export const getSessionMessages = async (
+  candidateId: string,
+  sessionId: string,
+) => {
+  await assertOwnedSession(candidateId, sessionId);
 
-    await assertOwnedSession(
-      candidateId,
-      sessionId,
-    );
+  const messages = await findMessagesBySession(sessionId);
 
-    const messages =
-      await findMessagesBySession(
-        sessionId,
-      );
+  return messages.map(
+    (message: Awaited<ReturnType<typeof findMessagesBySession>>[number]) => ({
+      id: message.id,
 
-    return messages.map(
-      (
-        message: Awaited<
-          ReturnType<
-            typeof findMessagesBySession
-          >
-        >[number],
-      ) => ({
+      sender: message.sender,
 
-        id:
-          message.id,
+      message: message.message,
 
-        sender:
-          message.sender,
+      questionId: message.questionId,
 
-        message:
-          message.message,
-
-        questionId:
-          message.questionId,
-
-        createdAt:
-          message.createdAt,
-      }),
-    );
-  };
-
+      createdAt: message.createdAt,
+    }),
+  );
+};
 
 // ============================================================
 // SEND CANDIDATE MESSAGE
 // ============================================================
 
-export const sendCandidateMessage =
-  async (
-    candidateId: string,
-    sessionId: string,
-    input: SendMessageInput,
-  ) => {
+export const sendCandidateMessage = async (
+  candidateId: string,
+  sessionId: string,
+  input: SendMessageInput,
+) => {
+  const session = await assertOwnedSession(candidateId, sessionId);
 
-    const session =
-      await assertOwnedSession(
-        candidateId,
-        sessionId,
-      );
+  if (session.status !== "IN_PROGRESS") {
+    throw new ConflictError("This interview session has already ended");
+  }
 
-    if (
-      session.status !==
-      "IN_PROGRESS"
-    ) {
+  if (isSessionExpired(session)) {
+    const messages = await findMessagesBySession(sessionId);
 
-      throw new ConflictError(
-        "This interview session has already ended",
-      );
-    }
+    const hasCandidateAttempt = messages.some(
+      (message) => message.sender === "CANDIDATE",
+    );
 
-    if (
-      isSessionExpired(
-        session,
-      )
-    ) {
+    if (hasCandidateAttempt) {
+      try {
+        await endInterviewSession(candidateId, sessionId);
+      } catch (error) {
+        if (!(error instanceof EvaluationUnavailableError)) {
+          throw error;
+        }
 
-      const messages =
-        await findMessagesBySession(
-          sessionId,
-        );
-
-      const hasCandidateAttempt =
-        messages.some(
-          (message) =>
-            message.sender ===
-            "CANDIDATE",
-        );
-
-      if (
-        hasCandidateAttempt
-      ) {
-
-        await endInterviewSession(
-          candidateId,
-          sessionId,
-        );
+        console.warn("Final evaluation pending:", error.message);
 
         return {
-          sessionEnded:
-            true,
+          sessionEnded: true,
 
-          expired:
-            false,
+          expired: false,
 
-          submitted:
-            true,
+          submitted: true,
+
+          evaluationPending: true,
 
           message:
-            "Interview time has expired. The interview has been submitted.",
+            "Interview time has expired. Your answers are saved; the evaluation is pending.",
         };
       }
 
-      await expireInterviewSession(
-        candidateId,
-        sessionId,
-      );
-
       return {
-        sessionEnded:
-          true,
+        sessionEnded: true,
 
-        expired:
-          true,
+        expired: false,
 
-        submitted:
-          false,
+        submitted: true,
 
         message:
-          "Interview time has expired.",
+          "Interview time has expired. The interview has been submitted.",
       };
     }
 
-    const orderedQuestions =
-      session.interview.questions;
+    await expireInterviewSession(candidateId, sessionId);
 
-    const currentIndex =
-      orderedQuestions.findIndex(
-        (
-          interviewQuestion:
-            InterviewQuestionWithQuestion,
-        ) =>
-          interviewQuestion.question.id ===
-          input.questionId,
-      );
+    return {
+      sessionEnded: true,
 
-    if (
-      currentIndex ===
-      -1
-    ) {
+      expired: true,
 
-      throw new NotFoundError(
-        "Question not found on this interview",
-      );
-    }
+      submitted: false,
 
-    // --------------------------------------------------------
-    // SAVE CANDIDATE MESSAGE
-    // --------------------------------------------------------
+      message: "Interview time has expired.",
+    };
+  }
 
-    const candidateMessage =
-      await createMessage({
-        sessionId,
+  const orderedQuestions = session.interview.questions;
 
-        questionId:
-          input.questionId,
+  const currentIndex = orderedQuestions.findIndex(
+    (interviewQuestion: InterviewQuestionWithQuestion) =>
+      interviewQuestion.question.id === input.questionId,
+  );
 
-        sender:
-          "CANDIDATE",
+  if (currentIndex === -1) {
+    throw new NotFoundError("Question not found on this interview");
+  }
 
-        message:
-          input.message,
-      });
+  // --------------------------------------------------------
+  // SAVE CANDIDATE MESSAGE
+  // --------------------------------------------------------
 
-    const candidateAnswer =
-      typeof input.message ===
-      "string"
-        ? input.message
-        : String(
-            input.message,
-          );
+  const candidateMessage = await createMessage({
+    sessionId,
 
-    const currentQuestion =
-      orderedQuestions[
-        currentIndex
-      ]?.question;
+    questionId: input.questionId,
 
-    if (
-      !currentQuestion
-    ) {
+    sender: "CANDIDATE",
 
-      throw new NotFoundError(
-        "Question not found on this interview",
-      );
-    }
+    message: input.message,
+  });
 
-    // --------------------------------------------------------
-    // EVALUATE CURRENT TURN
-    // --------------------------------------------------------
+  const candidateAnswer =
+    typeof input.message === "string" ? input.message : String(input.message);
 
-    const evaluation =
-      await evaluateTurn({
-        problem: {
-          id:
-            input.questionId,
+  const currentQuestion = orderedQuestions[currentIndex]?.question;
 
-          title:
-            currentQuestion.title,
+  if (!currentQuestion) {
+    throw new NotFoundError("Question not found on this interview");
+  }
 
-          difficulty:
-            currentQuestion.difficulty,
+  // --------------------------------------------------------
+  // EVALUATE CURRENT TURN
+  // --------------------------------------------------------
 
-          topics:
-            currentQuestion.topics,
+  const evaluation = await evaluateTurn({
+    problem: {
+      id: input.questionId,
 
-          description:
-            currentQuestion.description,
+      title: currentQuestion.title,
 
-          examples:
-            currentQuestion.examples,
+      difficulty: currentQuestion.difficulty,
 
-          constraints:
-            currentQuestion.constraints,
-        },
+      topics: currentQuestion.topics,
 
-        candidateAnswer,
+      description: currentQuestion.description,
 
-        history:
-          (
-            await findMessagesBySession(
-              sessionId,
-            )
-          )
-            .filter(
-              (message) =>
-                message.questionId ===
-                input.questionId,
-            )
-            .map(
-              (message) => ({
-                sender:
-                  message.sender,
+      examples: currentQuestion.examples,
 
-                message:
-                  message.message,
+      constraints: currentQuestion.constraints,
+    },
 
-                questionId:
-                  message.questionId,
-              }),
-            ),
-      });
+    candidateAnswer,
 
+    candidateId,
+
+    sessionId,
+
+    questionId: input.questionId,
+
+    // Seconds left in the whole interview; the AI service has no clock.
+    timeRemainingSeconds: Math.max(
+      1,
+      session.interview.duration * 60 - getElapsedDurationSeconds(session),
+    ),
+
+    maxTurns: MAX_TURNS_PER_QUESTION,
+
+    history: (await findMessagesBySession(sessionId))
+      .filter((message) => message.questionId === input.questionId)
+      .map((message) => ({
+        sender: message.sender,
+
+        message: message.message,
+
+        questionId: message.questionId,
+      })),
+  });
+
+  await upsertQuestionAttempt({
+    sessionId,
+
+    questionId: input.questionId,
+
+    candidateId,
+
+    status: "CURRENT",
+  });
+
+  // --------------------------------------------------------
+  // QUESTION ADVANCEMENT
+  // --------------------------------------------------------
+
+  const candidateMessageCount = await countMessagesForQuestion(
+    sessionId,
+    input.questionId,
+  );
+
+  // The AI service decides when a question is finished (adaptive
+  // policy). The turn cap is a backstop, and the only rule when the
+  // question has no reference solutions.
+  const advance =
+    evaluation.adaptive?.finished === true ||
+    candidateMessageCount >= MAX_TURNS_PER_QUESTION;
+
+  let aiText: string | null = evaluation.message ?? null;
+
+  let nextQuestionId: string | null = session.currentQuestionId;
+
+  if (advance) {
     await upsertQuestionAttempt({
       sessionId,
 
-      questionId:
-        input.questionId,
+      questionId: input.questionId,
 
       candidateId,
 
-      status:
-        "CURRENT",
+      status: "COMPLETED",
     });
 
-    // --------------------------------------------------------
-    // QUESTION ADVANCEMENT
-    // --------------------------------------------------------
+    await updateInterviewQuestionStatus(
+      session.interview.id,
 
-    const candidateMessageCount =
-      await countMessagesForQuestion(
-        sessionId,
-        input.questionId,
-      );
+      input.questionId,
 
-    const advance =
-      shouldAdvanceQuestion(
-        candidateMessageCount,
-      );
+      "COMPLETED",
+    );
 
-    let aiText: string =
-      evaluation.message;
+    const nextQuestion = orderedQuestions[currentIndex + 1]?.question ?? null;
 
-    let nextQuestionId:
-      string | null =
-      session.currentQuestionId;
-
-    if (advance) {
-
-      await upsertQuestionAttempt({
-        sessionId,
-
-        questionId:
-          input.questionId,
-
-        candidateId,
-
-        status:
-          "COMPLETED",
-      });
-
+    if (nextQuestion) {
       await updateInterviewQuestionStatus(
         session.interview.id,
 
-        input.questionId,
+        nextQuestion.id,
 
-        "COMPLETED",
+        "CURRENT",
       );
 
-      const nextQuestion =
-        orderedQuestions[
-          currentIndex + 1
-        ]?.question ?? null;
-
-      if (
-        nextQuestion
-      ) {
-
-        await updateInterviewQuestionStatus(
-          session.interview.id,
-
-          nextQuestion.id,
-
-          "CURRENT",
-        );
-
-        await updateSessionCurrentQuestion(
-          sessionId,
-
-          nextQuestion.id,
-        );
-
-        nextQuestionId =
-          nextQuestion.id;
-
-      } else {
-
-        nextQuestionId =
-          null;
-      }
-    }
-
-    // IMPORTANT:
-    // The AI response belongs to the question that was just
-    // evaluated, NOT the next question.
-    const aiMessage =
-      await createMessage({
+      await updateSessionCurrentQuestion(
         sessionId,
 
-        questionId:
-          input.questionId,
+        nextQuestion.id,
+      );
 
-        sender:
-          "AI",
+      nextQuestionId = nextQuestion.id;
 
-        message:
-          aiText,
-      });
+      aiText = buildTransitionMessage(nextQuestion);
+    } else {
+      nextQuestionId = null;
 
-    return {
-      candidateMessage: {
-        id:
-          candidateMessage.id,
+      aiText = buildClosingMessage();
+    }
+  }
 
-        sender:
-          candidateMessage.sender,
+  if (!aiText) {
+    throw new Error("The evaluation service returned no interviewer message.");
+  }
 
-        message:
-          candidateMessage.message,
+  // IMPORTANT:
+  // The AI response belongs to the question that was just
+  // evaluated, NOT the next question.
+  const aiMessage = await createMessage({
+    sessionId,
 
-        questionId:
-          candidateMessage.questionId,
+    questionId: input.questionId,
 
-        createdAt:
-          candidateMessage.createdAt,
-      },
+    sender: "AI",
 
-      aiMessage: {
-        id:
-          aiMessage.id,
+    message: aiText,
+  });
 
-        sender:
-          aiMessage.sender,
+  return {
+    candidateMessage: {
+      id: candidateMessage.id,
 
-        message:
-          aiMessage.message,
+      sender: candidateMessage.sender,
 
-        questionId:
-          aiMessage.questionId,
+      message: candidateMessage.message,
 
-        createdAt:
-          aiMessage.createdAt,
-      },
+      questionId: candidateMessage.questionId,
 
-      currentQuestionId:
-        nextQuestionId,
-    };
+      createdAt: candidateMessage.createdAt,
+    },
+
+    aiMessage: {
+      id: aiMessage.id,
+
+      sender: aiMessage.sender,
+
+      message: aiMessage.message,
+
+      questionId: aiMessage.questionId,
+
+      createdAt: aiMessage.createdAt,
+    },
+
+    currentQuestionId: nextQuestionId,
   };
-
+};
 
 // ============================================================
 // END INTERVIEW
 // ============================================================
 
-export const endInterviewSession =
-  async (
-    candidateId: string,
-    sessionId: string,
-  ) => {
+export const endInterviewSession = async (
+  candidateId: string,
+  sessionId: string,
+) => {
+  const session = await assertOwnedSession(candidateId, sessionId);
 
-    const session =
-      await assertOwnedSession(
-        candidateId,
-        sessionId,
-      );
+  // --------------------------------------------------------
+  // ALREADY COMPLETED
+  // --------------------------------------------------------
 
-    // --------------------------------------------------------
-    // ALREADY COMPLETED
-    // --------------------------------------------------------
-
-    if (
-      session.status ===
-      "COMPLETED"
-    ) {
-
-      const existingEvaluation =
-        await findEvaluationByInterviewId(
-          session.interview.id,
-        );
-
-      return {
-        message:
-          "Interview already completed",
-
-        durationSeconds:
-          session.durationSeconds ??
-          0,
-
-        overallScore:
-          existingEvaluation?.overallScore ??
-          null,
-      };
-    }
-
-    const endedAt =
-      new Date();
-
-    const durationSeconds =
-      Math.max(
-        0,
-
-        Math.floor(
-          (
-            endedAt.getTime() -
-            session.startedAt.getTime()
-          ) / 1000,
-        ),
-      );
-
-    const messages =
-      await findMessagesBySession(
-        sessionId,
-      );
-
-    const firstQuestion =
-      session.interview.questions[
-        0
-      ]?.question ?? null;
-
-    const candidateAnswer =
-      messages
-        .filter(
-          (message) =>
-            message.sender ===
-            "CANDIDATE",
-        )
-        .map(
-          (message) =>
-            message.message,
-        )
-        .join("\n\n");
-
-    // --------------------------------------------------------
-    // FINAL EVALUATION
-    // --------------------------------------------------------
-    //
-    // IMPORTANT:
-    // The old implementation marked the session COMPLETED
-    // BEFORE calling /v1/evaluate/final.
-    //
-    // That endpoint did not exist, so:
-    //
-    //     session -> COMPLETED
-    //     evaluation -> FAILED
-    //     Evaluation row -> never created
-    //     results page -> 404
-    //
-    // We now evaluate first and only then finalize the session.
-    // --------------------------------------------------------
-
-    let finalEvaluation: {
-      overallScore: number
-
-      evaluation?: {
-        scores?: Record<
-          string,
-          {
-            score?: number | null
-          }
-        >
-
-        reasoning?: string
-
-        errors?: string[]
-      }
-    };
-
-    try {
-
-      finalEvaluation =
-        await evaluateFinal({
-          problem: {
-            id:
-              firstQuestion?.id ||
-              session.interview.id,
-
-            title:
-              firstQuestion?.title ||
-              session.interview.title,
-
-            difficulty:
-              firstQuestion?.difficulty ||
-              null,
-
-            topics:
-              firstQuestion?.topics ||
-              [],
-
-            description:
-              firstQuestion?.description ||
-              "",
-
-            examples:
-              firstQuestion?.examples ||
-              [],
-
-            constraints:
-              firstQuestion?.constraints ||
-              [],
-          },
-
-          candidateAnswer,
-
-          history:
-            messages.map(
-              (message) => ({
-                sender:
-                  message.sender,
-
-                message:
-                  message.message,
-
-                questionId:
-                  message.questionId,
-              }),
-            ),
-        });
-
-    } catch (error) {
-
-      // ------------------------------------------------------
-      // FALLBACK
-      // ------------------------------------------------------
-      //
-      // If the external AI evaluator is temporarily unavailable,
-      // the interview must STILL be finishable.
-      //
-      // The candidate transcript is already saved.
-      // We create a valid result with a 0 score rather than
-      // leaving the interview in a broken state.
-      // ------------------------------------------------------
-
-      console.error(
-        "Final evaluation failed; saving fallback result:",
-        error,
-      );
-
-      finalEvaluation = {
-        overallScore:
-          0,
-
-        evaluation: {
-          scores:
-            {},
-
-          errors: [
-            error instanceof Error
-              ? error.message
-              : String(error),
-          ],
-
-          reasoning:
-            "The interview was submitted, but the final AI evaluation was unavailable.",
-        },
-      };
-    }
-
-    // --------------------------------------------------------
-    // EXTRACT SCORES
-    // --------------------------------------------------------
-
-    const scores =
-      finalEvaluation.evaluation
-        ?.scores || {};
-
-    const score = (
-      name: string,
-    ) => {
-
-      const value =
-        scores[name]?.score;
-
-      return typeof value ===
-        "number"
-        ? Math.round(value)
-        : 0;
-    };
-
-    const overallScore =
-      typeof finalEvaluation.overallScore ===
-      "number"
-        ? Math.round(
-            finalEvaluation.overallScore,
-          )
-        : 0;
-
-    // --------------------------------------------------------
-    // MARK SESSION COMPLETED
-    // --------------------------------------------------------
-
-    const endResult =
-      await endSessionRepo(
-        sessionId,
-        {
-          status:
-            "COMPLETED",
-
-          endedAt,
-
-          durationSeconds,
-        },
-      );
-
-    // Another request may have completed the session while
-    // the final evaluation was running.
-    if (
-      endResult.count ===
-      0
-    ) {
-
-      const existingEvaluation =
-        await findEvaluationByInterviewId(
-          session.interview.id,
-        );
-
-      return {
-        message:
-          "Interview already completed",
-
-        durationSeconds:
-          session.durationSeconds ??
-          durationSeconds,
-
-        overallScore:
-          existingEvaluation?.overallScore ??
-          overallScore,
-      };
-    }
-
-    // --------------------------------------------------------
-    // MARK INTERVIEW COMPLETED
-    // --------------------------------------------------------
-
-    await updateInterviewStatus(
+  if (session.status === "COMPLETED") {
+    const existingEvaluation = await findEvaluationByInterviewId(
       session.interview.id,
-      "COMPLETED",
     );
 
-    // --------------------------------------------------------
-    // SAVE FINAL EVALUATION
-    // --------------------------------------------------------
+    return {
+      message: "Interview already completed",
 
-    await createEvaluation({
-      interviewId:
-        session.interview.id,
+      durationSeconds: session.durationSeconds ?? 0,
 
-      sessionId,
+      overallScore: existingEvaluation?.overallScore ?? null,
+    };
+  }
 
-      candidateId,
+  const endedAt = new Date();
 
-      overallScore,
+  const durationSeconds = Math.max(
+    0,
 
-      algorithmCorrectness:
-        score(
-          "algorithm_correctness",
-        ),
+    Math.floor((endedAt.getTime() - session.startedAt.getTime()) / 1000),
+  );
 
-      logicalReasoning:
-        score(
-          "logical_reasoning",
-        ),
+  const messages = await findMessagesBySession(sessionId);
 
-      conceptCoverage:
-        score(
-          "concept_coverage",
-        ),
+  // --------------------------------------------------------
+  // FINAL EVALUATION
+  // --------------------------------------------------------
+  //
+  // The result is cumulative: the AI service evaluates every question
+  // of the interview and returns one combined result.
+  //
+  // The session is finalized only after the evaluation succeeds. If
+  // the AI service is unavailable an EvaluationUnavailableError
+  // propagates, the session stays IN_PROGRESS and the evaluation is
+  // retried later. A failed evaluation is never saved as a score of 0.
+  // --------------------------------------------------------
 
-      completeness:
-        score(
-          "completeness",
-        ),
+  const finalQuestions = session.interview.questions.map(
+    ({ question }: InterviewQuestionWithQuestion) => ({
+      questionId: question.id,
 
-      dataStructure:
-        score(
-          "data_structure",
-        ),
+      problem: {
+        id: question.id,
 
-      complexity:
-        score(
-          "complexity",
-        ),
+        title: question.title,
 
-      edgeCases:
-        score(
-          "edge_cases",
-        ),
+        difficulty: question.difficulty,
 
-      strengths:
-        [],
+        topics: question.topics,
 
-      improvements:
-        [],
+        description: question.description,
 
-      feedback:
-        finalEvaluation.evaluation
-          ?.reasoning ||
-        "Interview submitted successfully.",
-    });
+        examples: question.examples,
+
+        constraints: question.constraints,
+      },
+
+      candidateAnswer: messages
+        .filter(
+          (message) =>
+            message.sender === "CANDIDATE" &&
+            message.questionId === question.id,
+        )
+        .map((message) => message.message)
+        .join("\n\n"),
+
+      history: messages
+        .filter((message) => message.questionId === question.id)
+        .map((message) => ({
+          sender: message.sender,
+
+          message: message.message,
+
+          questionId: message.questionId,
+        })),
+    }),
+  );
+
+  const finalEvaluation: {
+    overallScore: number;
+
+    evaluation?: {
+      scores?: Record<
+        string,
+        {
+          score?: number | null;
+        }
+      >;
+
+      reasoning?: string;
+
+      errors?: string[];
+    };
+  } = await evaluateFinal({
+    problem: {},
+
+    candidateAnswer: "",
+
+    history: [],
+
+    candidateId,
+
+    sessionId,
+
+    questions: finalQuestions,
+  });
+
+  // --------------------------------------------------------
+  // EXTRACT SCORES
+  // --------------------------------------------------------
+
+  const scores = finalEvaluation.evaluation?.scores || {};
+
+  const score = (name: string) => {
+    const value = scores[name]?.score;
+
+    return typeof value === "number" ? Math.round(value) : 0;
+  };
+
+  const overallScore =
+    typeof finalEvaluation.overallScore === "number"
+      ? Math.round(finalEvaluation.overallScore)
+      : 0;
+
+  // --------------------------------------------------------
+  // MARK SESSION COMPLETED
+  // --------------------------------------------------------
+
+  const endResult = await endSessionRepo(sessionId, {
+    status: "COMPLETED",
+
+    endedAt,
+
+    durationSeconds,
+  });
+
+  // Another request may have completed the session while
+  // the final evaluation was running.
+  if (endResult.count === 0) {
+    const existingEvaluation = await findEvaluationByInterviewId(
+      session.interview.id,
+    );
 
     return {
-      message:
-        "Interview completed successfully",
+      message: "Interview already completed",
 
-      durationSeconds,
+      durationSeconds: session.durationSeconds ?? durationSeconds,
 
-      overallScore,
+      overallScore: existingEvaluation?.overallScore ?? overallScore,
     };
+  }
+
+  // --------------------------------------------------------
+  // MARK INTERVIEW COMPLETED
+  // --------------------------------------------------------
+
+  await updateInterviewStatus(session.interview.id, "COMPLETED");
+
+  // --------------------------------------------------------
+  // SAVE FINAL EVALUATION
+  // --------------------------------------------------------
+
+  await createEvaluation({
+    interviewId: session.interview.id,
+
+    sessionId,
+
+    candidateId,
+
+    overallScore,
+
+    algorithmCorrectness: score("algorithm_correctness"),
+
+    logicalReasoning: score("logical_reasoning"),
+
+    conceptCoverage: score("concept_coverage"),
+
+    completeness: score("completeness"),
+
+    dataStructure: score("data_structure"),
+
+    complexity: score("complexity"),
+
+    edgeCases: score("edge_cases"),
+
+    strengths: [],
+
+    improvements: [],
+
+    feedback:
+      finalEvaluation.evaluation?.reasoning ||
+      "Interview submitted successfully.",
+  });
+
+  return {
+    message: "Interview completed successfully",
+
+    durationSeconds,
+
+    overallScore,
   };
+};

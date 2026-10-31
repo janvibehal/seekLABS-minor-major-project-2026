@@ -13,15 +13,15 @@ function InterviewTopBar({
 
         <div className="flex h-10 w-10 items-center justify-center">
           <img
-          src="/images/logo-blue.png"
-          alt="SeekLABS"
-          className="h-7 w-7 object-contain"
+            src="/images/logo-blue.png"
+            alt="Qore"
+            className="h-7 w-7 object-contain"
           />
         </div>
 
         <div>
           <p className="text-sm font-bold text-[#173b63]">
-            SeekLABS
+            Qore
           </p>
 
           <p className="text-[10px] text-slate-400">

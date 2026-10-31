@@ -122,7 +122,7 @@ function Signup() {
                 <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/95" />
 
 
-                
+
 
 
                 {/* GRID */}
@@ -161,7 +161,7 @@ function Signup() {
 
                         <img
                             src="/images/logo.png"
-                            alt="SeekLABS Logo"
+                            alt="Qore Logo"
                             className="h-9 w-9 object-contain transition-transform duration-300 group-hover:scale-105"
                         />
 
@@ -233,7 +233,7 @@ function Signup() {
                     </div>
 
 
-                    
+
 
                 </div>
 
@@ -289,7 +289,7 @@ function Signup() {
 
                         <img
                             src="/images/interviewiq-logo.png"
-                            alt="SeekLABS"
+                            alt="Qore"
                             className="h-8 w-8 object-contain"
                         />
 

@@ -28,11 +28,15 @@ reference_solution = (
 )
 
 
-result = evaluate_submission(
-    problem,
-    candidate_answer,
-    reference_solution
-)
+def main():
+    result = evaluate_submission(
+        problem,
+        candidate_answer,
+        reference_solution
+    )
+
+    print_evaluation(result)
 
 
-print_evaluation(result)
+if __name__ == "__main__":
+    main()

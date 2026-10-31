@@ -1,9 +1,8 @@
 """
-Reference and rubric dataset loading.
+Reference dataset loading.
 
 Responsibilities:
 - Load reference solutions from the canonical Excel repository.
-- Load evaluation rubrics from JSON.
 - Preserve backward-compatible helper functions used by
   evaluation/interviewer and evaluation/scoring.
 
@@ -17,6 +16,7 @@ Important architecture rule:
 from __future__ import annotations
 
 import json
+from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
@@ -27,14 +27,15 @@ from typing import Any
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 
-# The current repository keeps shared dataset assets under AI/.
-AI_ROOT = PROJECT_ROOT / "AI"
+# The shared dataset assets live under the AI package directory.
+# Derived from this file's location so it does not depend on the
+# project folder being named "AI".
+AI_ROOT = Path(__file__).resolve().parent.parent
 
 DATASET_ROOT = AI_ROOT / "dataset"
 
 REFERENCES_DIR = DATASET_ROOT / "references"
 
-RUBRICS_DIR = DATASET_ROOT / "rubrics"
 
 # Canonical reference-answer workbook.
 REFERENCE_DATASET = (
@@ -123,7 +124,7 @@ def _get_problem_id(problem: dict[str, Any]) -> str:
 # REFERENCE DATASET
 # ============================================================
 
-def load_reference_dataset() -> dict[str, dict[str, Any]]:
+def _load_reference_dataset_uncached() -> dict[str, dict[str, Any]]:
     """
     Load the complete reference repository from Excel.
 
@@ -358,6 +359,81 @@ def load_reference_dataset() -> dict[str, dict[str, Any]]:
         workbook.close()
 
 
+_REFERENCE_CACHE: dict[tuple, dict[str, dict[str, Any]]] = {}
+
+
+def load_reference_dataset() -> dict[str, dict[str, Any]]:
+    """
+    Load the reference repository from Excel, caching the parsed
+    result per (file path, modification time).
+
+    A deep copy is returned so callers can mutate the result safely.
+    Editing the workbook invalidates the cache automatically.
+    """
+
+    try:
+        modified = REFERENCE_DATASET.stat().st_mtime_ns
+    except OSError:
+        # Let the uncached loader raise its descriptive error.
+        return _load_reference_dataset_uncached()
+
+    key = (str(REFERENCE_DATASET), modified)
+
+    if key not in _REFERENCE_CACHE:
+        _REFERENCE_CACHE.clear()
+        _REFERENCE_CACHE[key] = _load_reference_dataset_uncached()
+
+    return deepcopy(_REFERENCE_CACHE[key])
+
+
+# ============================================================
+# PROBLEM -> REFERENCE ID RESOLUTION
+# ============================================================
+
+def _normalize_title(title: Any) -> str:
+    return " ".join(str(title or "").casefold().split())
+
+
+def resolve_reference_problem_id(
+    problem: dict[str, Any],
+) -> str | None:
+    """
+    Find the reference-dataset problem ID (e.g. "P001") for a problem.
+
+    Backend questions carry their own database IDs, so the lookup is:
+      1. problem_id / id, when it is a key of the reference dataset;
+      2. otherwise a case-insensitive match of the problem title
+         against the dataset's "Problem Title" column.
+
+    Returns None when the problem has no references.
+    """
+
+    if not isinstance(problem, dict):
+        return None
+
+    dataset = load_reference_dataset()
+
+    for key in ("problem_id", "id"):
+        candidate = str(problem.get(key) or "").strip()
+
+        if candidate in dataset:
+            return candidate
+
+    wanted = _normalize_title(problem.get("title"))
+
+    if not wanted:
+        return None
+
+    for problem_id, data in dataset.items():
+        for reference in data.get("reference_solutions", []):
+            if _normalize_title(
+                reference.get("Problem Title")
+            ) == wanted:
+                return problem_id
+
+    return None
+
+
 # ============================================================
 # REFERENCE SOLUTIONS
 # ============================================================
@@ -379,8 +455,9 @@ def load_reference_solution(
     Those decisions belong to the adaptive-policy layer.
     """
 
-    problem_id = _get_problem_id(
-        problem
+    problem_id = (
+        resolve_reference_problem_id(problem)
+        or _get_problem_id(problem)
     )
 
     dataset = load_reference_dataset()
@@ -409,33 +486,6 @@ def load_reference_solution(
 
 
 # ============================================================
-# RUBRIC
-# ============================================================
-
-def load_rubric(
-    problem: dict[str, Any],
-) -> dict[str, Any]:
-    """
-    Load the evaluation rubric for a problem.
-
-    Rubrics remain separate from the reference repository.
-    """
-
-    problem_id = _get_problem_id(
-        problem
-    )
-
-    path = (
-        RUBRICS_DIR
-        / f"{problem_id}_rubric.json"
-    )
-
-    return _load_json(
-        path
-    )
-
-
-# ============================================================
 # EVALUATION CONTEXT
 # ============================================================
 
@@ -443,7 +493,7 @@ def load_evaluation_context(
     problem: dict[str, Any],
 ) -> tuple[
     list[dict[str, Any]],
-    dict[str, Any],
+    None,
 ]:
     """
     Backward-compatible helper used by the existing evaluation
@@ -453,8 +503,12 @@ def load_evaluation_context(
 
         (
             reference_solutions,
-            rubric
+            None
         )
+
+    The second element used to be a fixed per-problem rubric. Rubrics
+    are no longer used; the slot is kept so existing callers that
+    unpack two values keep working.
     """
 
     reference_solutions = (
@@ -463,11 +517,7 @@ def load_evaluation_context(
         )
     )
 
-    rubric = load_rubric(
-        problem
-    )
-
     return (
         reference_solutions,
-        rubric,
+        None,
     )

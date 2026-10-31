@@ -1,0 +1,343 @@
+{
+  "candidate_id": "cli_candidate",
+  "question_id": "clidb31cafd8be6_q1",
+  "reference_answer_id": "P001-R3",
+  "reference_match_confidence": null,
+  "target_reference_id": "P001-R3",
+  "current_answer": "I want to end the interview can we do that ?",
+  "nlp_state": {
+    "approach": "Traverse the array once, using a hash map to find the complement and return indices.",
+    "algorithms": [
+      "Brute Force",
+      "hashmap"
+    ],
+    "concepts": [
+      "nested loops",
+      "O(n^2)",
+      "complement"
+    ],
+    "operations": [
+      "check every pair of elements",
+      "return the indices",
+      "Traverse the array once",
+      "Calculate complement as target - nums[i]",
+      "Check if complement exists in hash map",
+      "Return the two indices",
+      "Store the current number and its index"
+    ],
+    "data_structures": [
+      "hashmap",
+      "hash map"
+    ],
+    "time_complexity": "O(n) average time",
+    "space_complexity": "O(n) space",
+    "edge_cases": [],
+    "reasoning_summary": null,
+    "assumptions": [],
+    "optimization": null
+  },
+  "scores": {
+    "algorithm_correctness": null,
+    "logical_reasoning": null,
+    "concept_coverage": null,
+    "completeness": null,
+    "data_structure": null,
+    "complexity": null,
+    "edge_cases": null
+  },
+  "primary_classification": "Partially Correct",
+  "secondary_classification": null,
+  "adaptive_classifications": [],
+  "primary_adaptive_gap": null,
+  "evidence": {
+    "algorithm_correctness": "Candidate did not provide any algorithmic description or steps to solve the problem.",
+    "logical_reasoning": "Candidate did not explain any reasoning or justification for a solution.",
+    "concept_coverage": "Candidate did not mention or demonstrate any relevant technical concepts.",
+    "completeness": "Candidate did not address any essential parts of a solution.",
+    "data_structure": "Candidate did not identify or describe any data structure.",
+    "complexity": "Candidate did not provide any complexity analysis.",
+    "edge_cases": "Candidate did not discuss or imply any edge cases."
+  },
+  "history": [
+    {
+      "turn_number": 1,
+      "candidate_answer": "The Two Sum problem can be solved using three main approaches. Brute Force: Use two nested loops to check every pair of elements and return the indices when their sum equals the target.",
+      "reference_answer_id": "P001-R1",
+      "reference_match_confidence": null,
+      "target_reference_id": "P001-R3",
+      "scores": {
+        "algorithm_correctness": 90.0,
+        "logical_reasoning": null,
+        "concept_coverage": 80.0,
+        "completeness": 50.0,
+        "data_structure": null,
+        "complexity": null,
+        "edge_cases": null
+      },
+      "primary_classification": "Partially Correct",
+      "secondary_classification": null,
+      "adaptive_classifications": [
+        "Completeness Gap"
+      ],
+      "primary_adaptive_gap": "Completeness Gap",
+      "evidence": {
+        "algorithm_correctness": "The candidate explicitly states \"Use two nested loops to check every pair of elements and return the indices when their sum equals the target,\" which correctly solves the Two Sum problem.",
+        "logical_reasoning": "The candidate did not provide any explanation or justification for why the nested-loop approach works.",
+        "concept_coverage": "The candidate mentions the concept of nested loops to iterate over all pairs, demonstrating understanding of basic iteration.",
+        "completeness": "The answer includes the core approach but omits discussion of complexity, edge cases, and other essential details required for a complete solution.",
+        "data_structure": "No data structure was mentioned or implied in the candidate's answer.",
+        "complexity": "The candidate did not provide any complexity analysis.",
+        "edge_cases": "No edge cases were discussed or implied in the candidate's answer."
+      },
+      "current_interviewer_question": "Please explain your approach for solving Two Sum.",
+      "nlp_state": {
+        "approach": "Brute Force",
+        "algorithms": [
+          "Brute Force"
+        ],
+        "concepts": [
+          "nested loops"
+        ],
+        "operations": [
+          "check every pair of elements",
+          "return the indices"
+        ],
+        "data_structures": [],
+        "time_complexity": null,
+        "space_complexity": null,
+        "edge_cases": [],
+        "reasoning_summary": null,
+        "assumptions": [],
+        "optimization": null
+      }
+    },
+    {
+      "turn_number": 2,
+      "candidate_answer": "I don't know",
+      "reference_answer_id": "P001-R1",
+      "reference_match_confidence": null,
+      "target_reference_id": "P001-R3",
+      "scores": {
+        "algorithm_correctness": null,
+        "logical_reasoning": null,
+        "concept_coverage": null,
+        "completeness": null,
+        "data_structure": null,
+        "complexity": null,
+        "edge_cases": null
+      },
+      "primary_classification": "Partially Correct",
+      "secondary_classification": null,
+      "adaptive_classifications": [],
+      "primary_adaptive_gap": null,
+      "evidence": {
+        "algorithm_correctness": "The candidate answer is \"I don't know\", which contains no algorithmic description or steps to evaluate correctness.",
+        "logical_reasoning": "The candidate answer provides no reasoning or explanation of any approach.",
+        "concept_coverage": "No concepts, operations, or approach are mentioned in the candidate answer.",
+        "completeness": "The candidate answer does not address any part of the problem, so completeness cannot be assessed.",
+        "data_structure": "No data structure is referenced or described in the candidate answer.",
+        "complexity": "The candidate answer contains no complexity analysis or claims.",
+        "edge_cases": "No edge cases are discussed or implied in the candidate answer."
+      },
+      "current_interviewer_question": "What is the time and space complexity of your nested-loop solution, and how would you handle the case where no pair sums to the target?",
+      "nlp_state": {
+        "approach": "Brute Force",
+        "algorithms": [
+          "Brute Force"
+        ],
+        "concepts": [
+          "nested loops"
+        ],
+        "operations": [
+          "check every pair of elements",
+          "return the indices"
+        ],
+        "data_structures": [],
+        "time_complexity": null,
+        "space_complexity": null,
+        "edge_cases": [],
+        "reasoning_summary": null,
+        "assumptions": [],
+        "optimization": null
+      }
+    },
+    {
+      "turn_number": 3,
+      "candidate_answer": "If I wanted to approach it using the O(n2) approach i would probably use a hashmap approach",
+      "reference_answer_id": "P001-R1",
+      "reference_match_confidence": null,
+      "target_reference_id": "P001-R3",
+      "scores": {
+        "algorithm_correctness": null,
+        "logical_reasoning": null,
+        "concept_coverage": null,
+        "completeness": null,
+        "data_structure": null,
+        "complexity": null,
+        "edge_cases": null
+      },
+      "primary_classification": "Partially Correct",
+      "secondary_classification": null,
+      "adaptive_classifications": [],
+      "primary_adaptive_gap": null,
+      "evidence": {
+        "algorithm_correctness": "The evaluation could not be completed.",
+        "logical_reasoning": "The evaluation could not be completed.",
+        "concept_coverage": "The evaluation could not be completed.",
+        "completeness": "The evaluation could not be completed.",
+        "data_structure": "The evaluation could not be completed.",
+        "complexity": "The evaluation could not be completed.",
+        "edge_cases": "The evaluation could not be completed."
+      },
+      "current_interviewer_question": "If you wanted to improve on the O(n²) brute‑force approach, what kind of data structure could you use to quickly find the complement of a number as you iterate through the array?",
+      "nlp_state": {
+        "approach": "O(n^2) approach",
+        "algorithms": [
+          "Brute Force",
+          "hashmap"
+        ],
+        "concepts": [
+          "nested loops",
+          "O(n^2)"
+        ],
+        "operations": [
+          "check every pair of elements",
+          "return the indices"
+        ],
+        "data_structures": [
+          "hashmap"
+        ],
+        "time_complexity": "O(n^2)",
+        "space_complexity": null,
+        "edge_cases": [],
+        "reasoning_summary": null,
+        "assumptions": [],
+        "optimization": null
+      }
+    },
+    {
+      "turn_number": 4,
+      "candidate_answer": "Hash Map: Traverse the array once, calculate the complement as target - nums[i], and check whether it already exists in a hash map; if it does, return the two indices, otherwise store the current number and its index. This takes O(n) average time and O(n) space.",
+      "reference_answer_id": "P001-R3",
+      "reference_match_confidence": null,
+      "target_reference_id": "P001-R3",
+      "scores": {
+        "algorithm_correctness": 90.0,
+        "logical_reasoning": null,
+        "concept_coverage": 80.0,
+        "completeness": 85.0,
+        "data_structure": 90.0,
+        "complexity": 90.0,
+        "edge_cases": null
+      },
+      "primary_classification": "Partially Correct",
+      "secondary_classification": null,
+      "adaptive_classifications": [],
+      "primary_adaptive_gap": null,
+      "evidence": {
+        "algorithm_correctness": "Candidate explicitly describes traversing the array once, using a hash map to find the complement and returning the indices, which is a correct solution for Two Sum.",
+        "logical_reasoning": "No explicit reasoning or justification provided beyond the algorithm description.",
+        "concept_coverage": "Candidate mentions the complement concept, hash map usage, and array traversal, covering the key concepts needed for the solution.",
+        "completeness": "Candidate outlines the core approach, traversal, complement calculation, hash map lookup, index return, and complexity, covering all essential parts of the solution.",
+        "data_structure": "Candidate explicitly states the use of a hash map to store numbers and indices.",
+        "complexity": "Candidate explicitly claims O(n) average time and O(n) space.",
+        "edge_cases": "Candidate does not mention any edge cases."
+      },
+      "current_interviewer_question": "How would you use a hash map to find the complement of each number as you iterate, and what would you store in the map?",
+      "nlp_state": {
+        "approach": "Traverse the array once, using a hash map to find the complement and return indices.",
+        "algorithms": [
+          "Brute Force",
+          "hashmap"
+        ],
+        "concepts": [
+          "nested loops",
+          "O(n^2)",
+          "complement"
+        ],
+        "operations": [
+          "check every pair of elements",
+          "return the indices",
+          "Traverse the array once",
+          "Calculate complement as target - nums[i]",
+          "Check if complement exists in hash map",
+          "Return the two indices",
+          "Store the current number and its index"
+        ],
+        "data_structures": [
+          "hashmap",
+          "hash map"
+        ],
+        "time_complexity": "O(n) average time",
+        "space_complexity": "O(n) space",
+        "edge_cases": [],
+        "reasoning_summary": null,
+        "assumptions": [],
+        "optimization": null
+      }
+    },
+    {
+      "turn_number": 5,
+      "candidate_answer": "I want to end the interview can we do that ?",
+      "reference_answer_id": "P001-R3",
+      "reference_match_confidence": null,
+      "target_reference_id": "P001-R3",
+      "scores": {
+        "algorithm_correctness": null,
+        "logical_reasoning": null,
+        "concept_coverage": null,
+        "completeness": null,
+        "data_structure": null,
+        "complexity": null,
+        "edge_cases": null
+      },
+      "primary_classification": "Partially Correct",
+      "secondary_classification": null,
+      "adaptive_classifications": [],
+      "primary_adaptive_gap": null,
+      "evidence": {
+        "algorithm_correctness": "Candidate did not provide any algorithmic description or steps to solve the problem.",
+        "logical_reasoning": "Candidate did not explain any reasoning or justification for a solution.",
+        "concept_coverage": "Candidate did not mention or demonstrate any relevant technical concepts.",
+        "completeness": "Candidate did not address any essential parts of a solution.",
+        "data_structure": "Candidate did not identify or describe any data structure.",
+        "complexity": "Candidate did not provide any complexity analysis.",
+        "edge_cases": "Candidate did not discuss or imply any edge cases."
+      },
+      "current_interviewer_question": "Can you explain why, when using a hash map, you only need to look up previously seen values and not future ones?",
+      "nlp_state": {
+        "approach": "Traverse the array once, using a hash map to find the complement and return indices.",
+        "algorithms": [
+          "Brute Force",
+          "hashmap"
+        ],
+        "concepts": [
+          "nested loops",
+          "O(n^2)",
+          "complement"
+        ],
+        "operations": [
+          "check every pair of elements",
+          "return the indices",
+          "Traverse the array once",
+          "Calculate complement as target - nums[i]",
+          "Check if complement exists in hash map",
+          "Return the two indices",
+          "Store the current number and its index"
+        ],
+        "data_structures": [
+          "hashmap",
+          "hash map"
+        ],
+        "time_complexity": "O(n) average time",
+        "space_complexity": "O(n) space",
+        "edge_cases": [],
+        "reasoning_summary": null,
+        "assumptions": [],
+        "optimization": null
+      }
+    }
+  ],
+  "current_interviewer_question": "Can you explain why, when using a hash map, you only need to look up previously seen values and not future ones?",
+  "should_continue": false
+}

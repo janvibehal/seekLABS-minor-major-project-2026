@@ -14,6 +14,13 @@ def print_evaluation(result: dict) -> None:
         "N/A"
     )
 
+    # classify_answer() returns a dict; show its primary label.
+    if isinstance(classification, dict):
+        classification = (
+            classification.get("primary_classification")
+            or "N/A"
+        )
+
     semantic_similarity = result.get(
         "semantic_similarity",
         0.0
