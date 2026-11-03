@@ -61,10 +61,7 @@ function Footer() {
 
                             <span className="text-base font-semibold tracking-[-0.04em]">
 
-                                Seek
-                                <span className="text-white/40">
-                                    LABS
-                                </span>
+                               Qore
 
                             </span>
 

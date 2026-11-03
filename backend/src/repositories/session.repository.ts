@@ -36,6 +36,40 @@ export const findSessionById = async (sessionId: string) => {
   });
 };
 
+export const findInProgressSessions = async () => {
+  return prisma.interviewSession.findMany({
+    where: {
+      OR: [
+        {
+          status: "IN_PROGRESS",
+        },
+        {
+          status: "COMPLETED",
+          evaluation: {
+            is: null,
+          },
+          messages: {
+            some: {
+              sender: "CANDIDATE",
+            },
+          },
+        },
+      ],
+    },
+    select: {
+      id: true,
+      candidateId: true,
+      status: true,
+      startedAt: true,
+      interview: {
+        select: {
+          duration: true,
+        },
+      },
+    },
+  });
+};
+
 export const findSessionByInterviewId = async (interviewId: string) => {
   return prisma.interviewSession.findUnique({
     where: {

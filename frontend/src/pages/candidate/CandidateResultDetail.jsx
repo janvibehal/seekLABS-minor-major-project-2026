@@ -4,13 +4,13 @@ import { useNavigate, useParams } from 'react-router-dom'
 import * as candidateApi from '../../api/candidate.api.js'
 
 const RUBRICS = [
-  { key: 'algorithmCorrectness', label: 'Algorithmic Correctness' },
-  { key: 'logicalReasoning', label: 'Reasoning & Approach' },
-  { key: 'conceptCoverage', label: 'Concept Coverage' },
-  { key: 'completeness', label: 'Completeness' },
-  { key: 'dataStructure', label: 'Data Structure Selection' },
-  { key: 'complexity', label: 'Time & Space Complexity' },
-  { key: 'edgeCases', label: 'Edge Case Handling' },
+  { key: 'algorithmCorrectness', aiKey: 'algorithm_correctness', label: 'Algorithmic Correctness' },
+  { key: 'logicalReasoning', aiKey: 'logical_reasoning', label: 'Reasoning & Approach' },
+  { key: 'conceptCoverage', aiKey: 'concept_coverage', label: 'Concept Coverage' },
+  { key: 'completeness', aiKey: 'completeness', label: 'Completeness' },
+  { key: 'dataStructure', aiKey: 'data_structure', label: 'Data Structure Selection' },
+  { key: 'complexity', aiKey: 'complexity', label: 'Time & Space Complexity' },
+  { key: 'edgeCases', aiKey: 'edge_cases', label: 'Edge Case Handling' },
 ]
 
 const toValidScore = (value) => {
@@ -92,6 +92,12 @@ function CandidateResultDetail() {
       ...rubric,
       score: toValidScore(dimensions[rubric.key]),
     })).filter((rubric) => rubric.score !== null)
+  }, [detail])
+
+  const questionPerformance = useMemo(() => {
+    return [...(detail?.questionPerformance || [])].sort(
+      (a, b) => (a.order || 0) - (b.order || 0)
+    )
   }, [detail])
 
   // Identify the highest and lowest scoring rubrics
@@ -197,12 +203,23 @@ function CandidateResultDetail() {
           </div>
 
           <h1 className="mt-5 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-            Interview Performance
+            {detail.title || 'Interview Performance'}
           </h1>
 
           <p className="mt-3 max-w-xl text-sm leading-6 text-zinc-400">
-            Your scores across the seven evaluation dimensions for this interview.
+            Interview Performance
+            <span className="mx-2 text-zinc-600">·</span>
+            Your scores across the seven evaluation dimensions.
           </p>
+
+          <div className="mt-5 inline-flex items-center gap-2 rounded-xl border border-emerald-400/20 bg-emerald-400/10 px-3 py-2">
+            <span className="text-xs font-medium text-emerald-300">
+              Questions answered
+            </span>
+            <span className="text-sm font-semibold text-white">
+              {detail.questionsAnswered ?? 0} / {detail.totalQuestions ?? 0}
+            </span>
+          </div>
         </div>
       </section>
 
@@ -231,9 +248,30 @@ function CandidateResultDetail() {
 
       {/* PERFORMANCE BREAKDOWN */}
       <section className="mt-8">
+        <div className="mb-5 grid gap-4 sm:grid-cols-3">
+          <SummaryCard
+            label="Overall average"
+            value={toValidScore(detail.overallScore)}
+            suffix="%"
+            tone="blue"
+          />
+          <SummaryCard
+            label="Questions assessed"
+            value={questionPerformance.filter((item) => item.answered).length}
+            suffix={` / ${detail.totalQuestions ?? 0}`}
+            tone="emerald"
+          />
+          <SummaryCard
+            label="Rubrics averaged"
+            value={rubricScores.length}
+            suffix={` / ${RUBRICS.length}`}
+            tone="violet"
+          />
+        </div>
+
         <SectionHeader
           title="Performance Breakdown"
-          subtitle="Your score for each evaluation rubric in this interview"
+          subtitle="Interview average across every assessed question"
         />
 
         {rubricScores.length > 0 ? (
@@ -266,6 +304,28 @@ function CandidateResultDetail() {
         <p className="mt-4 text-xs leading-5 text-zinc-600">
           These scores belong only to this interview. Rubrics that were not assessed are excluded.
         </p>
+      </section>
+
+      <section className="mt-8">
+        <SectionHeader
+          title="Question-by-question performance"
+          subtitle="Expand a question to see its individual rubric scores and average"
+        />
+
+        {questionPerformance.length > 0 ? (
+          <div className="space-y-3">
+            {questionPerformance.map((question) => (
+              <QuestionPerformanceCard
+                key={question.questionId}
+                question={question}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-dashed border-white/[0.10] bg-[#0d1420] px-6 py-10 text-center text-sm text-zinc-500">
+            Per-question scores are not available for this evaluation.
+          </div>
+        )}
       </section>
 
       {/* STRENGTHS AND AREAS TO IMPROVE */}
@@ -309,6 +369,96 @@ function SectionHeader({ title, subtitle }) {
         </p>
       )}
     </div>
+  )
+}
+
+function SummaryCard({ label, value, suffix, tone }) {
+  const colors = {
+    blue: 'border-blue-400/20 bg-blue-400/[0.06] text-blue-300',
+    emerald: 'border-emerald-400/20 bg-emerald-400/[0.06] text-emerald-300',
+    violet: 'border-violet-400/20 bg-violet-400/[0.06] text-violet-300',
+  }
+
+  return (
+    <div className={`rounded-2xl border p-5 ${colors[tone]}`}>
+      <p className="text-xs font-medium uppercase tracking-[0.12em] opacity-70">
+        {label}
+      </p>
+      <p className="mt-2 text-2xl font-semibold text-white">
+        {value ?? '—'}
+        <span className="ml-1 text-sm font-medium text-zinc-500">
+          {suffix}
+        </span>
+      </p>
+    </div>
+  )
+}
+
+function QuestionPerformanceCard({ question }) {
+  const scores = RUBRICS.map((rubric) => ({
+    ...rubric,
+    score: toValidScore(
+      question.scores?.[rubric.key]?.score ??
+      question.scores?.[rubric.aiKey]?.score ??
+      question.scores?.[rubric.key] ??
+      question.scores?.[rubric.aiKey]
+    ),
+  })).filter((rubric) => rubric.score !== null)
+
+  return (
+    <details className="group rounded-2xl border border-white/[0.07] bg-[#0d1420]">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-5 sm:p-6">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-400/10 text-xs font-semibold text-blue-300">
+            {String(question.order || 0).padStart(2, '0')}
+          </span>
+          <div className="min-w-0">
+            <h3 className="truncate text-sm font-semibold text-white">
+              {question.title}
+            </h3>
+            <p className="mt-1 text-xs text-zinc-500">
+              {question.answered ? 'Answered' : 'Not answered'}
+              {question.difficulty ? ` · ${question.difficulty}` : ''}
+            </p>
+          </div>
+        </div>
+        <div className="flex shrink-0 items-center gap-3">
+          <span className="text-lg font-semibold text-white">
+            {question.overallScore === null || question.overallScore === undefined
+              ? '—'
+              : `${Number(question.overallScore).toFixed(1)}%`}
+          </span>
+          <span className="text-zinc-500 transition-transform group-open:rotate-180">
+            ↓
+          </span>
+        </div>
+      </summary>
+
+      <div className="grid gap-3 border-t border-white/[0.06] p-5 sm:grid-cols-2 sm:p-6 lg:grid-cols-3">
+        {scores.length > 0 ? (
+          scores.map((rubric) => (
+            <div key={rubric.key} className="rounded-xl bg-white/[0.03] p-3">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs text-zinc-400">{rubric.label}</span>
+                <span className="text-sm font-semibold text-white">
+                  {rubric.score.toFixed(1)}%
+                </span>
+              </div>
+              <div className="mt-2 h-1 overflow-hidden rounded-full bg-white/[0.08]">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-blue-600 to-cyan-300"
+                  style={{ width: `${rubric.score}%` }}
+                />
+              </div>
+            </div>
+          ))
+        ) : (
+          <p className="text-sm text-zinc-500">
+            No rubric scores were recorded for this question.
+          </p>
+        )}
+      </div>
+    </details>
   )
 }
 

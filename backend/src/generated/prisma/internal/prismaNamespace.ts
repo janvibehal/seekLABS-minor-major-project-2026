@@ -1548,7 +1548,6 @@ export const InterviewQuestionScalarFieldEnum = {
   questionId: 'questionId',
   order: 'order',
   status: 'status',
-  timeAllottedSeconds: 'timeAllottedSeconds',
   createdAt: 'createdAt'
 } as const
 
@@ -1589,9 +1588,6 @@ export const QuestionAttemptScalarFieldEnum = {
   questionId: 'questionId',
   candidateId: 'candidateId',
   status: 'status',
-  attempted: 'attempted',
-  draftAnswer: 'draftAnswer',
-  lastSavedAt: 'lastSavedAt',
   startedAt: 'startedAt',
   completedAt: 'completedAt',
   createdAt: 'createdAt',
@@ -1614,6 +1610,7 @@ export const EvaluationScalarFieldEnum = {
   dataStructure: 'dataStructure',
   complexity: 'complexity',
   edgeCases: 'edgeCases',
+  questionPerformance: 'questionPerformance',
   strengths: 'strengths',
   improvements: 'improvements',
   feedback: 'feedback',
@@ -1636,6 +1633,14 @@ export const JsonNullValueInput = {
 } as const
 
 export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
+
+
+export const NullableJsonNullValueInput = {
+  DbNull: DbNull,
+  JsonNull: JsonNull
+} as const
+
+export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
 
 
 export const QueryMode = {

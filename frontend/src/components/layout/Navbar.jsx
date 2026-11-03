@@ -27,10 +27,7 @@ function Navbar() {
 
                     <span className="text-base font-semibold tracking-[-0.04em] text-white">
 
-                        Seek
-                        <span className="text-white/40">
-                            LABS
-                        </span>
+                        QORE
 
                     </span>
 

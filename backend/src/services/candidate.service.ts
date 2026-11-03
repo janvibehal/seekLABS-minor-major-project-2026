@@ -201,7 +201,11 @@ export const listCandidateResults = async (
     await findEvaluationsByCandidate(candidateId);
 
 
-  return evaluations.map(
+  return evaluations
+    .filter(
+      (evaluation) => evaluation.session.messages.length > 0
+    )
+    .map(
     (evaluation: CandidateEvaluation) => ({
       interviewId: evaluation.interviewId,
 
@@ -236,13 +240,21 @@ export const getCandidateResultDetail = async (
     );
   }
 
-
   if (evaluation.candidateId !== candidateId) {
     throw new ForbiddenError(
       "This result does not belong to you"
     );
   }
 
+  const hasCandidateAnswer = evaluation.session.messages.some(
+    (message) => message.sender === "CANDIDATE"
+  );
+
+  if (!hasCandidateAnswer) {
+    throw new NotFoundError(
+      "Results not found because no candidate answers were submitted"
+    );
+  }
 
   /* ============================================================
      QUESTION ANALYSIS
@@ -305,11 +317,48 @@ export const getCandidateResultDetail = async (
       }
     );
 
+  const answeredQuestions =
+    questionAnalysis.filter(
+      (question) => question.candidateResponseCount > 0
+    ).length;
 
   const solvedQuestions =
     questionAnalysis.filter(
       (question) => question.solved
     ).length;
+
+  const questionPerformance = Array.isArray(evaluation.questionPerformance)
+    ? evaluation.questionPerformance.map((result) => {
+        const item =
+          result && typeof result === "object"
+            ? (result as Record<string, unknown>)
+            : {};
+
+        const questionId =
+          typeof item.questionId === "string" ? item.questionId : "";
+
+        const question = questionAnalysis.find(
+          (candidateQuestion) =>
+            candidateQuestion.questionId === questionId,
+        );
+
+        return {
+          questionId,
+          order: question?.order ?? 0,
+          title: question?.title ?? "Question",
+          difficulty: question?.difficulty ?? null,
+          answered: item.answered === true,
+          overallScore:
+            typeof item.overallScore === "number"
+              ? item.overallScore
+              : null,
+          scores:
+            item.scores && typeof item.scores === "object"
+              ? item.scores
+              : {},
+        };
+      })
+    : [];
 
 
   /* ============================================================
@@ -319,11 +368,17 @@ export const getCandidateResultDetail = async (
   return {
     interviewId: evaluation.interviewId,
 
+    title: evaluation.session.interview.title,
+
     overallScore: evaluation.overallScore,
 
     questionsSolved: solvedQuestions,
 
+    questionsAnswered: answeredQuestions,
+
     totalQuestions: questionAnalysis.length,
+
+    questionPerformance,
 
 
     dimensions: {

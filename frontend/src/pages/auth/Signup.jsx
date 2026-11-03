@@ -166,15 +166,6 @@ function Signup() {
                         />
 
 
-                        <span className="text-sm font-medium tracking-[-0.02em]">
-
-                            Interview
-                            <span className="text-white/40">
-                                IQ
-                            </span>
-
-                        </span>
-
                     </button>
 
 

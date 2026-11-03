@@ -95,6 +95,7 @@ export type EvaluationCountAggregateOutputType = {
   dataStructure: number
   complexity: number
   edgeCases: number
+  questionPerformance: number
   strengths: number
   improvements: number
   feedback: number
@@ -172,6 +173,7 @@ export type EvaluationCountAggregateInputType = {
   dataStructure?: true
   complexity?: true
   edgeCases?: true
+  questionPerformance?: true
   strengths?: true
   improvements?: true
   feedback?: true
@@ -278,6 +280,7 @@ export type EvaluationGroupByOutputType = {
   dataStructure: number
   complexity: number
   edgeCases: number
+  questionPerformance: runtime.JsonValue | null
   strengths: string[]
   improvements: string[]
   feedback: string
@@ -320,6 +323,7 @@ export type EvaluationWhereInput = {
   dataStructure?: Prisma.IntFilter<"Evaluation"> | number
   complexity?: Prisma.IntFilter<"Evaluation"> | number
   edgeCases?: Prisma.IntFilter<"Evaluation"> | number
+  questionPerformance?: Prisma.JsonNullableFilter<"Evaluation">
   strengths?: Prisma.StringNullableListFilter<"Evaluation">
   improvements?: Prisma.StringNullableListFilter<"Evaluation">
   feedback?: Prisma.StringFilter<"Evaluation"> | string
@@ -342,6 +346,7 @@ export type EvaluationOrderByWithRelationInput = {
   dataStructure?: Prisma.SortOrder
   complexity?: Prisma.SortOrder
   edgeCases?: Prisma.SortOrder
+  questionPerformance?: Prisma.SortOrderInput | Prisma.SortOrder
   strengths?: Prisma.SortOrder
   improvements?: Prisma.SortOrder
   feedback?: Prisma.SortOrder
@@ -367,6 +372,7 @@ export type EvaluationWhereUniqueInput = Prisma.AtLeast<{
   dataStructure?: Prisma.IntFilter<"Evaluation"> | number
   complexity?: Prisma.IntFilter<"Evaluation"> | number
   edgeCases?: Prisma.IntFilter<"Evaluation"> | number
+  questionPerformance?: Prisma.JsonNullableFilter<"Evaluation">
   strengths?: Prisma.StringNullableListFilter<"Evaluation">
   improvements?: Prisma.StringNullableListFilter<"Evaluation">
   feedback?: Prisma.StringFilter<"Evaluation"> | string
@@ -389,6 +395,7 @@ export type EvaluationOrderByWithAggregationInput = {
   dataStructure?: Prisma.SortOrder
   complexity?: Prisma.SortOrder
   edgeCases?: Prisma.SortOrder
+  questionPerformance?: Prisma.SortOrderInput | Prisma.SortOrder
   strengths?: Prisma.SortOrder
   improvements?: Prisma.SortOrder
   feedback?: Prisma.SortOrder
@@ -416,6 +423,7 @@ export type EvaluationScalarWhereWithAggregatesInput = {
   dataStructure?: Prisma.IntWithAggregatesFilter<"Evaluation"> | number
   complexity?: Prisma.IntWithAggregatesFilter<"Evaluation"> | number
   edgeCases?: Prisma.IntWithAggregatesFilter<"Evaluation"> | number
+  questionPerformance?: Prisma.JsonNullableWithAggregatesFilter<"Evaluation">
   strengths?: Prisma.StringNullableListFilter<"Evaluation">
   improvements?: Prisma.StringNullableListFilter<"Evaluation">
   feedback?: Prisma.StringWithAggregatesFilter<"Evaluation"> | string
@@ -432,6 +440,7 @@ export type EvaluationCreateInput = {
   dataStructure: number
   complexity: number
   edgeCases: number
+  questionPerformance?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   strengths?: Prisma.EvaluationCreatestrengthsInput | string[]
   improvements?: Prisma.EvaluationCreateimprovementsInput | string[]
   feedback: string
@@ -454,6 +463,7 @@ export type EvaluationUncheckedCreateInput = {
   dataStructure: number
   complexity: number
   edgeCases: number
+  questionPerformance?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   strengths?: Prisma.EvaluationCreatestrengthsInput | string[]
   improvements?: Prisma.EvaluationCreateimprovementsInput | string[]
   feedback: string
@@ -470,6 +480,7 @@ export type EvaluationUpdateInput = {
   dataStructure?: Prisma.IntFieldUpdateOperationsInput | number
   complexity?: Prisma.IntFieldUpdateOperationsInput | number
   edgeCases?: Prisma.IntFieldUpdateOperationsInput | number
+  questionPerformance?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   strengths?: Prisma.EvaluationUpdatestrengthsInput | string[]
   improvements?: Prisma.EvaluationUpdateimprovementsInput | string[]
   feedback?: Prisma.StringFieldUpdateOperationsInput | string
@@ -492,6 +503,7 @@ export type EvaluationUncheckedUpdateInput = {
   dataStructure?: Prisma.IntFieldUpdateOperationsInput | number
   complexity?: Prisma.IntFieldUpdateOperationsInput | number
   edgeCases?: Prisma.IntFieldUpdateOperationsInput | number
+  questionPerformance?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   strengths?: Prisma.EvaluationUpdatestrengthsInput | string[]
   improvements?: Prisma.EvaluationUpdateimprovementsInput | string[]
   feedback?: Prisma.StringFieldUpdateOperationsInput | string
@@ -511,6 +523,7 @@ export type EvaluationCreateManyInput = {
   dataStructure: number
   complexity: number
   edgeCases: number
+  questionPerformance?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   strengths?: Prisma.EvaluationCreatestrengthsInput | string[]
   improvements?: Prisma.EvaluationCreateimprovementsInput | string[]
   feedback: string
@@ -527,6 +540,7 @@ export type EvaluationUpdateManyMutationInput = {
   dataStructure?: Prisma.IntFieldUpdateOperationsInput | number
   complexity?: Prisma.IntFieldUpdateOperationsInput | number
   edgeCases?: Prisma.IntFieldUpdateOperationsInput | number
+  questionPerformance?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   strengths?: Prisma.EvaluationUpdatestrengthsInput | string[]
   improvements?: Prisma.EvaluationUpdateimprovementsInput | string[]
   feedback?: Prisma.StringFieldUpdateOperationsInput | string
@@ -546,6 +560,7 @@ export type EvaluationUncheckedUpdateManyInput = {
   dataStructure?: Prisma.IntFieldUpdateOperationsInput | number
   complexity?: Prisma.IntFieldUpdateOperationsInput | number
   edgeCases?: Prisma.IntFieldUpdateOperationsInput | number
+  questionPerformance?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   strengths?: Prisma.EvaluationUpdatestrengthsInput | string[]
   improvements?: Prisma.EvaluationUpdateimprovementsInput | string[]
   feedback?: Prisma.StringFieldUpdateOperationsInput | string
@@ -580,6 +595,7 @@ export type EvaluationCountOrderByAggregateInput = {
   dataStructure?: Prisma.SortOrder
   complexity?: Prisma.SortOrder
   edgeCases?: Prisma.SortOrder
+  questionPerformance?: Prisma.SortOrder
   strengths?: Prisma.SortOrder
   improvements?: Prisma.SortOrder
   feedback?: Prisma.SortOrder
@@ -776,6 +792,7 @@ export type EvaluationCreateWithoutCandidateInput = {
   dataStructure: number
   complexity: number
   edgeCases: number
+  questionPerformance?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   strengths?: Prisma.EvaluationCreatestrengthsInput | string[]
   improvements?: Prisma.EvaluationCreateimprovementsInput | string[]
   feedback: string
@@ -796,6 +813,7 @@ export type EvaluationUncheckedCreateWithoutCandidateInput = {
   dataStructure: number
   complexity: number
   edgeCases: number
+  questionPerformance?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   strengths?: Prisma.EvaluationCreatestrengthsInput | string[]
   improvements?: Prisma.EvaluationCreateimprovementsInput | string[]
   feedback: string
@@ -844,6 +862,7 @@ export type EvaluationScalarWhereInput = {
   dataStructure?: Prisma.IntFilter<"Evaluation"> | number
   complexity?: Prisma.IntFilter<"Evaluation"> | number
   edgeCases?: Prisma.IntFilter<"Evaluation"> | number
+  questionPerformance?: Prisma.JsonNullableFilter<"Evaluation">
   strengths?: Prisma.StringNullableListFilter<"Evaluation">
   improvements?: Prisma.StringNullableListFilter<"Evaluation">
   feedback?: Prisma.StringFilter<"Evaluation"> | string
@@ -860,6 +879,7 @@ export type EvaluationCreateWithoutInterviewInput = {
   dataStructure: number
   complexity: number
   edgeCases: number
+  questionPerformance?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   strengths?: Prisma.EvaluationCreatestrengthsInput | string[]
   improvements?: Prisma.EvaluationCreateimprovementsInput | string[]
   feedback: string
@@ -880,6 +900,7 @@ export type EvaluationUncheckedCreateWithoutInterviewInput = {
   dataStructure: number
   complexity: number
   edgeCases: number
+  questionPerformance?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   strengths?: Prisma.EvaluationCreatestrengthsInput | string[]
   improvements?: Prisma.EvaluationCreateimprovementsInput | string[]
   feedback: string
@@ -912,6 +933,7 @@ export type EvaluationUpdateWithoutInterviewInput = {
   dataStructure?: Prisma.IntFieldUpdateOperationsInput | number
   complexity?: Prisma.IntFieldUpdateOperationsInput | number
   edgeCases?: Prisma.IntFieldUpdateOperationsInput | number
+  questionPerformance?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   strengths?: Prisma.EvaluationUpdatestrengthsInput | string[]
   improvements?: Prisma.EvaluationUpdateimprovementsInput | string[]
   feedback?: Prisma.StringFieldUpdateOperationsInput | string
@@ -932,6 +954,7 @@ export type EvaluationUncheckedUpdateWithoutInterviewInput = {
   dataStructure?: Prisma.IntFieldUpdateOperationsInput | number
   complexity?: Prisma.IntFieldUpdateOperationsInput | number
   edgeCases?: Prisma.IntFieldUpdateOperationsInput | number
+  questionPerformance?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   strengths?: Prisma.EvaluationUpdatestrengthsInput | string[]
   improvements?: Prisma.EvaluationUpdateimprovementsInput | string[]
   feedback?: Prisma.StringFieldUpdateOperationsInput | string
@@ -948,6 +971,7 @@ export type EvaluationCreateWithoutSessionInput = {
   dataStructure: number
   complexity: number
   edgeCases: number
+  questionPerformance?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   strengths?: Prisma.EvaluationCreatestrengthsInput | string[]
   improvements?: Prisma.EvaluationCreateimprovementsInput | string[]
   feedback: string
@@ -968,6 +992,7 @@ export type EvaluationUncheckedCreateWithoutSessionInput = {
   dataStructure: number
   complexity: number
   edgeCases: number
+  questionPerformance?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   strengths?: Prisma.EvaluationCreatestrengthsInput | string[]
   improvements?: Prisma.EvaluationCreateimprovementsInput | string[]
   feedback: string
@@ -1000,6 +1025,7 @@ export type EvaluationUpdateWithoutSessionInput = {
   dataStructure?: Prisma.IntFieldUpdateOperationsInput | number
   complexity?: Prisma.IntFieldUpdateOperationsInput | number
   edgeCases?: Prisma.IntFieldUpdateOperationsInput | number
+  questionPerformance?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   strengths?: Prisma.EvaluationUpdatestrengthsInput | string[]
   improvements?: Prisma.EvaluationUpdateimprovementsInput | string[]
   feedback?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1020,6 +1046,7 @@ export type EvaluationUncheckedUpdateWithoutSessionInput = {
   dataStructure?: Prisma.IntFieldUpdateOperationsInput | number
   complexity?: Prisma.IntFieldUpdateOperationsInput | number
   edgeCases?: Prisma.IntFieldUpdateOperationsInput | number
+  questionPerformance?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   strengths?: Prisma.EvaluationUpdatestrengthsInput | string[]
   improvements?: Prisma.EvaluationUpdateimprovementsInput | string[]
   feedback?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1038,6 +1065,7 @@ export type EvaluationCreateManyCandidateInput = {
   dataStructure: number
   complexity: number
   edgeCases: number
+  questionPerformance?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   strengths?: Prisma.EvaluationCreatestrengthsInput | string[]
   improvements?: Prisma.EvaluationCreateimprovementsInput | string[]
   feedback: string
@@ -1054,6 +1082,7 @@ export type EvaluationUpdateWithoutCandidateInput = {
   dataStructure?: Prisma.IntFieldUpdateOperationsInput | number
   complexity?: Prisma.IntFieldUpdateOperationsInput | number
   edgeCases?: Prisma.IntFieldUpdateOperationsInput | number
+  questionPerformance?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   strengths?: Prisma.EvaluationUpdatestrengthsInput | string[]
   improvements?: Prisma.EvaluationUpdateimprovementsInput | string[]
   feedback?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1074,6 +1103,7 @@ export type EvaluationUncheckedUpdateWithoutCandidateInput = {
   dataStructure?: Prisma.IntFieldUpdateOperationsInput | number
   complexity?: Prisma.IntFieldUpdateOperationsInput | number
   edgeCases?: Prisma.IntFieldUpdateOperationsInput | number
+  questionPerformance?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   strengths?: Prisma.EvaluationUpdatestrengthsInput | string[]
   improvements?: Prisma.EvaluationUpdateimprovementsInput | string[]
   feedback?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1092,6 +1122,7 @@ export type EvaluationUncheckedUpdateManyWithoutCandidateInput = {
   dataStructure?: Prisma.IntFieldUpdateOperationsInput | number
   complexity?: Prisma.IntFieldUpdateOperationsInput | number
   edgeCases?: Prisma.IntFieldUpdateOperationsInput | number
+  questionPerformance?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   strengths?: Prisma.EvaluationUpdatestrengthsInput | string[]
   improvements?: Prisma.EvaluationUpdateimprovementsInput | string[]
   feedback?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1113,6 +1144,7 @@ export type EvaluationSelect<ExtArgs extends runtime.Types.Extensions.InternalAr
   dataStructure?: boolean
   complexity?: boolean
   edgeCases?: boolean
+  questionPerformance?: boolean
   strengths?: boolean
   improvements?: boolean
   feedback?: boolean
@@ -1135,6 +1167,7 @@ export type EvaluationSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ex
   dataStructure?: boolean
   complexity?: boolean
   edgeCases?: boolean
+  questionPerformance?: boolean
   strengths?: boolean
   improvements?: boolean
   feedback?: boolean
@@ -1157,6 +1190,7 @@ export type EvaluationSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ex
   dataStructure?: boolean
   complexity?: boolean
   edgeCases?: boolean
+  questionPerformance?: boolean
   strengths?: boolean
   improvements?: boolean
   feedback?: boolean
@@ -1179,13 +1213,14 @@ export type EvaluationSelectScalar = {
   dataStructure?: boolean
   complexity?: boolean
   edgeCases?: boolean
+  questionPerformance?: boolean
   strengths?: boolean
   improvements?: boolean
   feedback?: boolean
   createdAt?: boolean
 }
 
-export type EvaluationOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "interviewId" | "sessionId" | "candidateId" | "overallScore" | "algorithmCorrectness" | "logicalReasoning" | "conceptCoverage" | "completeness" | "dataStructure" | "complexity" | "edgeCases" | "strengths" | "improvements" | "feedback" | "createdAt", ExtArgs["result"]["evaluation"]>
+export type EvaluationOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "interviewId" | "sessionId" | "candidateId" | "overallScore" | "algorithmCorrectness" | "logicalReasoning" | "conceptCoverage" | "completeness" | "dataStructure" | "complexity" | "edgeCases" | "questionPerformance" | "strengths" | "improvements" | "feedback" | "createdAt", ExtArgs["result"]["evaluation"]>
 export type EvaluationInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   interview?: boolean | Prisma.InterviewDefaultArgs<ExtArgs>
   session?: boolean | Prisma.InterviewSessionDefaultArgs<ExtArgs>
@@ -1222,6 +1257,7 @@ export type $EvaluationPayload<ExtArgs extends runtime.Types.Extensions.Internal
     dataStructure: number
     complexity: number
     edgeCases: number
+    questionPerformance: runtime.JsonValue | null
     strengths: string[]
     improvements: string[]
     feedback: string
@@ -1664,6 +1700,7 @@ export interface EvaluationFieldRefs {
   readonly dataStructure: Prisma.FieldRef<"Evaluation", 'Int'>
   readonly complexity: Prisma.FieldRef<"Evaluation", 'Int'>
   readonly edgeCases: Prisma.FieldRef<"Evaluation", 'Int'>
+  readonly questionPerformance: Prisma.FieldRef<"Evaluation", 'Json'>
   readonly strengths: Prisma.FieldRef<"Evaluation", 'String[]'>
   readonly improvements: Prisma.FieldRef<"Evaluation", 'String[]'>
   readonly feedback: Prisma.FieldRef<"Evaluation", 'String'>

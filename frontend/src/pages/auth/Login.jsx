@@ -121,32 +121,23 @@ function Login() {
 
           {/* LOGO */}
 
-          <div className="flex items-center gap-3">
 
-            {/* LOGO */}
+          {/* LOGO */}
 
-            <div className="flex h-9 w-9 items-center justify-center">
+          <button
+            type="button"
+            onClick={() => navigate("/")}
+            className="group flex w-fit items-center gap-3"
+          >
 
-              <img
-                src="/images/logo.png"
-                alt="Qore Logo"
-                className="h-full w-full object-contain"
-              />
-
-            </div>
+            <img
+              src="/images/logo.png"
+              alt="Qore Logo"
+              className="h-9 w-9 object-contain transition-transform duration-300 group-hover:scale-105"
+            />
 
 
-            {/* TEXT */}
-
-            <Link
-              to="/"
-              className="text-sm font-medium tracking-[-0.02em] text-white transition-opacity hover:opacity-70"
-            >
-              Qore
-            </Link>
-
-          </div>
-
+          </button>
 
           {/* MAIN TEXT */}
 
@@ -313,19 +304,6 @@ function Login() {
 
 
           <div className="w-full max-w-[400px]">
-
-
-            {/* LABEL */}
-
-            <div className="flex items-center gap-3">
-
-              <span className="h-px w-8 bg-blue-400/70" />
-
-              <span className="text-[9px] uppercase tracking-[0.25em] text-white/35">
-                Secure access
-              </span>
-
-            </div>
 
 
             {/* HEADING */}

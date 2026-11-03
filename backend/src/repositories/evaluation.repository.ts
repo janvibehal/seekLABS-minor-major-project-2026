@@ -12,6 +12,7 @@ export const createEvaluation = async (data: {
   dataStructure: number;
   complexity: number;
   edgeCases: number;
+  questionPerformance?: object;
   strengths: string[];
   improvements: string[];
   feedback: string;
@@ -59,6 +60,19 @@ export const findEvaluationsByCandidate = async (candidateId: string) => {
     },
     include: {
       interview: true,
+      session: {
+        include: {
+          messages: {
+            where: {
+              sender: "CANDIDATE",
+            },
+            select: {
+              id: true,
+            },
+            take: 1,
+          },
+        },
+      },
     },
     orderBy: {
       createdAt: "desc",

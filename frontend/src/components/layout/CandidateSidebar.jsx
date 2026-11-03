@@ -49,7 +49,7 @@ function CandidateSidebar() {
 
           <div className="relative flex h-11 w-11 shrink-0 items-center justify-center">
             <img
-              src="/images/logo-Photoroom.png"
+              src="/images/logo.png"
               alt="Qore"
               className="h-11 w-11 rounded-2xl object-contain"
             />

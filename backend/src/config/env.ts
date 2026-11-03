@@ -17,6 +17,11 @@ export const env = {
 
   PORT: Number(process.env.PORT) || 5000,
 
+  SESSION_EXPIRY_POLL_INTERVAL_MS:
+    Number(process.env.SESSION_EXPIRY_POLL_INTERVAL_MS) >= 1000
+      ? Number(process.env.SESSION_EXPIRY_POLL_INTERVAL_MS)
+      : 10000,
+
   DATABASE_URL: process.env.DATABASE_URL!,
 
   FRONTEND_URL:

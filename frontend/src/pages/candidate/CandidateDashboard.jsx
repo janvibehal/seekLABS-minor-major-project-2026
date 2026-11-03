@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import CandidateLayout from '../../components/layout/CandidateLayout'
 import { useAuth } from '../../context/AuthContext.jsx'
 import * as candidateApi from '../../api/candidate.api.js'
 
@@ -11,7 +10,6 @@ function CandidateDashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [dashboard, setDashboard] = useState(null)
-  const [latestResult, setLatestResult] = useState(null)
 
   useEffect(() => {
     let cancelled = false
@@ -26,15 +24,6 @@ function CandidateDashboard() {
         if (cancelled) return
 
         setDashboard(dashboardData)
-        const latestCompleted = dashboardData.recentInterviews?.[0]
-
-        if (latestCompleted) {
-          const detail = await candidateApi.getResultDetail(latestCompleted.id)
-
-          if (!cancelled) {
-            setLatestResult(detail)
-          }
-        }
       } catch (err) {
         if (!cancelled) {
           setError(err.message || 'Unable to load your dashboard.')
@@ -59,7 +48,6 @@ function CandidateDashboard() {
 
   if (loading) {
     return (
-      <CandidateLayout>
         <div className="flex min-h-[70vh] items-center justify-center">
           <div className="flex flex-col items-center gap-4">
             <div className="relative h-12 w-12">
@@ -73,7 +61,6 @@ function CandidateDashboard() {
             </p>
           </div>
         </div>
-      </CandidateLayout>
     )
   }
 
@@ -83,7 +70,6 @@ function CandidateDashboard() {
 
   if (error) {
     return (
-      <CandidateLayout>
         <div className="rounded-2xl border border-red-500/20 bg-red-500/5 p-6">
           <p className="text-sm font-medium text-red-400">
             Something went wrong
@@ -93,20 +79,11 @@ function CandidateDashboard() {
             {error}
           </p>
         </div>
-      </CandidateLayout>
     )
   }
 
-  const upcoming = dashboard?.upcomingInterviews?.[0]
-
-  const dimensionEntries = latestResult
-    ? Object.entries(latestResult.dimensions || {})
-    : []
-
-
   return (
-    <CandidateLayout>
-      <div className="min-h-screen pb-8 text-white">
+    <div className="min-h-screen pb-8 text-white">
 
         {/* =====================================================
             HERO / HEADER
@@ -209,24 +186,13 @@ function CandidateDashboard() {
           />
         </div>
 
-      </div>
-    </CandidateLayout>
+    </div>
   )
 }
 
 /* ============================================================
    LABELS
 ============================================================ */
-
-const DIMENSION_LABELS = {
-  algorithmCorrectness: 'Algorithmic Correctness',
-  logicalReasoning: 'Reasoning & Approach',
-  conceptCoverage: 'Concept Coverage',
-  completeness: 'Completeness',
-  dataStructure: 'Data Structures',
-  complexity: 'Time & Space Complexity',
-  edgeCases: 'Edge Cases',
-}
 
 /* ============================================================
    COMPONENTS
@@ -277,158 +243,6 @@ function StatCard({
   )
 }
 
-function SectionHeader({
-  title,
-  subtitle,
-  action,
-  onAction,
-}) {
-  return (
-    <div className="mb-4 flex items-end justify-between gap-4">
-
-      <div>
-        <h2 className="text-base font-semibold text-white">
-          {title}
-        </h2>
-
-        {subtitle && (
-          <p className="mt-1 text-xs text-zinc-600">
-            {subtitle}
-          </p>
-        )}
-      </div>
-
-      {action && (
-        <button
-          type="button"
-          onClick={onAction}
-          className="group whitespace-nowrap text-xs font-medium text-zinc-500 transition hover:text-blue-300"
-        >
-          {action}
-
-          <span className="ml-1 inline-block text-blue-400 transition-transform group-hover:translate-x-1">
-            →
-          </span>
-        </button>
-      )}
-
-    </div>
-  )
-}
-
-function EmptyState({
-  message,
-  action,
-  onAction,
-}) {
-  return (
-    <div className="rounded-2xl border border-dashed border-white/[0.08] bg-white/[0.015] px-6 py-10 text-center">
-
-      <p className="text-sm text-zinc-600">
-        {message}
-      </p>
-
-      {action && (
-        <button
-          type="button"
-          onClick={onAction}
-          className="mt-4 text-sm font-medium text-blue-400 hover:text-blue-300"
-        >
-          {action} →
-        </button>
-      )}
-
-    </div>
-  )
-}
-
-function DimensionCard({
-  title,
-  score,
-  progress,
-}) {
-  return (
-    <div className="group rounded-2xl border border-white/[0.07] bg-[#0b0d12] p-5 transition-all duration-300 hover:border-blue-400/20 hover:bg-[#0e1118]">
-
-      <div className="flex items-start justify-between gap-4">
-
-        <p className="max-w-[150px] text-xs font-medium leading-5 text-zinc-500">
-          {title}
-        </p>
-
-        <span className="text-sm font-semibold text-blue-300">
-          {score}
-        </span>
-
-      </div>
-
-      <div className="mt-6 h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
-
-        <div
-          className="h-full rounded-full bg-gradient-to-r from-blue-600 via-blue-400 to-cyan-400 transition-all duration-700"
-          style={{
-            width: `${progress}%`,
-          }}
-        />
-
-      </div>
-
-    </div>
-  )
-}
-
-function ProgressItem({
-  label,
-  value,
-  progress,
-}) {
-  return (
-    <div>
-
-      <div className="mb-2 flex justify-between gap-3">
-
-        <span className="truncate text-[11px] text-zinc-500">
-          {label}
-        </span>
-
-        <span className="text-[11px] font-medium text-blue-200">
-          {value}
-        </span>
-
-      </div>
-
-      <div className="h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
-
-        <div
-          className="h-full rounded-full bg-gradient-to-r from-blue-600 to-blue-400"
-          style={{
-            width: `${progress}%`,
-          }}
-        />
-
-      </div>
-
-    </div>
-  )
-}
-
-function InterviewMeta({
-  icon,
-  value,
-}) {
-  return (
-    <span className="flex items-center gap-2">
-
-      <span className="text-blue-400/70">
-        {icon}
-      </span>
-
-      {value}
-
-    </span>
-  )
-}
-
 /* ============================================================
    ICONS
 ============================================================ */
@@ -474,83 +288,6 @@ function ChartIcon() {
       <path d="M4 19V5" />
       <path d="M4 19h16" />
       <path d="m7 15 4-5 3 2 5-6" />
-    </svg>
-  )
-}
-
-function BookIcon() {
-  return (
-    <svg
-      className="h-4 w-4"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-    >
-      <path d="M4 5a3 3 0 0 1 3-3h13v18H7a3 3 0 0 0-3 3V5Z" />
-      <path d="M7 20h13" />
-    </svg>
-  )
-}
-
-function CodeIcon() {
-  return (
-    <svg
-      className="h-5 w-5"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-    >
-      <path d="m8 9-4 3 4 3" />
-      <path d="m16 9 4 3-4 3" />
-      <path d="m14 5-4 14" />
-    </svg>
-  )
-}
-
-function ClockIcon() {
-  return (
-    <svg
-      className="h-4 w-4"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-    >
-      <circle cx="12" cy="12" r="9" />
-      <path d="M12 7v5l3 2" />
-    </svg>
-  )
-}
-
-function TimerIcon() {
-  return (
-    <svg
-      className="h-4 w-4"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-    >
-      <circle cx="12" cy="13" r="8" />
-      <path d="M12 5V2M9 2h6" />
-      <path d="m12 9 3 4" />
-    </svg>
-  )
-}
-
-function MessageIcon() {
-  return (
-    <svg
-      className="h-5 w-5"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-    >
-      <path d="M20 11.5a8 8 0 0 1-8 8 8.6 8.6 0 0 1-3.4-.7L4 20l1.2-3.7A8 8 0 1 1 20 11.5Z" />
-      <path d="M8 12h.01M12 12h.01M16 12h.01" />
     </svg>
   )
 }

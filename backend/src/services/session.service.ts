@@ -5,6 +5,7 @@ import {
   updateInterviewQuestionStatus,
   countMessagesForQuestion,
   endSession as endSessionRepo,
+  findInProgressSessions,
 } from "../repositories/session.repository.js";
 
 import {
@@ -120,6 +121,54 @@ const expireInterviewSession = async (
 
     expired: true,
   };
+};
+
+export const finalizeExpiredSessions = async () => {
+  const sessions = await findInProgressSessions();
+  let finalized = 0;
+
+  for (const session of sessions) {
+    const durationSeconds = session.interview.duration * 60;
+    const elapsedSeconds =
+      (Date.now() - session.startedAt.getTime()) / 1000;
+
+    if (
+      session.status === "IN_PROGRESS" &&
+      elapsedSeconds < durationSeconds
+    ) {
+      continue;
+    }
+
+    const messages = await findMessagesBySession(session.id);
+    const hasCandidateAttempt = messages.some(
+      (message) => message.sender === "CANDIDATE",
+    );
+
+    try {
+      if (hasCandidateAttempt) {
+        await endInterviewSession(session.candidateId, session.id);
+      } else {
+        await expireInterviewSession(session.candidateId, session.id);
+      }
+
+      finalized += 1;
+    } catch (error) {
+      if (error instanceof EvaluationUnavailableError) {
+        console.warn(
+          `Final evaluation pending for expired session ${session.id}:`,
+          error.message,
+        );
+        continue;
+      }
+
+      console.error(
+        `Failed to finalize expired session ${session.id}:`,
+        error,
+      );
+    }
+  }
+
+  return finalized;
 };
 
 // ============================================================
@@ -521,13 +570,18 @@ export const endInterviewSession = async (
       session.interview.id,
     );
 
-    return {
-      message: "Interview already completed",
+    if (existingEvaluation) {
+      return {
+        message: "Interview already completed",
 
-      durationSeconds: session.durationSeconds ?? 0,
+        durationSeconds: session.durationSeconds ?? 0,
 
-      overallScore: existingEvaluation?.overallScore ?? null,
-    };
+        overallScore: existingEvaluation.overallScore,
+      };
+    }
+
+    // Older sessions can be marked completed without an Evaluation.
+    // Continue through the final-evaluation path so they can be repaired.
   }
 
   const endedAt = new Date();
@@ -539,6 +593,13 @@ export const endInterviewSession = async (
   );
 
   const messages = await findMessagesBySession(sessionId);
+  const hasCandidateAttempt = messages.some(
+    (message) => message.sender === "CANDIDATE",
+  );
+
+  if (!hasCandidateAttempt) {
+    return expireInterviewSession(candidateId, sessionId);
+  }
 
   // --------------------------------------------------------
   // FINAL EVALUATION
@@ -609,6 +670,12 @@ export const endInterviewSession = async (
 
       errors?: string[];
     };
+    questions?: Array<{
+      question_id: string;
+      answered: boolean;
+      overallScore: number | null;
+      scores: Record<string, { score?: number | null }>;
+    }>;
   } = await evaluateFinal({
     problem: {},
 
@@ -640,6 +707,15 @@ export const endInterviewSession = async (
       ? Math.round(finalEvaluation.overallScore)
       : 0;
 
+  const questionPerformance = (finalEvaluation.questions || []).map(
+    (question) => ({
+      questionId: question.question_id,
+      answered: question.answered,
+      overallScore: question.overallScore,
+      scores: question.scores,
+    }),
+  );
+
   // --------------------------------------------------------
   // MARK SESSION COMPLETED
   // --------------------------------------------------------
@@ -659,13 +735,37 @@ export const endInterviewSession = async (
       session.interview.id,
     );
 
-    return {
-      message: "Interview already completed",
+    if (existingEvaluation) {
+      return {
+        message: "Interview already completed",
 
-      durationSeconds: session.durationSeconds ?? durationSeconds,
+        durationSeconds: session.durationSeconds ?? durationSeconds,
 
-      overallScore: existingEvaluation?.overallScore ?? overallScore,
-    };
+        overallScore: existingEvaluation.overallScore,
+      };
+    }
+
+    // The session was completed by an earlier request, but the
+    // evaluation was never persisted. Continue and save this result.
+  }
+
+  for (const question of finalQuestions) {
+    if (!question.candidateAnswer.trim()) {
+      continue;
+    }
+
+    await upsertQuestionAttempt({
+      sessionId,
+      questionId: question.questionId,
+      candidateId,
+      status: "COMPLETED",
+    });
+
+    await updateInterviewQuestionStatus(
+      session.interview.id,
+      question.questionId,
+      "COMPLETED",
+    );
   }
 
   // --------------------------------------------------------
@@ -700,6 +800,8 @@ export const endInterviewSession = async (
     complexity: score("complexity"),
 
     edgeCases: score("edge_cases"),
+
+    questionPerformance,
 
     strengths: [],
 

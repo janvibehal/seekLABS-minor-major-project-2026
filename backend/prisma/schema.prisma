@@ -406,6 +406,8 @@ model Evaluation {
   complexity           Int
   edgeCases            Int
 
+  questionPerformance Json?
+
   strengths    String[]
   improvements String[]
   feedback     String
